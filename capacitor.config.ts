@@ -3,11 +3,11 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.justif.app',
   appName: "JUSTIF'",
-  webDir: 'out',
+  webDir: '.next',
   server: {
-    // Point to your production API or use localhost for dev
-    url: process.env.CAPACITOR_SERVER_URL || undefined,
-    cleartext: true
+    // Point to Railway production URL
+    url: 'https://justif-app-production.up.railway.app',
+    cleartext: false
   },
   ios: {
     contentInset: 'always'

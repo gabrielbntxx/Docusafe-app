@@ -5,7 +5,7 @@
     "dev": "next dev",
     "build": "npx prisma generate && next build",
     "build:mobile": "next build && npx cap sync",
-    "start": "npx prisma migrate deploy && next start",
+    "start": "npx prisma migrate deploy && next start -p ${PORT:-3000}",
     "lint": "next lint",
     "open:ios": "npx cap open ios",
     "open:android": "npx cap open android"
