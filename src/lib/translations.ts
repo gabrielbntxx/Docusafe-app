@@ -121,6 +121,8 @@ export const translations = {
     saveSettings: "Save Settings",
     saving: "Saving...",
     saved: "Saved",
+    enabled: "Enabled",
+    disabled: "Disabled",
 
     // Errors
     unauthorized: "Unauthorized",
@@ -162,6 +164,9 @@ export const translations = {
     // Notifications
     notificationsTitle: "Notifications",
     noNotifications: "No notifications",
+    noNewNotifications: "No new notifications",
+    unreadNotifications: "unread notifications",
+    notificationsWillAppear: "Your notifications will appear here",
     markAllAsRead: "Mark all as read",
     documentUploaded: "uploaded a document",
     documentDeleted: "deleted a document",
@@ -299,6 +304,8 @@ export const translations = {
     saveSettings: "Enregistrer les paramètres",
     saving: "Enregistrement...",
     saved: "Enregistré",
+    enabled: "Activé",
+    disabled: "Désactivé",
 
     // Errors
     unauthorized: "Non autorisé",
@@ -340,6 +347,9 @@ export const translations = {
     // Notifications
     notificationsTitle: "Notifications",
     noNotifications: "Aucune notification",
+    noNewNotifications: "Aucune nouvelle notification",
+    unreadNotifications: "notifications non lues",
+    notificationsWillAppear: "Vos notifications apparaîtront ici",
     markAllAsRead: "Tout marquer comme lu",
     documentUploaded: "a ajouté un document",
     documentDeleted: "a supprimé un document",
