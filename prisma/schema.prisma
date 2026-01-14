@@ -1,0 +1,153 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  password      String?   // Hashed, nullable for OAuth users
+
+  // Subscription
+  planType      String    @default("FREE")
+  stripeCustomerId String? @unique
+  stripeSubscriptionId String? @unique
+  subscriptionStatus String? // active, canceled, past_due
+  subscriptionEndsAt DateTime?
+
+  // Usage tracking
+  documentsCount Int      @default(0)
+  storageUsedBytes BigInt @default(0)
+
+  // Settings
+  language             String    @default("en")
+  folderPin            String?   // 4-digit PIN for folder creation (hashed)
+  theme                String    @default("light")
+  notificationsEnabled Int       @default(1) // 1 = enabled, 0 = disabled
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  documents     Document[]
+  folders       Folder[]
+  notifications Notification[]
+
+  @@index([email])
+  @@index([stripeCustomerId])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Folder {
+  id          String   @id @default(cuid())
+  name        String
+  color       String?  @default("#3B82F6")
+  icon        String?  @default("folder")
+  isDefault   Int      @default(0)
+  userId      String
+  parentId    String?
+  pin         String?  // Optional 4-digit PIN for this folder (hashed)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent      Folder?   @relation("FolderHierarchy", fields: [parentId], references: [id])
+  children    Folder[]  @relation("FolderHierarchy")
+  documents   Document[]
+
+  @@index([userId])
+  @@index([parentId])
+}
+
+model Document {
+  id              String   @id @default(cuid())
+  userId          String
+  folderId        String?
+
+  // File metadata
+  originalName    String
+  displayName     String
+  fileType        String   // pdf, jpg, png, etc.
+  mimeType        String
+  sizeBytes       BigInt
+
+  // Storage
+  storageKey      String   @unique  // S3/R2 object key
+  storageUrl      String?  // Optional CDN URL
+  thumbnailUrl    String?
+
+  // OCR & Categorization
+  ocrStatus       String   @default("PENDING")
+  ocrText         String?
+  ocrConfidence   Float?
+  suggestedCategory String?
+
+  // Metadata
+  tags            String   @default("")
+  description     String?
+  uploadedAt      DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folder          Folder?   @relation(fields: [folderId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([folderId])
+  @@index([ocrStatus])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // document_uploaded, document_deleted, folder_created, etc.
+  title     String
+  message   String?
+  read      Int      @default(0) // 0 = unread, 1 = read
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+}
