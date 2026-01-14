@@ -31,7 +31,7 @@ export default async function SubscriptionPage() {
 
   return (
     <SubscriptionClient
-      currentPlan={user.planType}
+      currentPlan={user.planType as "FREE" | "PRO"}
       documentsCount={user.documentsCount || 0}
       storageUsedBytes={Number(user.storageUsedBytes) || 0}
     />
