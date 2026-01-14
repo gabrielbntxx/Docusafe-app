@@ -15,10 +15,18 @@ const handle = app.getRequestHandler()
 
 app.prepare().then(() => {
   createServer((req, res) => {
+    // Health check endpoint for Railway
+    if (req.url === '/health' || req.url === '/healthz') {
+      res.writeHead(200, { 'Content-Type': 'text/plain' })
+      res.end('OK')
+      return
+    }
+
     const parsedUrl = parse(req.url, true)
     handle(req, res, parsedUrl)
   }).listen(port, hostname, (err) => {
     if (err) throw err
     console.log(`> Ready on http://${hostname}:${port}`)
+    console.log(`> Health check available at /health`)
   })
 })
