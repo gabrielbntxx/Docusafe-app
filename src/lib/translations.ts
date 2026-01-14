@@ -56,6 +56,7 @@ export const translations = {
     download: "Download",
     uploadedAt: "Uploaded",
     subscription: "Subscription",
+    profile: "Profile",
 
     // My Folders
     myFolders: "My Folders",
@@ -233,6 +234,7 @@ export const translations = {
     download: "Télécharger",
     uploadedAt: "Téléversé",
     subscription: "Abonnement",
+    profile: "Profil",
 
     // My Folders
     myFolders: "Mes dossiers",

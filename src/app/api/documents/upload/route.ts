@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { writeFile } from "fs/promises";
+import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { randomBytes } from "crypto";
 import { createNotification } from "@/lib/notifications";
+import { existsSync } from "fs";
 
 // Limite de taille: 10MB
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -125,6 +126,12 @@ export async function POST(req: Request) {
 
     // Sauvegarder le fichier localement
     const uploadDir = join(process.cwd(), "uploads");
+
+    // Créer le dossier uploads s'il n'existe pas
+    if (!existsSync(uploadDir)) {
+      await mkdir(uploadDir, { recursive: true });
+    }
+
     const filePath = join(uploadDir, storageKey);
 
     await writeFile(filePath, buffer);
