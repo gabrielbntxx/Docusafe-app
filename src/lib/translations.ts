@@ -26,6 +26,7 @@ export const translations = {
 
     // Dashboard
     dashboard: "Dashboard",
+    upload: "Upload",
     welcome: "Welcome",
     hello: "Hello",
     manageDocumentsEasily: "Manage your documents with ease",
@@ -205,6 +206,7 @@ export const translations = {
 
     // Dashboard
     dashboard: "Tableau de bord",
+    upload: "Importer",
     welcome: "Bienvenue",
     overview: "Voici un aperçu de votre activité",
     documents: "Documents",

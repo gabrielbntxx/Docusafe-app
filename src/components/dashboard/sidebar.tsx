@@ -37,7 +37,7 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-800">
+    <aside className="hidden lg:fixed lg:left-0 lg:top-0 lg:z-40 lg:block lg:h-screen lg:w-64 lg:border-r lg:border-neutral-200 lg:bg-white dark:lg:border-neutral-700 dark:lg:bg-neutral-800">
       <div className="flex h-full flex-col">
         <div className="flex h-16 items-center border-b border-neutral-200 px-6 dark:border-neutral-700">
           <Link href="/dashboard" className="flex items-center space-x-2">

@@ -11,7 +11,7 @@ export function Header() {
   const router = useRouter();
 
   return (
-    <header className="sticky top-0 z-30 border-b border-neutral-200 bg-white/80 backdrop-blur-lg dark:border-neutral-700 dark:bg-neutral-800/80">
+    <header className="sticky top-0 z-30 hidden border-b border-neutral-200 bg-white/80 backdrop-blur-lg dark:border-neutral-700 dark:bg-neutral-800/80 lg:block">
       <div className="flex h-16 items-center justify-between px-8">
         <div>
           <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
