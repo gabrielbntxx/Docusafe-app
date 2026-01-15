@@ -47,17 +47,19 @@ export default async function MyFilesPage() {
     },
   });
 
-  // Serialize for JSON
-  const serializedFolders = folders.map((folder) => ({
-    id: folder.id,
-    name: folder.name,
-    color: folder.color || "#3B82F6",
-    icon: folder.icon || "folder",
-    isDefault: folder.isDefault === 1,
-    documentCount: Number(folder._count.documents),
-    createdAt: folder.createdAt.toISOString(),
-    hasPin: !!folder.pin,
-  }));
+  // Serialize for JSON - filter out default folders
+  const serializedFolders = folders
+    .filter((folder) => folder.isDefault !== 1)
+    .map((folder) => ({
+      id: folder.id,
+      name: folder.name,
+      color: folder.color || "#3B82F6",
+      icon: folder.icon || "folder",
+      isDefault: false,
+      documentCount: Number(folder._count.documents),
+      createdAt: folder.createdAt.toISOString(),
+      hasPin: !!folder.pin,
+    }));
 
   const serializedDocuments = documents.map((doc) => ({
     id: doc.id,

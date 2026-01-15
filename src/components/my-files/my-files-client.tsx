@@ -415,20 +415,45 @@ export function MyFilesClient({
             </h2>
 
             {/* Uncategorized */}
-            <button
-              onClick={() => setSelectedFolder(null)}
-              className={`mb-2 flex w-full items-center gap-3 rounded-xl p-3 transition-all ${
+            <div
+              className={`mb-2 flex items-center rounded-xl p-3 transition-all ${
                 selectedFolder === null
-                  ? "bg-primary-50 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300"
-                  : "text-neutral-700 hover:bg-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                  ? "bg-primary-50 dark:bg-primary-900/40"
+                  : "hover:bg-neutral-50 dark:hover:bg-neutral-800"
               }`}
             >
-              <FolderOpen className="h-5 w-5" />
-              <span className="flex-1 text-left font-medium">{t("uncategorized")}</span>
-              <span className="text-sm text-neutral-500 dark:text-neutral-400">
-                {documents.filter((d) => !d.folderId).length}
-              </span>
-            </button>
+              <button
+                onClick={() => setSelectedFolder(null)}
+                className="flex flex-1 items-center gap-3 text-left min-w-0"
+              >
+                <FolderOpen className={`h-5 w-5 flex-shrink-0 ${
+                  selectedFolder === null
+                    ? "text-primary-700 dark:text-primary-300"
+                    : "text-neutral-700 dark:text-neutral-300"
+                }`} />
+                <span className={`flex-1 truncate font-medium ${
+                  selectedFolder === null
+                    ? "text-primary-700 dark:text-primary-300"
+                    : "text-neutral-700 dark:text-neutral-300"
+                }`}>
+                  {t("uncategorized")}
+                </span>
+              </button>
+              <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                  {documents.filter((d) => !d.folderId).length}
+                </span>
+                {/* Espace réservé pour aligner avec les autres dossiers */}
+                <div className="flex gap-1 invisible">
+                  <div className="rounded-lg p-1.5">
+                    <Edit2 className="h-3.5 w-3.5" />
+                  </div>
+                  <div className="rounded-lg p-1.5">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {/* User Folders */}
             <div className="space-y-1">
@@ -456,7 +481,7 @@ export function MyFilesClient({
                       {folder.documentCount}
                     </span>
 
-                    <div className={`flex gap-1 ${folder.isDefault ? 'invisible' : 'opacity-0 transition-opacity group-hover:opacity-100'}`}>
+                    <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                       <button
                         onClick={() => startEditFolder(folder)}
                         className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
