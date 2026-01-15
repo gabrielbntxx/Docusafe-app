@@ -128,6 +128,10 @@ export const translations = {
     enabled: "Enabled",
     disabled: "Disabled",
 
+    // File errors
+    fileNotAvailable: "File not available",
+    fileNotAvailableDesc: "The file is not accessible at the moment. Please try again later or contact support.",
+
     // Errors
     unauthorized: "Unauthorized",
     notFound: "Not found",
@@ -183,7 +187,6 @@ export const translations = {
     minutesAgo: "minutes ago",
     hoursAgo: "hours ago",
     daysAgo: "days ago",
-    justNow: "Just now",
   },
 
   fr: {
@@ -315,6 +318,10 @@ export const translations = {
     enabled: "Activé",
     disabled: "Désactivé",
 
+    // File errors
+    fileNotAvailable: "Fichier non disponible",
+    fileNotAvailableDesc: "Le fichier n'est pas accessible actuellement. Veuillez réessayer plus tard ou contacter le support.",
+
     // Errors
     unauthorized: "Non autorisé",
     notFound: "Non trouvé",
@@ -370,7 +377,6 @@ export const translations = {
     minutesAgo: "minutes",
     hoursAgo: "heures",
     daysAgo: "jours",
-    justNow: "À l'instant",
   },
 } as const;
 

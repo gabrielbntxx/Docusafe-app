@@ -193,7 +193,7 @@ export function SearchClient({
                   return (
                     <div
                       key={doc.id}
-                      className="flex items-center gap-4 rounded-xl border border-neutral-200 bg-neutral-50 p-4 transition-all hover:bg-white hover:shadow-soft dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-750"
+                      className="flex items-center gap-4 rounded-xl border border-neutral-200 bg-neutral-50 p-4 transition-all hover:bg-white hover:shadow-soft dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700"
                     >
                       <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary-50 to-secondary-50 dark:from-primary-900/40 dark:to-secondary-900/40">
                         <Icon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
@@ -274,7 +274,7 @@ export function SearchClient({
                   return (
                     <div
                       key={doc.id}
-                      className="flex items-center gap-4 rounded-xl border border-neutral-200 bg-neutral-50 p-4 transition-all hover:bg-white hover:shadow-soft dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-750"
+                      className="flex items-center gap-4 rounded-xl border border-neutral-200 bg-neutral-50 p-4 transition-all hover:bg-white hover:shadow-soft dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700"
                     >
                       <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary-50 to-secondary-50 dark:from-primary-900/40 dark:to-secondary-900/40">
                         <Icon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
