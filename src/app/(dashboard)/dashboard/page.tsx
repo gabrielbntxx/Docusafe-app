@@ -1,4 +1,5 @@
 import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
@@ -6,9 +7,14 @@ import { DashboardClient } from "@/components/dashboard/dashboard-client";
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
 
+  // Redirect to login if no session
+  if (!session?.user?.id) {
+    redirect("/login");
+  }
+
   // Fetch user statistics
   const user = await db.user.findUnique({
-    where: { id: session?.user?.id },
+    where: { id: session.user.id },
     include: {
       _count: {
         select: {
@@ -21,7 +27,7 @@ export default async function DashboardPage() {
 
   // Fetch recent documents
   const recentDocuments = await db.document.findMany({
-    where: { userId: session?.user?.id },
+    where: { userId: session.user.id },
     orderBy: { uploadedAt: "desc" },
     take: 5,
     include: {
