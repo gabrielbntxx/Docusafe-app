@@ -193,7 +193,7 @@ export function RegisterForm() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-4 bg-apple-blue hover:bg-apple-blue-hover text-white font-semibold rounded-full shadow-apple transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0 flex items-center justify-center gap-2"
+            className="w-full py-4 bg-apple-blue hover:bg-apple-blue-hover text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0 flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <>
@@ -220,7 +220,7 @@ export function RegisterForm() {
         <button
           onClick={handleGoogleSignIn}
           disabled={isLoading}
-          className="w-full py-4 bg-white border-2 border-apple-gray-200 hover:border-apple-gray-300 text-apple-gray-600 font-semibold rounded-full transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0 flex items-center justify-center gap-3"
+          className="w-full py-4 bg-white border-2 border-apple-gray-300 hover:border-apple-gray-400 text-apple-gray-600 font-semibold rounded-full transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0 flex items-center justify-center gap-3 shadow-sm"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path

@@ -113,7 +113,7 @@ export function LoginForm() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-4 bg-apple-blue hover:bg-apple-blue-hover text-white font-semibold rounded-full shadow-apple transition-all duration-300 hover:-translate-y-0.5 hover:shadow-apple-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center gap-2"
+            className="w-full py-4 bg-apple-blue hover:bg-apple-blue-hover text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <>
@@ -141,7 +141,7 @@ export function LoginForm() {
           type="button"
           onClick={handleGoogleSignIn}
           disabled={isLoading}
-          className="w-full py-4 bg-apple-gray-50 hover:bg-apple-gray-100 text-apple-gray-600 font-medium rounded-full border border-apple-gray-200 transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-50"
+          className="w-full py-4 bg-white hover:bg-apple-gray-50 text-apple-gray-600 font-semibold rounded-full border-2 border-apple-gray-300 hover:border-apple-gray-400 transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-50 shadow-sm"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path

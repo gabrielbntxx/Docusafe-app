@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Shield, FolderOpen, Bell, ChevronRight } from "lucide-react";
+import { Shield, FolderOpen, Bell, ChevronRight, Upload } from "lucide-react";
 
 export default function Home() {
   return (
@@ -33,13 +33,13 @@ export default function Home() {
           <div className="flex items-center gap-3">
             <Link
               href="/login"
-              className="px-5 py-2.5 text-apple-gray-600 font-medium hover:text-apple-blue transition-colors"
+              className="px-5 py-2.5 text-apple-gray-600 font-medium hover:text-apple-blue transition-colors border border-apple-gray-200 rounded-full hover:border-apple-blue"
             >
               Connexion
             </Link>
             <Link
               href="/register"
-              className="px-5 py-2.5 bg-apple-blue hover:bg-apple-blue-hover text-white font-medium rounded-full transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
+              className="px-5 py-2.5 bg-apple-blue hover:bg-apple-blue-hover text-white font-medium rounded-full transition-all duration-300 hover:-translate-y-0.5 shadow-apple hover:shadow-lg"
             >
               Commencer
             </Link>
@@ -74,16 +74,16 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-20">
             <Link
               href="/register"
-              className="group px-8 py-4 bg-apple-blue hover:bg-apple-blue-hover text-white font-semibold rounded-full shadow-apple-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex items-center gap-2"
+              className="group px-8 py-4 bg-apple-blue hover:bg-apple-blue-hover text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex items-center gap-2"
             >
               Commencer gratuitement
               <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
             <Link
               href="/login"
-              className="px-8 py-4 bg-apple-gray-50 hover:bg-apple-gray-100 text-apple-gray-600 font-semibold rounded-full border border-apple-gray-200 transition-all duration-300"
+              className="px-8 py-4 bg-white hover:bg-apple-gray-50 text-apple-gray-600 font-semibold rounded-full border-2 border-apple-gray-300 hover:border-apple-blue transition-all duration-300 shadow-sm"
             >
-              J'ai déjà un compte
+              J&apos;ai déjà un compte
             </Link>
           </div>
 
@@ -134,9 +134,7 @@ export default function Home() {
             {/* Feature 1 */}
             <div className="bg-white rounded-4xl p-8 border border-apple-gray-100 shadow-apple hover:shadow-apple-lg transition-all duration-300">
               <div className="w-14 h-14 bg-gradient-to-br from-apple-blue to-apple-blue-hover rounded-2xl flex items-center justify-center mb-6">
-                <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
+                <Upload className="w-7 h-7 text-white" />
               </div>
               <h3 className="text-xl font-bold text-apple-gray-600 mb-3">Upload rapide</h3>
               <p className="text-apple-gray-400 leading-relaxed">
@@ -172,40 +170,40 @@ export default function Home() {
       {/* Security Section */}
       <section id="security" className="py-20 px-6">
         <div className="max-w-6xl mx-auto">
-          <div className="bg-gradient-to-br from-apple-gray-600 to-gray-900 rounded-4xl p-12 md:p-16 text-center text-white relative overflow-hidden">
+          <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-4xl p-12 md:p-16 text-center relative overflow-hidden">
             {/* Background decoration */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-apple-blue/20 rounded-full blur-3xl" />
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-apple-violet/20 rounded-full blur-3xl" />
+            <div className="absolute top-0 right-0 w-64 h-64 bg-apple-blue/30 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-apple-violet/30 rounded-full blur-3xl" />
 
             <div className="relative z-10">
-              <div className="w-20 h-20 bg-white/10 backdrop-blur-xl rounded-3xl flex items-center justify-center mx-auto mb-8">
+              <div className="w-20 h-20 bg-white/20 backdrop-blur-xl rounded-3xl flex items-center justify-center mx-auto mb-8 border border-white/10">
                 <Shield className="w-10 h-10 text-white" />
               </div>
-              <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">
                 Sécurité maximale
               </h2>
               <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-10">
                 Vos documents sont chiffrés de bout en bout et stockés sur des serveurs sécurisés.
-                Personne d'autre que vous n'y a accès.
+                Personne d&apos;autre que vous n&apos;y a accès.
               </p>
-              <div className="flex flex-wrap justify-center gap-6">
-                <div className="flex items-center gap-2 bg-white/10 backdrop-blur px-5 py-3 rounded-full">
+              <div className="flex flex-wrap justify-center gap-4">
+                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-5 py-3 rounded-full border border-white/10">
                   <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  <span>Chiffrement AES-256</span>
+                  <span className="text-white font-medium">Chiffrement AES-256</span>
                 </div>
-                <div className="flex items-center gap-2 bg-white/10 backdrop-blur px-5 py-3 rounded-full">
+                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-5 py-3 rounded-full border border-white/10">
                   <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  <span>RGPD compliant</span>
+                  <span className="text-white font-medium">RGPD compliant</span>
                 </div>
-                <div className="flex items-center gap-2 bg-white/10 backdrop-blur px-5 py-3 rounded-full">
+                <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-5 py-3 rounded-full border border-white/10">
                   <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  <span>Hébergé en Europe</span>
+                  <span className="text-white font-medium">Hébergé en Europe</span>
                 </div>
               </div>
             </div>
