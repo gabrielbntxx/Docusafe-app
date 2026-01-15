@@ -48,12 +48,12 @@ export function LoginForm() {
   return (
     <div className="w-full max-w-md">
       {/* Card */}
-      <div className="bg-white/80 backdrop-blur-xl rounded-4xl border border-apple-gray-200 shadow-apple-lg p-8 md:p-10">
+      <div className="bg-white backdrop-blur-xl rounded-3xl border border-gray-200 shadow-xl p-8 md:p-10">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-apple-gray-600 mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Bon retour !
           </h1>
-          <p className="text-apple-gray-400">
+          <p className="text-gray-500">
             Connectez-vous pour accéder à vos documents
           </p>
         </div>
@@ -67,11 +67,11 @@ export function LoginForm() {
 
           {/* Email Input */}
           <div className="space-y-2">
-            <label htmlFor="email" className="block text-sm font-medium text-apple-gray-600">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
               Email
             </label>
             <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-apple-gray-400" />
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 id="email"
                 type="email"
@@ -82,18 +82,18 @@ export function LoginForm() {
                 }
                 required
                 disabled={isLoading}
-                className="w-full pl-12 pr-4 py-4 bg-apple-gray-50 border border-apple-gray-200 rounded-2xl text-apple-gray-600 placeholder-apple-gray-400 focus:outline-none focus:ring-2 focus:ring-apple-blue focus:border-transparent transition-all disabled:opacity-50"
+                className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-300 rounded-2xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:opacity-50"
               />
             </div>
           </div>
 
           {/* Password Input */}
           <div className="space-y-2">
-            <label htmlFor="password" className="block text-sm font-medium text-apple-gray-600">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
               Mot de passe
             </label>
             <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-apple-gray-400" />
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 id="password"
                 type="password"
@@ -104,7 +104,7 @@ export function LoginForm() {
                 }
                 required
                 disabled={isLoading}
-                className="w-full pl-12 pr-4 py-4 bg-apple-gray-50 border border-apple-gray-200 rounded-2xl text-apple-gray-600 placeholder-apple-gray-400 focus:outline-none focus:ring-2 focus:ring-apple-blue focus:border-transparent transition-all disabled:opacity-50"
+                className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-300 rounded-2xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:opacity-50"
               />
             </div>
           </div>
@@ -113,7 +113,7 @@ export function LoginForm() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-4 bg-apple-blue hover:bg-apple-blue-hover text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center gap-2"
+            className="w-full py-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <>
@@ -129,10 +129,10 @@ export function LoginForm() {
         {/* Divider */}
         <div className="relative my-8">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-apple-gray-200"></div>
+            <div className="w-full border-t border-gray-200"></div>
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="bg-white px-4 text-apple-gray-400">ou continuer avec</span>
+            <span className="bg-white px-4 text-gray-500">ou continuer avec</span>
           </div>
         </div>
 
@@ -141,7 +141,7 @@ export function LoginForm() {
           type="button"
           onClick={handleGoogleSignIn}
           disabled={isLoading}
-          className="w-full py-4 bg-white hover:bg-apple-gray-50 text-apple-gray-600 font-semibold rounded-full border-2 border-apple-gray-300 hover:border-apple-gray-400 transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-50 shadow-sm"
+          className="w-full py-4 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-full border-2 border-gray-300 hover:border-gray-400 transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-50 shadow-sm"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
@@ -165,9 +165,9 @@ export function LoginForm() {
         </button>
 
         {/* Register Link */}
-        <p className="mt-8 text-center text-apple-gray-500">
+        <p className="mt-8 text-center text-gray-600">
           Pas encore de compte ?{" "}
-          <Link href="/register" className="text-apple-blue hover:text-apple-blue-hover font-semibold transition-colors">
+          <Link href="/register" className="text-blue-500 hover:text-blue-600 font-semibold transition-colors">
             Créer un compte
           </Link>
         </p>
