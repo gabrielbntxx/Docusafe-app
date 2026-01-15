@@ -19,6 +19,22 @@ export default async function DashboardPage() {
     },
   });
 
+  // Fetch recent documents
+  const recentDocuments = await db.document.findMany({
+    where: { userId: session?.user?.id },
+    orderBy: { uploadedAt: "desc" },
+    take: 5,
+    include: {
+      folder: {
+        select: {
+          id: true,
+          name: true,
+          color: true,
+        },
+      },
+    },
+  });
+
   const stats = {
     documentsCount: user?._count.documents || 0,
     foldersCount: user?._count.folders || 0,
@@ -26,5 +42,17 @@ export default async function DashboardPage() {
     planType: user?.planType || "FREE",
   };
 
-  return <DashboardClient stats={stats} />;
+  // Serialize documents for client
+  const serializedDocuments = recentDocuments.map((doc) => ({
+    id: doc.id,
+    displayName: doc.displayName,
+    originalName: doc.originalName,
+    fileType: doc.fileType,
+    mimeType: doc.mimeType,
+    sizeBytes: Number(doc.sizeBytes),
+    uploadedAt: doc.uploadedAt.toISOString(),
+    folder: doc.folder,
+  }));
+
+  return <DashboardClient stats={stats} recentDocuments={serializedDocuments} />;
 }

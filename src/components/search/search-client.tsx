@@ -137,27 +137,27 @@ export function SearchClient({
 
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-neutral-900">{t("searchTitle")}</h1>
-          <p className="mt-2 text-neutral-500">
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white sm:text-3xl">{t("searchTitle")}</h1>
+          <p className="mt-2 text-neutral-500 dark:text-neutral-400">
             {t("findDocuments")}
           </p>
         </div>
 
-        <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-soft">
+        <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-soft dark:border-neutral-800 dark:bg-neutral-900">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-neutral-400" />
+            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
             <Input
               type="text"
               placeholder={t("searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-14 pl-12 pr-12 text-lg"
+              className="h-14 pl-12 pr-12 text-lg dark:bg-neutral-800 dark:border-neutral-700 dark:text-white dark:placeholder-neutral-400"
               autoFocus
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -165,7 +165,7 @@ export function SearchClient({
           </div>
 
           {searchQuery && (
-            <div className="mt-4 text-sm text-neutral-500">
+            <div className="mt-4 text-sm text-neutral-500 dark:text-neutral-400">
               {filteredDocuments.length} {t("resultsFound")}
             </div>
           )}
@@ -173,18 +173,18 @@ export function SearchClient({
 
         {searchQuery.trim() ? (
           filteredDocuments.length === 0 ? (
-            <div className="flex flex-col items-center justify-center rounded-2xl border border-neutral-200 bg-white p-12 text-center">
-              <Search className="h-12 w-12 text-neutral-300" />
-              <p className="mt-4 text-sm font-medium text-neutral-900">
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-neutral-200 bg-white p-12 text-center dark:border-neutral-800 dark:bg-neutral-900">
+              <Search className="h-12 w-12 text-neutral-300 dark:text-neutral-600" />
+              <p className="mt-4 text-sm font-medium text-neutral-900 dark:text-white">
                 {t("noResultsFound")}
               </p>
-              <p className="mt-1 text-xs text-neutral-500">
+              <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
                 {t("tryDifferentKeywords")}
               </p>
             </div>
           ) : (
-            <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-soft">
-              <h2 className="mb-4 text-lg font-semibold text-neutral-900">
+            <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-soft dark:border-neutral-800 dark:bg-neutral-900">
+              <h2 className="mb-4 text-lg font-semibold text-neutral-900 dark:text-white">
                 {t("searchResults")}
               </h2>
               <div className="space-y-2">
@@ -193,17 +193,17 @@ export function SearchClient({
                   return (
                     <div
                       key={doc.id}
-                      className="flex items-center gap-4 rounded-xl border border-neutral-200 bg-neutral-50 p-4 transition-all hover:bg-white hover:shadow-soft"
+                      className="flex items-center gap-4 rounded-xl border border-neutral-200 bg-neutral-50 p-4 transition-all hover:bg-white hover:shadow-soft dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-750"
                     >
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary-50 to-secondary-50">
-                        <Icon className="h-6 w-6 text-primary-600" />
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary-50 to-secondary-50 dark:from-primary-900/40 dark:to-secondary-900/40">
+                        <Icon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <h3 className="truncate font-medium text-neutral-900">
+                        <h3 className="truncate font-medium text-neutral-900 dark:text-white">
                           {doc.displayName}
                         </h3>
-                        <div className="mt-1 flex items-center gap-3 text-xs text-neutral-500">
+                        <div className="mt-1 flex items-center gap-3 text-xs text-neutral-500 dark:text-neutral-400">
                           <span>{formatFileSize(doc.sizeBytes)}</span>
                           <span>•</span>
                           <span>{formatDate(doc.uploadedAt)}</span>
@@ -225,19 +225,19 @@ export function SearchClient({
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleView(doc)}
-                          className="rounded-lg bg-primary-50 px-3 py-2 text-xs font-medium text-primary-700 transition-colors hover:bg-primary-100"
+                          className="rounded-lg bg-primary-50 px-3 py-2 text-xs font-medium text-primary-700 transition-colors hover:bg-primary-100 dark:bg-primary-900/40 dark:text-primary-300 dark:hover:bg-primary-900/60"
                         >
                           {t("view")}
                         </button>
                         <button
                           onClick={() => handleDownload(doc.id, doc.originalName)}
-                          className="rounded-lg bg-neutral-100 p-2 text-neutral-600 transition-colors hover:bg-neutral-200"
+                          className="rounded-lg bg-neutral-100 p-2 text-neutral-600 transition-colors hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600"
                         >
                           <Download className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(doc.id, doc.displayName)}
-                          className="rounded-lg bg-neutral-100 p-2 text-neutral-600 transition-colors hover:bg-red-50 hover:text-red-600"
+                          className="rounded-lg bg-neutral-100 p-2 text-neutral-600 transition-colors hover:bg-red-50 hover:text-red-600 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-red-900/30 dark:hover:text-red-400"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -249,21 +249,21 @@ export function SearchClient({
             </div>
           )
         ) : (
-          <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-soft">
+          <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-soft dark:border-neutral-800 dark:bg-neutral-900">
             <div className="mb-4 flex items-center gap-2">
-              <Clock className="h-5 w-5 text-neutral-400" />
-              <h2 className="text-lg font-semibold text-neutral-900">
+              <Clock className="h-5 w-5 text-neutral-400 dark:text-neutral-500" />
+              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
                 {t("recentFiles")}
               </h2>
             </div>
 
             {recentDocuments.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <FileText className="h-12 w-12 text-neutral-300" />
-                <p className="mt-4 text-sm text-neutral-500">
+                <FileText className="h-12 w-12 text-neutral-300 dark:text-neutral-600" />
+                <p className="mt-4 text-sm text-neutral-500 dark:text-neutral-400">
                   {t("noDocuments")}
                 </p>
-                <p className="mt-1 text-xs text-neutral-400">
+                <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">
                   {t("startByAdding")}
                 </p>
               </div>
@@ -274,17 +274,17 @@ export function SearchClient({
                   return (
                     <div
                       key={doc.id}
-                      className="flex items-center gap-4 rounded-xl border border-neutral-200 bg-neutral-50 p-4 transition-all hover:bg-white hover:shadow-soft"
+                      className="flex items-center gap-4 rounded-xl border border-neutral-200 bg-neutral-50 p-4 transition-all hover:bg-white hover:shadow-soft dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-750"
                     >
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary-50 to-secondary-50">
-                        <Icon className="h-6 w-6 text-primary-600" />
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary-50 to-secondary-50 dark:from-primary-900/40 dark:to-secondary-900/40">
+                        <Icon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <h3 className="truncate font-medium text-neutral-900">
+                        <h3 className="truncate font-medium text-neutral-900 dark:text-white">
                           {doc.displayName}
                         </h3>
-                        <div className="mt-1 flex items-center gap-3 text-xs text-neutral-500">
+                        <div className="mt-1 flex items-center gap-3 text-xs text-neutral-500 dark:text-neutral-400">
                           <span>{formatFileSize(doc.sizeBytes)}</span>
                           <span>•</span>
                           <span>{formatDate(doc.uploadedAt)}</span>
@@ -306,19 +306,19 @@ export function SearchClient({
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleView(doc)}
-                          className="rounded-lg bg-primary-50 px-3 py-2 text-xs font-medium text-primary-700 transition-colors hover:bg-primary-100"
+                          className="rounded-lg bg-primary-50 px-3 py-2 text-xs font-medium text-primary-700 transition-colors hover:bg-primary-100 dark:bg-primary-900/40 dark:text-primary-300 dark:hover:bg-primary-900/60"
                         >
                           {t("view")}
                         </button>
                         <button
                           onClick={() => handleDownload(doc.id, doc.originalName)}
-                          className="rounded-lg bg-neutral-100 p-2 text-neutral-600 transition-colors hover:bg-neutral-200"
+                          className="rounded-lg bg-neutral-100 p-2 text-neutral-600 transition-colors hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600"
                         >
                           <Download className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(doc.id, doc.displayName)}
-                          className="rounded-lg bg-neutral-100 p-2 text-neutral-600 transition-colors hover:bg-red-50 hover:text-red-600"
+                          className="rounded-lg bg-neutral-100 p-2 text-neutral-600 transition-colors hover:bg-red-50 hover:text-red-600 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-red-900/30 dark:hover:text-red-400"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
