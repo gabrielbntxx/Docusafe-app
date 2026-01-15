@@ -36,20 +36,12 @@ export async function POST(req: Request) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user with default folder
+    // Create user
     const user = await db.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
-        folders: {
-          create: {
-            name: "Dossier Location",
-            isDefault: 1,
-            icon: "home",
-            color: "#3B82F6",
-          },
-        },
       },
     });
 

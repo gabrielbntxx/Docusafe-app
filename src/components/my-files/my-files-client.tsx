@@ -435,7 +435,7 @@ export function MyFilesClient({
               {folders.map((folder) => (
                 <div
                   key={folder.id}
-                  className={`group flex items-center gap-3 rounded-xl p-3 transition-all ${
+                  className={`group flex items-center rounded-xl p-3 transition-all ${
                     selectedFolder === folder.id
                       ? "bg-primary-50 dark:bg-primary-900/40"
                       : "hover:bg-neutral-50 dark:hover:bg-neutral-800"
@@ -443,19 +443,20 @@ export function MyFilesClient({
                 >
                   <button
                     onClick={() => handleFolderClick(folder)}
-                    className="flex flex-1 items-center gap-3 text-left"
+                    className="flex flex-1 items-center gap-3 text-left min-w-0"
                   >
-                    <Folder className="h-5 w-5" style={{ color: folder.color }} />
+                    <Folder className="h-5 w-5 flex-shrink-0" style={{ color: folder.color }} />
                     <span className="flex-1 truncate font-medium text-neutral-700 dark:text-neutral-300">
                       {folder.name} {folder.hasPin && "🔒"}
                     </span>
+                  </button>
+
+                  <div className="flex items-center gap-2 flex-shrink-0 ml-2">
                     <span className="text-sm text-neutral-500 dark:text-neutral-400">
                       {folder.documentCount}
                     </span>
-                  </button>
 
-                  {!folder.isDefault && (
-                    <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                    <div className={`flex gap-1 ${folder.isDefault ? 'invisible' : 'opacity-0 transition-opacity group-hover:opacity-100'}`}>
                       <button
                         onClick={() => startEditFolder(folder)}
                         className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
@@ -469,7 +470,7 @@ export function MyFilesClient({
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
-                  )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -507,7 +508,7 @@ export function MyFilesClient({
                   return (
                     <div
                       key={doc.id}
-                      className="flex items-center gap-4 rounded-xl border border-neutral-200 bg-neutral-50 p-3 transition-all hover:bg-white hover:shadow-soft dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-750"
+                      className="flex items-center gap-4 rounded-xl border border-neutral-200 bg-neutral-50 p-3 transition-all hover:bg-white hover:shadow-soft dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700"
                     >
                       <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary-50 to-secondary-50 dark:from-primary-900/40 dark:to-secondary-900/40">
                         <Icon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
