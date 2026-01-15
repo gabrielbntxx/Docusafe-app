@@ -55,5 +55,8 @@
     "prisma": "^5.22.0",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3"
+  },
+  "optionalDependencies": {
+    "@next/swc-linux-x64-gnu": "^16.1.2"
   }
 }
