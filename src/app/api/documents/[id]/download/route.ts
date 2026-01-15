@@ -44,7 +44,7 @@ export async function GET(
     const fileBuffer = await getFromR2(document.storageKey);
 
     // Retourner le fichier en téléchargement (attachment)
-    return new NextResponse(fileBuffer, {
+    return new NextResponse(new Uint8Array(fileBuffer), {
       headers: {
         "Content-Type": document.mimeType,
         "Content-Disposition": `attachment; filename="${encodeURIComponent(document.originalName)}"`,
