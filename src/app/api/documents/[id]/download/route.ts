@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { readFile } from "fs/promises";
-import { join } from "path";
+import { getFromR2 } from "@/lib/storage";
 
 export async function GET(
   req: Request,
@@ -19,7 +18,6 @@ export async function GET(
       );
     }
 
-    // Await params
     const { id } = await params;
 
     // Récupérer le document
@@ -42,11 +40,10 @@ export async function GET(
       );
     }
 
-    // Lire le fichier
-    const filePath = join(process.cwd(), "uploads", document.storageKey);
-    const fileBuffer = await readFile(filePath);
+    // Récupérer le fichier depuis R2
+    const fileBuffer = await getFromR2(document.storageKey);
 
-    // Retourner le fichier
+    // Retourner le fichier en téléchargement (attachment)
     return new NextResponse(fileBuffer, {
       headers: {
         "Content-Type": document.mimeType,

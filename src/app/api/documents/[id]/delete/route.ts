@@ -2,9 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { unlink } from "fs/promises";
-import { join } from "path";
 import { createNotification } from "@/lib/notifications";
+import { deleteFromR2 } from "@/lib/storage";
 
 export async function DELETE(
   req: Request,
@@ -20,7 +19,6 @@ export async function DELETE(
       );
     }
 
-    // Await params
     const { id } = await params;
 
     // Récupérer le document
@@ -43,12 +41,11 @@ export async function DELETE(
       );
     }
 
-    // Supprimer le fichier physique
+    // Supprimer le fichier de R2
     try {
-      const filePath = join(process.cwd(), "uploads", document.storageKey);
-      await unlink(filePath);
+      await deleteFromR2(document.storageKey);
     } catch (fileError) {
-      console.error("Error deleting file:", fileError);
+      console.error("Error deleting file from R2:", fileError);
       // Continue même si le fichier n'existe pas
     }
 

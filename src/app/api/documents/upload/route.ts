@@ -2,20 +2,14 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import { randomBytes } from "crypto";
 import { createNotification } from "@/lib/notifications";
-import { existsSync } from "fs";
-
-// Limite de taille: 10MB
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
-
-// Quotas
-const FREE_PLAN_LIMITS = {
-  maxDocuments: 5,
-  maxStorage: 2 * 1024 * 1024, // 2MB
-};
+import {
+  uploadToR2,
+  generateStorageKey,
+  checkStorageLimit,
+  checkFileSizeLimit,
+  checkDocumentLimit,
+} from "@/lib/storage";
 
 export async function POST(req: Request) {
   try {
@@ -45,23 +39,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Vérifier les quotas pour plan FREE
-    if (user.planType === "FREE") {
-      if (user.documentsCount >= FREE_PLAN_LIMITS.maxDocuments) {
-        return NextResponse.json(
-          { error: `Limite atteinte: ${FREE_PLAN_LIMITS.maxDocuments} fichiers maximum pour le plan FREE. Passez à la version Pro pour plus de fichiers.` },
-          { status: 403 }
-        );
-      }
-
-      if (Number(user.storageUsedBytes) >= FREE_PLAN_LIMITS.maxStorage) {
-        return NextResponse.json(
-          { error: "Limite de stockage atteinte: 2MB maximum pour le plan FREE. Passez à la version Pro pour plus de stockage." },
-          { status: 403 }
-        );
-      }
-    }
-
     // Parser le FormData
     const formData = await req.formData();
     const file = formData.get("file") as File;
@@ -69,22 +46,6 @@ export async function POST(req: Request) {
     if (!file) {
       return NextResponse.json(
         { error: "Aucun fichier fourni" },
-        { status: 400 }
-      );
-    }
-
-    // Vérifier la taille du fichier pour le plan FREE
-    if (user.planType === "FREE" && file.size > FREE_PLAN_LIMITS.maxStorage) {
-      return NextResponse.json(
-        { error: "Fichier trop volumineux (max 2MB par fichier pour le plan FREE). Passez à la version Pro pour télécharger des fichiers plus volumineux." },
-        { status: 403 }
-      );
-    }
-
-    // Vérifier la taille générale (10MB pour PRO)
-    if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { error: "Fichier trop volumineux (max 10MB)" },
         { status: 400 }
       );
     }
@@ -100,41 +61,51 @@ export async function POST(req: Request) {
 
     if (!validTypes.includes(file.type)) {
       return NextResponse.json(
-        { error: "Type de fichier non supporté" },
+        { error: "Type de fichier non supporté. Formats acceptés: PDF, JPG, PNG, GIF" },
         { status: 400 }
       );
     }
 
-    // Vérifier si le stockage après upload dépasserait la limite
-    if (
-      user.planType === "FREE" &&
-      Number(user.storageUsedBytes) + file.size > FREE_PLAN_LIMITS.maxStorage
-    ) {
+    // Vérifier la limite de taille du fichier
+    const fileSizeCheck = checkFileSizeLimit(user.planType, file.size);
+    if (!fileSizeCheck.allowed) {
       return NextResponse.json(
-        { error: "Ce fichier dépasserait votre limite de stockage de 2MB. Passez à la version Pro pour plus de stockage." },
+        { error: fileSizeCheck.reason },
         { status: 403 }
       );
     }
 
-    // Générer un nom unique
+    // Vérifier le nombre de documents
+    const documentCheck = checkDocumentLimit(user.planType, user.documentsCount);
+    if (!documentCheck.allowed) {
+      return NextResponse.json(
+        { error: documentCheck.reason },
+        { status: 403 }
+      );
+    }
+
+    // Vérifier la limite de stockage
+    const storageCheck = checkStorageLimit(
+      user.planType,
+      Number(user.storageUsedBytes),
+      file.size
+    );
+    if (!storageCheck.allowed) {
+      return NextResponse.json(
+        { error: storageCheck.reason },
+        { status: 403 }
+      );
+    }
+
+    // Convertir le fichier en buffer
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const uniqueId = randomBytes(16).toString("hex");
-    const fileExtension = file.name.split(".").pop();
-    const storageKey = `${uniqueId}.${fileExtension}`;
+    // Générer la clé de stockage
+    const storageKey = generateStorageKey(session.user.id, file.name);
 
-    // Sauvegarder le fichier localement
-    const uploadDir = join(process.cwd(), "uploads");
-
-    // Créer le dossier uploads s'il n'existe pas
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true });
-    }
-
-    const filePath = join(uploadDir, storageKey);
-
-    await writeFile(filePath, buffer);
+    // Upload vers R2
+    await uploadToR2(storageKey, buffer, file.type);
 
     // Déterminer le type de fichier
     let fileType = "other";
@@ -151,7 +122,7 @@ export async function POST(req: Request) {
         mimeType: file.type,
         sizeBytes: BigInt(file.size),
         storageKey,
-        storageUrl: `/uploads/${storageKey}`,
+        storageUrl: `r2://${storageKey}`,
         ocrStatus: "PENDING",
       },
     });
