@@ -1,82 +1,259 @@
 import Link from "next/link";
+import { Shield, FolderOpen, Bell, ChevronRight } from "lucide-react";
 
 export default function Home() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-primary-50 via-white to-secondary-50">
-      <div className="max-w-4xl mx-auto px-6 py-16 text-center">
-        {/* Logo */}
-        <div className="mb-8">
-          <h1 className="text-6xl font-bold bg-gradient-to-r from-primary-600 to-secondary-500 bg-clip-text text-transparent">
-            Justif&apos;
-          </h1>
+    <div className="min-h-screen bg-white overflow-hidden">
+      {/* Animated Background Blobs */}
+      <div className="fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-apple-blue/20 to-apple-violet/20 rounded-full blur-3xl animate-blob" />
+        <div className="absolute top-1/2 -left-40 w-96 h-96 bg-gradient-to-br from-apple-violet/15 to-apple-blue/15 rounded-full blur-3xl animate-blob animation-delay-2000" />
+        <div className="absolute -bottom-40 right-1/3 w-72 h-72 bg-gradient-to-br from-apple-blue/10 to-apple-violet/10 rounded-full blur-3xl animate-blob animation-delay-4000" />
+      </div>
+
+      {/* Header */}
+      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-white/70 border-b border-apple-gray-200/50">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-10 h-10 bg-gradient-to-br from-apple-blue to-apple-violet rounded-2xl flex items-center justify-center">
+              <Shield className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-xl font-bold text-apple-gray-600">DocuSafe</span>
+          </Link>
+
+          <nav className="hidden md:flex items-center gap-8">
+            <a href="#features" className="text-apple-gray-500 hover:text-apple-gray-600 transition-colors">
+              Fonctionnalités
+            </a>
+            <a href="#security" className="text-apple-gray-500 hover:text-apple-gray-600 transition-colors">
+              Sécurité
+            </a>
+          </nav>
+
+          <div className="flex items-center gap-3">
+            <Link
+              href="/login"
+              className="px-5 py-2.5 text-apple-gray-600 font-medium hover:text-apple-blue transition-colors"
+            >
+              Connexion
+            </Link>
+            <Link
+              href="/register"
+              className="px-5 py-2.5 bg-apple-blue hover:bg-apple-blue-hover text-white font-medium rounded-full transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
+            >
+              Commencer
+            </Link>
+          </div>
         </div>
+      </header>
 
-        {/* Hero Text */}
-        <h2 className="text-4xl md:text-5xl font-bold text-neutral-900 mb-6">
-          Tous vos justificatifs au bon endroit,{" "}
-          <span className="text-primary-600">au bon moment</span>
-        </h2>
+      {/* Hero Section */}
+      <section className="pt-32 pb-20 px-6">
+        <div className="max-w-6xl mx-auto text-center">
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-apple-gray-50 rounded-full border border-apple-gray-200 mb-8">
+            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            <span className="text-sm text-apple-gray-500">100% sécurisé et chiffré</span>
+          </div>
 
-        <p className="text-xl text-neutral-600 mb-12 max-w-2xl mx-auto">
-          Centralisez, organisez et digitalisez tous vos documents administratifs
-          avec l&apos;intelligence artificielle pour tout catégoriser automatiquement.
-        </p>
+          {/* Main Heading */}
+          <h1 className="text-5xl md:text-7xl font-bold text-apple-gray-600 mb-6 tracking-tight">
+            Vos documents.
+            <br />
+            <span className="bg-gradient-to-r from-apple-blue to-apple-violet bg-clip-text text-transparent">
+              En sécurité.
+            </span>
+          </h1>
 
-        {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
+          <p className="text-xl md:text-2xl text-apple-gray-400 max-w-2xl mx-auto mb-12 leading-relaxed">
+            Centralisez, organisez et protégez tous vos documents administratifs
+            en un seul endroit sécurisé.
+          </p>
+
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-20">
+            <Link
+              href="/register"
+              className="group px-8 py-4 bg-apple-blue hover:bg-apple-blue-hover text-white font-semibold rounded-full shadow-apple-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex items-center gap-2"
+            >
+              Commencer gratuitement
+              <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </Link>
+            <Link
+              href="/login"
+              className="px-8 py-4 bg-apple-gray-50 hover:bg-apple-gray-100 text-apple-gray-600 font-semibold rounded-full border border-apple-gray-200 transition-all duration-300"
+            >
+              J'ai déjà un compte
+            </Link>
+          </div>
+
+          {/* App Preview */}
+          <div className="relative max-w-4xl mx-auto">
+            <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent z-10 pointer-events-none" />
+            <div className="bg-gradient-to-br from-apple-gray-50 to-white rounded-4xl border border-apple-gray-200 shadow-apple-lg p-8 md:p-12">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {['Factures', 'Contrats', 'Identité', 'Banque'].map((folder, i) => (
+                  <div
+                    key={folder}
+                    className="bg-white rounded-3xl p-6 border border-apple-gray-100 shadow-apple hover:shadow-apple-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+                  >
+                    <div className={`w-12 h-12 rounded-2xl mb-4 flex items-center justify-center ${
+                      i === 0 ? 'bg-blue-100' :
+                      i === 1 ? 'bg-purple-100' :
+                      i === 2 ? 'bg-green-100' : 'bg-orange-100'
+                    }`}>
+                      <FolderOpen className={`w-6 h-6 ${
+                        i === 0 ? 'text-blue-600' :
+                        i === 1 ? 'text-purple-600' :
+                        i === 2 ? 'text-green-600' : 'text-orange-600'
+                      }`} />
+                    </div>
+                    <p className="font-semibold text-apple-gray-600">{folder}</p>
+                    <p className="text-sm text-apple-gray-400 mt-1">{Math.floor(Math.random() * 10) + 2} fichiers</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section id="features" className="py-20 px-6 bg-apple-gray-50">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold text-apple-gray-600 mb-4">
+              Tout ce dont vous avez besoin
+            </h2>
+            <p className="text-xl text-apple-gray-400 max-w-2xl mx-auto">
+              Une solution complète pour gérer vos documents en toute simplicité
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {/* Feature 1 */}
+            <div className="bg-white rounded-4xl p-8 border border-apple-gray-100 shadow-apple hover:shadow-apple-lg transition-all duration-300">
+              <div className="w-14 h-14 bg-gradient-to-br from-apple-blue to-apple-blue-hover rounded-2xl flex items-center justify-center mb-6">
+                <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-apple-gray-600 mb-3">Upload rapide</h3>
+              <p className="text-apple-gray-400 leading-relaxed">
+                Glissez-déposez vos fichiers ou prenez une photo. Tout est automatiquement organisé.
+              </p>
+            </div>
+
+            {/* Feature 2 */}
+            <div className="bg-white rounded-4xl p-8 border border-apple-gray-100 shadow-apple hover:shadow-apple-lg transition-all duration-300">
+              <div className="w-14 h-14 bg-gradient-to-br from-apple-violet to-purple-600 rounded-2xl flex items-center justify-center mb-6">
+                <FolderOpen className="w-7 h-7 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-apple-gray-600 mb-3">Organisation intelligente</h3>
+              <p className="text-apple-gray-400 leading-relaxed">
+                Créez des dossiers personnalisés et retrouvez vos documents en quelques secondes.
+              </p>
+            </div>
+
+            {/* Feature 3 */}
+            <div className="bg-white rounded-4xl p-8 border border-apple-gray-100 shadow-apple hover:shadow-apple-lg transition-all duration-300">
+              <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mb-6">
+                <Bell className="w-7 h-7 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-apple-gray-600 mb-3">Notifications</h3>
+              <p className="text-apple-gray-400 leading-relaxed">
+                Recevez des alertes pour ne jamais oublier un document important ou une échéance.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Security Section */}
+      <section id="security" className="py-20 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-gradient-to-br from-apple-gray-600 to-gray-900 rounded-4xl p-12 md:p-16 text-center text-white relative overflow-hidden">
+            {/* Background decoration */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-apple-blue/20 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-apple-violet/20 rounded-full blur-3xl" />
+
+            <div className="relative z-10">
+              <div className="w-20 h-20 bg-white/10 backdrop-blur-xl rounded-3xl flex items-center justify-center mx-auto mb-8">
+                <Shield className="w-10 h-10 text-white" />
+              </div>
+              <h2 className="text-4xl md:text-5xl font-bold mb-6">
+                Sécurité maximale
+              </h2>
+              <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-10">
+                Vos documents sont chiffrés de bout en bout et stockés sur des serveurs sécurisés.
+                Personne d'autre que vous n'y a accès.
+              </p>
+              <div className="flex flex-wrap justify-center gap-6">
+                <div className="flex items-center gap-2 bg-white/10 backdrop-blur px-5 py-3 rounded-full">
+                  <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  <span>Chiffrement AES-256</span>
+                </div>
+                <div className="flex items-center gap-2 bg-white/10 backdrop-blur px-5 py-3 rounded-full">
+                  <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  <span>RGPD compliant</span>
+                </div>
+                <div className="flex items-center gap-2 bg-white/10 backdrop-blur px-5 py-3 rounded-full">
+                  <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  <span>Hébergé en Europe</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-4xl md:text-5xl font-bold text-apple-gray-600 mb-6">
+            Prêt à sécuriser vos documents ?
+          </h2>
+          <p className="text-xl text-apple-gray-400 mb-10">
+            Rejoignez des milliers d'utilisateurs qui font confiance à DocuSafe.
+          </p>
           <Link
             href="/register"
-            className="px-8 py-4 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-2xl shadow-soft-lg hover:shadow-soft-xl transition-all duration-200 transform hover:scale-105"
+            className="inline-flex items-center gap-2 px-10 py-5 bg-apple-blue hover:bg-apple-blue-hover text-white text-lg font-semibold rounded-full shadow-apple-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
           >
-            Commencer gratuitement
-          </Link>
-          <Link
-            href="/login"
-            className="px-8 py-4 bg-white hover:bg-neutral-50 text-neutral-900 font-semibold rounded-2xl shadow-soft border border-neutral-200 transition-all duration-200"
-          >
-            Se connecter
+            Créer mon compte gratuit
+            <ChevronRight className="w-6 h-6" />
           </Link>
         </div>
+      </section>
 
-        {/* Features */}
-        <div className="grid md:grid-cols-3 gap-8 mt-20">
-          <div className="p-6 bg-white rounded-2xl shadow-soft-md border border-neutral-100">
-            <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center mb-4 mx-auto">
-              <svg className="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
+      {/* Footer */}
+      <footer className="py-12 px-6 border-t border-apple-gray-200">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-gradient-to-br from-apple-blue to-apple-violet rounded-xl flex items-center justify-center">
+              <Shield className="w-4 h-4 text-white" />
             </div>
-            <h3 className="text-lg font-semibold text-neutral-900 mb-2">Upload intelligent</h3>
-            <p className="text-neutral-600">
-              Uploadez vos documents, notre IA les analyse et les classe automatiquement
-            </p>
+            <span className="font-semibold text-apple-gray-600">DocuSafe</span>
           </div>
-
-          <div className="p-6 bg-white rounded-2xl shadow-soft-md border border-neutral-100">
-            <div className="w-12 h-12 bg-secondary-100 rounded-xl flex items-center justify-center mb-4 mx-auto">
-              <svg className="w-6 h-6 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold text-neutral-900 mb-2">Dossiers pré-configurés</h3>
-            <p className="text-neutral-600">
-              Dossiers location, crédit, CAF... tout est prêt pour vos démarches
-            </p>
-          </div>
-
-          <div className="p-6 bg-white rounded-2xl shadow-soft-md border border-neutral-100">
-            <div className="w-12 h-12 bg-accent-100 rounded-xl flex items-center justify-center mb-4 mx-auto">
-              <svg className="w-6 h-6 text-accent-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold text-neutral-900 mb-2">Alertes intelligentes</h3>
-            <p className="text-neutral-600">
-              Ne manquez plus jamais une date d&apos;expiration ou un document manquant
-            </p>
+          <p className="text-apple-gray-400 text-sm">
+            © 2024 DocuSafe. Tous droits réservés.
+          </p>
+          <div className="flex items-center gap-6">
+            <a href="#" className="text-apple-gray-400 hover:text-apple-gray-600 text-sm transition-colors">
+              Confidentialité
+            </a>
+            <a href="#" className="text-apple-gray-400 hover:text-apple-gray-600 text-sm transition-colors">
+              Conditions
+            </a>
           </div>
         </div>
-      </div>
+      </footer>
     </div>
   );
 }
