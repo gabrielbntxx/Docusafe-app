@@ -21,10 +21,10 @@ export default async function DashboardLayout({
   return (
     <SessionProvider>
       <ThemeProvider>
-        <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
+        <div className="min-h-screen bg-neutral-100/50 dark:bg-neutral-950">
           <Sidebar />
           <MobileNav />
-          <div className="lg:ml-64 pt-16 lg:pt-0">
+          <div className="lg:ml-72 pt-16 lg:pt-0">
             <Header />
             <main className="p-4 sm:p-6 lg:p-8">{children}</main>
           </div>

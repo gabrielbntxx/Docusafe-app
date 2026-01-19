@@ -187,6 +187,19 @@ export const translations = {
     minutesAgo: "minutes ago",
     hoursAgo: "hours ago",
     daysAgo: "days ago",
+
+    // Quick Actions
+    uploadNewFile: "Upload a new file",
+    organizeFiles: "Organize your files",
+
+    // Greetings
+    goodMorning: "Good morning",
+    goodAfternoon: "Good afternoon",
+    goodEvening: "Good evening",
+    viewProfile: "View profile",
+    preview: "Preview",
+    protected: "Protected",
+    noFoldersYet: "No folders yet",
   },
 
   fr: {
@@ -377,6 +390,19 @@ export const translations = {
     minutesAgo: "minutes",
     hoursAgo: "heures",
     daysAgo: "jours",
+
+    // Quick Actions
+    uploadNewFile: "Téléverser un fichier",
+    organizeFiles: "Organiser vos fichiers",
+
+    // Greetings
+    goodMorning: "Bonjour",
+    goodAfternoon: "Bon après-midi",
+    goodEvening: "Bonsoir",
+    viewProfile: "Voir le profil",
+    preview: "Aperçu",
+    protected: "Protégé",
+    noFoldersYet: "Aucun dossier",
   },
 } as const;
 

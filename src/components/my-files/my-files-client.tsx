@@ -13,9 +13,9 @@ import {
   MoreVertical,
   FolderOpen,
   X,
+  Lock,
+  Plus,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useTranslation } from "@/hooks/useTranslation";
 import { PinModal } from "@/components/folders/pin-modal";
 
@@ -76,7 +76,6 @@ export function MyFilesClient({
   const [unlockedFolders, setUnlockedFolders] = useState<Set<string>>(new Set());
   const [pendingFolder, setPendingFolder] = useState<FolderType | null>(null);
 
-  // Auto-open create folder modal if create=true in URL
   useEffect(() => {
     if (searchParams.get("create") === "true") {
       setIsCreatingFolder(true);
@@ -257,18 +256,14 @@ export function MyFilesClient({
   };
 
   const handleMoveDocumentWithPinCheck = async (documentId: string, targetFolderId: string | null) => {
-    // Si on déplace vers un dossier protégé par PIN
     if (targetFolderId) {
       const targetFolder = folders.find(f => f.id === targetFolderId);
       if (targetFolder?.hasPin && !unlockedFolders.has(targetFolderId)) {
         setPendingFolder(targetFolder);
-        // On garde en mémoire le document à déplacer
         (window as any).pendingMoveOperation = { documentId, targetFolderId };
         return;
       }
     }
-
-    // Si pas de PIN ou déjà déverrouillé, on déplace directement
     await handleMoveDocument(documentId, targetFolderId);
   };
 
@@ -281,46 +276,54 @@ export function MyFilesClient({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white sm:text-3xl">{t("myFolders")}</h1>
-          <p className="mt-2 text-neutral-500 dark:text-neutral-400">
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
+            {t("myFolders")}
+          </h1>
+          <p className="mt-1 text-neutral-500 dark:text-neutral-400">
             {t("organizeFolders")}
           </p>
         </div>
-        <Button onClick={() => setIsCreatingFolder(true)} className="hidden sm:flex">
-          <FolderPlus className="mr-2 h-4 w-4" />
+        <button
+          onClick={() => setIsCreatingFolder(true)}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition-all hover:shadow-xl hover:shadow-violet-500/30 active:scale-[0.98]"
+        >
+          <FolderPlus className="h-4 w-4" />
           {t("newFolder")}
-        </Button>
+        </button>
       </div>
 
       {/* Create/Edit Folder Modal */}
       {(isCreatingFolder || editingFolder) && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-0 sm:p-4">
-          <div className="w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl bg-white dark:bg-neutral-900 p-6 shadow-soft-xl">
-            <div className="mb-4 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4">
+          <div className="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl bg-white dark:bg-neutral-900 p-6 shadow-2xl">
+            <div className="mb-6 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
                 {editingFolder ? t("editFolder") : t("newFolder")}
               </h3>
-              <button onClick={cancelEdit} className="text-neutral-400 hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300">
-                <X className="h-5 w-5" />
+              <button
+                onClick={cancelEdit}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700"
+              >
+                <X className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div>
                 <label className="mb-2 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
                   {t("folderName")}
                 </label>
-                <Input
+                <input
                   type="text"
                   value={newFolderName}
                   onChange={(e) => setNewFolderName(e.target.value)}
                   placeholder={t("folderNamePlaceholder")}
                   autoFocus
-                  className="dark:bg-neutral-800 dark:border-neutral-700 dark:text-white"
+                  className="w-full rounded-xl border-0 bg-neutral-100 px-4 py-3 text-neutral-900 placeholder-neutral-400 outline-none transition-all focus:ring-2 focus:ring-violet-500/20 dark:bg-neutral-800 dark:text-white dark:placeholder-neutral-500"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       editingFolder ? handleUpdateFolder() : handleCreateFolder();
@@ -338,10 +341,10 @@ export function MyFilesClient({
                     <button
                       key={color}
                       onClick={() => setNewFolderColor(color)}
-                      className={`flex h-12 items-center justify-center rounded-xl border-2 transition-all ${
+                      className={`flex h-12 items-center justify-center rounded-xl transition-all ${
                         newFolderColor === color
-                          ? "border-neutral-900 dark:border-white scale-105"
-                          : "border-transparent hover:border-neutral-200 dark:hover:border-neutral-700"
+                          ? "ring-2 ring-neutral-900 ring-offset-2 dark:ring-white dark:ring-offset-neutral-900"
+                          : "hover:scale-105"
                       }`}
                       style={{ backgroundColor: color + "20" }}
                       title={name}
@@ -353,53 +356,59 @@ export function MyFilesClient({
               </div>
 
               {!editingFolder && (
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                      🔒 {t("pinProtection")}
-                    </label>
+                <div className="rounded-xl bg-neutral-50 p-4 dark:bg-neutral-800/50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Lock className="h-4 w-4 text-neutral-500" />
+                      <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                        {t("pinProtection")}
+                      </span>
+                    </div>
                     <button
                       type="button"
                       onClick={() => setEnablePin(!enablePin)}
                       className={`relative h-6 w-11 rounded-full transition-colors ${
-                        enablePin ? "bg-primary-600" : "bg-neutral-300 dark:bg-neutral-600"
+                        enablePin ? "bg-violet-500" : "bg-neutral-300 dark:bg-neutral-600"
                       }`}
                     >
                       <div
-                        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
+                        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
                           enablePin ? "translate-x-5" : "translate-x-0.5"
                         }`}
                       />
                     </button>
                   </div>
                   {enablePin && (
-                    <Input
+                    <input
                       type="password"
                       inputMode="numeric"
                       maxLength={4}
                       value={newFolderPin}
                       onChange={(e) => setNewFolderPin(e.target.value.replace(/\D/g, ""))}
                       placeholder={t("enterPin")}
-                      className="text-center tracking-widest dark:bg-neutral-800 dark:border-neutral-700 dark:text-white"
+                      className="mt-3 w-full rounded-xl border-0 bg-white px-4 py-2.5 text-center text-lg tracking-[0.5em] text-neutral-900 placeholder-neutral-400 outline-none transition-all focus:ring-2 focus:ring-violet-500/20 dark:bg-neutral-700 dark:text-white dark:placeholder-neutral-500"
                     />
                   )}
-                  <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                  <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-400">
                     {t("addPinToProtect")}
                   </p>
                 </div>
               )}
 
-              <div className="flex gap-2 pt-2">
-                <Button variant="outline" onClick={cancelEdit} className="flex-1 dark:border-neutral-700 dark:text-neutral-300">
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={cancelEdit}
+                  className="flex-1 rounded-xl border border-neutral-200 bg-white py-3 text-sm font-medium text-neutral-700 transition-all hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                >
                   {t("cancel")}
-                </Button>
-                <Button
+                </button>
+                <button
                   onClick={editingFolder ? handleUpdateFolder : handleCreateFolder}
-                  className="flex-1"
                   disabled={!newFolderName.trim()}
+                  className="flex-1 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition-all hover:shadow-xl disabled:opacity-50 disabled:shadow-none"
                 >
                   {editingFolder ? t("save") : t("create")}
-                </Button>
+                </button>
               </div>
             </div>
           </div>
@@ -409,120 +418,125 @@ export function MyFilesClient({
       <div className="grid gap-6 lg:grid-cols-12">
         {/* Folders Sidebar */}
         <div className="lg:col-span-4">
-          <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-soft dark:border-neutral-800 dark:bg-neutral-900">
-            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+          <div className="rounded-3xl bg-white p-5 shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
+            <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
               {t("folders")}
             </h2>
 
             {/* Uncategorized */}
-            <div
-              className={`mb-2 flex items-center rounded-xl p-3 transition-all ${
+            <button
+              onClick={() => setSelectedFolder(null)}
+              className={`mb-2 flex w-full items-center gap-3 rounded-xl p-3 transition-all ${
                 selectedFolder === null
-                  ? "bg-primary-50 dark:bg-primary-900/40"
-                  : "hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                  ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
+                  : "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-white/5"
               }`}
             >
-              <button
-                onClick={() => setSelectedFolder(null)}
-                className="flex flex-1 items-center gap-3 text-left min-w-0"
-              >
-                <FolderOpen className={`h-5 w-5 flex-shrink-0 ${
-                  selectedFolder === null
-                    ? "text-primary-700 dark:text-primary-300"
-                    : "text-neutral-700 dark:text-neutral-300"
-                }`} />
-                <span className={`flex-1 truncate font-medium ${
-                  selectedFolder === null
-                    ? "text-primary-700 dark:text-primary-300"
-                    : "text-neutral-700 dark:text-neutral-300"
-                }`}>
-                  {t("uncategorized")}
-                </span>
-              </button>
-              <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                <span className="text-sm text-neutral-500 dark:text-neutral-400">
-                  {documents.filter((d) => !d.folderId).length}
-                </span>
-                {/* Espace réservé pour aligner avec les autres dossiers */}
-                <div className="flex gap-1 invisible">
-                  <div className="rounded-lg p-1.5">
-                    <Edit2 className="h-3.5 w-3.5" />
-                  </div>
-                  <div className="rounded-lg p-1.5">
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </div>
-                </div>
+              <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+                selectedFolder === null
+                  ? "bg-blue-100 dark:bg-blue-500/20"
+                  : "bg-neutral-100 dark:bg-neutral-700/50"
+              }`}>
+                <FolderOpen className="h-5 w-5" />
               </div>
-            </div>
+              <span className="flex-1 text-left font-medium">{t("uncategorized")}</span>
+              <span className="text-sm text-neutral-400">
+                {documents.filter((d) => !d.folderId).length}
+              </span>
+            </button>
 
             {/* User Folders */}
             <div className="space-y-1">
               {folders.map((folder) => (
                 <div
                   key={folder.id}
-                  className={`group flex items-center rounded-xl p-3 transition-all ${
+                  className={`group flex items-center gap-3 rounded-xl p-3 transition-all ${
                     selectedFolder === folder.id
-                      ? "bg-primary-50 dark:bg-primary-900/40"
-                      : "hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                      ? "bg-violet-50 dark:bg-violet-500/10"
+                      : "hover:bg-neutral-100 dark:hover:bg-white/5"
                   }`}
                 >
                   <button
                     onClick={() => handleFolderClick(folder)}
                     className="flex flex-1 items-center gap-3 text-left min-w-0"
                   >
-                    <Folder className="h-5 w-5 flex-shrink-0" style={{ color: folder.color }} />
-                    <span className="flex-1 truncate font-medium text-neutral-700 dark:text-neutral-300">
-                      {folder.name} {folder.hasPin && "🔒"}
-                    </span>
+                    <div
+                      className="flex h-10 w-10 items-center justify-center rounded-xl"
+                      style={{ backgroundColor: folder.color + "20" }}
+                    >
+                      <Folder className="h-5 w-5" style={{ color: folder.color }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className={`block truncate font-medium ${
+                        selectedFolder === folder.id
+                          ? "text-violet-700 dark:text-violet-400"
+                          : "text-neutral-700 dark:text-neutral-300"
+                      }`}>
+                        {folder.name}
+                      </span>
+                      {folder.hasPin && (
+                        <span className="text-xs text-neutral-400">
+                          <Lock className="inline h-3 w-3 mr-1" />
+                          {t("protected")}
+                        </span>
+                      )}
+                    </div>
                   </button>
 
-                  <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                    <span className="text-sm text-neutral-500 dark:text-neutral-400">
-                      {folder.documentCount}
-                    </span>
+                  <span className="text-sm text-neutral-400">{folder.documentCount}</span>
 
-                    <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                      <button
-                        onClick={() => startEditFolder(folder)}
-                        className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
-                      >
-                        <Edit2 className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteFolder(folder.id, folder.name)}
-                        className="rounded-lg p-1.5 text-neutral-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30 dark:hover:text-red-400"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
+                  <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                    <button
+                      onClick={() => startEditFolder(folder)}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-200 hover:text-neutral-600 dark:hover:bg-neutral-600 dark:hover:text-neutral-300"
+                    >
+                      <Edit2 className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteFolder(folder.id, folder.name)}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-500/20 dark:hover:text-red-400"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
+
+            {folders.length === 0 && (
+              <div className="mt-4 rounded-xl border-2 border-dashed border-neutral-200 p-6 text-center dark:border-neutral-700">
+                <Folder className="mx-auto h-8 w-8 text-neutral-300 dark:text-neutral-600" />
+                <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
+                  {t("noFoldersYet")}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Documents Grid */}
         <div className="lg:col-span-8">
-          <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-soft dark:border-neutral-800 dark:bg-neutral-900">
+          <div className="rounded-3xl bg-white p-6 shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
                 {selectedFolder
                   ? folders.find((f) => f.id === selectedFolder)?.name
                   : t("uncategorized")}
               </h2>
-              <span className="text-sm text-neutral-500 dark:text-neutral-400">
-                {filteredDocuments.length} {t("documents").toLowerCase()}
+              <span className="rounded-full bg-neutral-100 px-3 py-1 text-sm text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">
+                {filteredDocuments.length} {filteredDocuments.length === 1 ? "document" : "documents"}
               </span>
             </div>
 
             {filteredDocuments.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Folder className="h-12 w-12 text-neutral-300 dark:text-neutral-600" />
-                <p className="mt-4 text-sm font-medium text-neutral-900 dark:text-white">
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-700">
+                  <Folder className="h-8 w-8 text-neutral-400 dark:text-neutral-500" />
+                </div>
+                <p className="font-medium text-neutral-900 dark:text-white">
                   {t("noDocumentsInFolder")}
                 </p>
-                <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
                   {t("documentsWillAppear")}
                 </p>
               </div>
@@ -533,17 +547,17 @@ export function MyFilesClient({
                   return (
                     <div
                       key={doc.id}
-                      className="flex items-center gap-4 rounded-xl border border-neutral-200 bg-neutral-50 p-3 transition-all hover:bg-white hover:shadow-soft dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700"
+                      className="group flex items-center gap-4 rounded-2xl bg-neutral-50 p-4 transition-all hover:bg-neutral-100 dark:bg-neutral-700/30 dark:hover:bg-neutral-700/50"
                     >
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary-50 to-secondary-50 dark:from-primary-900/40 dark:to-secondary-900/40">
-                        <Icon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-50 to-violet-50 dark:from-blue-500/10 dark:to-violet-500/10">
+                        <Icon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <h3 className="truncate text-sm font-medium text-neutral-900 dark:text-white">
+                        <h3 className="truncate font-medium text-neutral-900 dark:text-white">
                           {doc.displayName}
                         </h3>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                        <p className="text-sm text-neutral-500 dark:text-neutral-400">
                           {formatFileSize(doc.sizeBytes)}
                         </p>
                       </div>
@@ -555,35 +569,33 @@ export function MyFilesClient({
                               movingDocumentId === doc.id ? null : doc.id
                             )
                           }
-                          className="rounded-lg p-2 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
+                          className="flex h-9 w-9 items-center justify-center rounded-xl text-neutral-400 hover:bg-neutral-200 hover:text-neutral-600 dark:hover:bg-neutral-600 dark:hover:text-neutral-300"
                         >
                           <MoreVertical className="h-4 w-4" />
                         </button>
 
                         {movingDocumentId === doc.id && (
-                          <div className="absolute right-0 top-full z-10 mt-1 w-48 rounded-xl border border-neutral-200 bg-white py-2 shadow-soft-lg dark:border-neutral-700 dark:bg-neutral-800">
-                            <div className="px-3 py-2 text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                          <div className="absolute right-0 top-full z-10 mt-2 w-52 rounded-2xl border border-neutral-200 bg-white p-2 shadow-xl dark:border-neutral-700 dark:bg-neutral-800">
+                            <div className="mb-2 px-3 py-1.5 text-xs font-medium uppercase tracking-wide text-neutral-400">
                               {t("moveTo")}
                             </div>
                             <button
                               onClick={() => handleMoveDocumentWithPinCheck(doc.id, null)}
-                              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                              className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
                             >
-                              <FolderOpen className="h-4 w-4" />
+                              <FolderOpen className="h-4 w-4 text-neutral-400" />
                               {t("uncategorized")}
                             </button>
                             {folders.map((folder) => (
                               <button
                                 key={folder.id}
                                 onClick={() => handleMoveDocumentWithPinCheck(doc.id, folder.id)}
-                                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-700"
                                 disabled={doc.folderId === folder.id}
+                                className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-300 dark:hover:bg-neutral-700"
                               >
-                                <Folder
-                                  className="h-4 w-4"
-                                  style={{ color: folder.color }}
-                                />
-                                {folder.name} {folder.hasPin && "🔒"}
+                                <Folder className="h-4 w-4" style={{ color: folder.color }} />
+                                <span className="flex-1 text-left">{folder.name}</span>
+                                {folder.hasPin && <Lock className="h-3 w-3 text-neutral-400" />}
                               </button>
                             ))}
                           </div>

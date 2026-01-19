@@ -3,7 +3,20 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useTranslation } from "@/hooks/useTranslation";
-import { FileText, Folder, HardDrive, TrendingUp, Eye, Download, Image as ImageIcon, File } from "lucide-react";
+import {
+  FileText,
+  Folder,
+  HardDrive,
+  Crown,
+  Eye,
+  Download,
+  Image as ImageIcon,
+  File,
+  Plus,
+  Search,
+  ArrowUpRight,
+  Clock,
+} from "lucide-react";
 import { DocumentPreviewModal } from "@/components/documents/document-preview-modal";
 
 type DashboardStats = {
@@ -38,40 +51,11 @@ export function DashboardClient({
   const { t } = useTranslation();
   const [previewDocument, setPreviewDocument] = useState<RecentDocument | null>(null);
 
-  const statCards = [
-    {
-      nameKey: "documents" as const,
-      value: stats.documentsCount || 0,
-      icon: FileText,
-      color: "from-primary-500 to-primary-600",
-      bgColor: "bg-primary-50",
-      textColor: "text-primary-600",
-    },
-    {
-      nameKey: "folders" as const,
-      value: stats.foldersCount || 0,
-      icon: Folder,
-      color: "from-secondary-500 to-secondary-600",
-      bgColor: "bg-secondary-50",
-      textColor: "text-secondary-600",
-    },
-    {
-      nameKey: "storage" as const,
-      value: `${((stats.storageUsedBytes || 0) / 1024 / 1024).toFixed(1)} MB`,
-      icon: HardDrive,
-      color: "from-accent-500 to-accent-600",
-      bgColor: "bg-accent-50",
-      textColor: "text-accent-600",
-    },
-    {
-      nameKey: "currentPlan" as const,
-      value: stats.planType || "FREE",
-      icon: TrendingUp,
-      color: "from-purple-500 to-purple-600",
-      bgColor: "bg-purple-50",
-      textColor: "text-purple-600",
-    },
-  ];
+  const formatStorageSize = (bytes: number) => {
+    const mb = bytes / 1024 / 1024;
+    if (mb < 1024) return `${mb.toFixed(1)} MB`;
+    return `${(mb / 1024).toFixed(2)} GB`;
+  };
 
   const getFileIcon = (fileType: string) => {
     if (fileType === "pdf") return FileText;
@@ -133,149 +117,196 @@ export function DashboardClient({
         onClose={() => setPreviewDocument(null)}
       />
 
-      <div className="space-y-8">
-        {/* Welcome Section */}
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white sm:text-3xl">
-            {t("dashboard")}
-          </h1>
-          <p className="mt-2 text-neutral-500 dark:text-neutral-400">
-            {t("overview")}
-          </p>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-          {statCards.map((stat) => (
-            <div
-              key={stat.nameKey}
-              className="group rounded-2xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-soft transition-all hover:shadow-soft-md dark:border-neutral-700 dark:bg-neutral-800"
-            >
-              <div className="flex items-center justify-between">
-                <div className={`rounded-xl ${stat.bgColor} p-2 sm:p-3 dark:bg-opacity-20`}>
-                  <stat.icon className={`h-5 w-5 sm:h-6 sm:w-6 ${stat.textColor}`} />
-                </div>
-                <div className="text-right">
-                  <p className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-neutral-100">
-                    {stat.value}
-                  </p>
-                  <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">{t(stat.nameKey)}</p>
-                </div>
+      <div className="mx-auto max-w-6xl space-y-8">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {/* Documents */}
+          <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-500 to-blue-600 p-6 text-white shadow-xl shadow-blue-500/20 transition-all hover:shadow-2xl hover:shadow-blue-500/30">
+            <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+            <div className="absolute -bottom-6 -right-6 h-32 w-32 rounded-full bg-white/5" />
+            <div className="relative">
+              <div className="mb-4 inline-flex rounded-2xl bg-white/20 p-3">
+                <FileText className="h-6 w-6" />
               </div>
+              <p className="text-3xl font-bold">{stats.documentsCount || 0}</p>
+              <p className="mt-1 text-sm text-blue-100">{t("documents")}</p>
             </div>
-          ))}
+          </div>
+
+          {/* Folders */}
+          <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-500 to-purple-600 p-6 text-white shadow-xl shadow-violet-500/20 transition-all hover:shadow-2xl hover:shadow-violet-500/30">
+            <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+            <div className="absolute -bottom-6 -right-6 h-32 w-32 rounded-full bg-white/5" />
+            <div className="relative">
+              <div className="mb-4 inline-flex rounded-2xl bg-white/20 p-3">
+                <Folder className="h-6 w-6" />
+              </div>
+              <p className="text-3xl font-bold">{stats.foldersCount || 0}</p>
+              <p className="mt-1 text-sm text-violet-100">{t("folders")}</p>
+            </div>
+          </div>
+
+          {/* Storage */}
+          <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 to-teal-600 p-6 text-white shadow-xl shadow-emerald-500/20 transition-all hover:shadow-2xl hover:shadow-emerald-500/30">
+            <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+            <div className="absolute -bottom-6 -right-6 h-32 w-32 rounded-full bg-white/5" />
+            <div className="relative">
+              <div className="mb-4 inline-flex rounded-2xl bg-white/20 p-3">
+                <HardDrive className="h-6 w-6" />
+              </div>
+              <p className="text-3xl font-bold">{formatStorageSize(stats.storageUsedBytes || 0)}</p>
+              <p className="mt-1 text-sm text-emerald-100">{t("storage")}</p>
+            </div>
+          </div>
+
+          {/* Plan */}
+          <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-500 to-orange-600 p-6 text-white shadow-xl shadow-amber-500/20 transition-all hover:shadow-2xl hover:shadow-amber-500/30">
+            <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
+            <div className="absolute -bottom-6 -right-6 h-32 w-32 rounded-full bg-white/5" />
+            <div className="relative">
+              <div className="mb-4 inline-flex rounded-2xl bg-white/20 p-3">
+                <Crown className="h-6 w-6" />
+              </div>
+              <p className="text-3xl font-bold">{stats.planType || "FREE"}</p>
+              <p className="mt-1 text-sm text-amber-100">{t("currentPlan")}</p>
+            </div>
+          </div>
         </div>
 
         {/* Quick Actions */}
-        <div className="rounded-2xl border border-neutral-200 bg-white p-6 sm:p-8 shadow-soft dark:border-neutral-700 dark:bg-neutral-800">
-          <h2 className="text-xl font-semibold text-neutral-900 mb-6 dark:text-neutral-100">
+        <div className="rounded-3xl bg-white p-6 shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
+          <h2 className="mb-6 text-lg font-semibold text-neutral-900 dark:text-white">
             {t("quickActions")}
           </h2>
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-3">
             <Link
               href="/dashboard/upload"
-              className="group flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-neutral-300 bg-neutral-50 p-6 sm:p-8 transition-all hover:border-primary-500 hover:bg-primary-50 dark:border-neutral-600 dark:bg-neutral-700/50 dark:hover:border-primary-500 dark:hover:bg-primary-900/20"
+              className="group flex items-center gap-4 rounded-2xl border-2 border-dashed border-neutral-200 bg-neutral-50 p-5 transition-all hover:border-blue-300 hover:bg-blue-50 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:border-blue-500/50 dark:hover:bg-blue-500/10"
             >
-              <FileText className="h-8 w-8 text-neutral-400 transition-colors group-hover:text-primary-600 dark:text-neutral-500 dark:group-hover:text-primary-400" />
-              <p className="mt-3 text-sm font-medium text-neutral-700 group-hover:text-primary-700 dark:text-neutral-300 dark:group-hover:text-primary-400">
-                {t("addDocument")}
-              </p>
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-600 transition-colors group-hover:bg-blue-500 group-hover:text-white dark:bg-blue-500/20 dark:text-blue-400 dark:group-hover:bg-blue-500">
+                <Plus className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="font-medium text-neutral-900 dark:text-white">{t("addDocument")}</p>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">{t("uploadNewFile")}</p>
+              </div>
             </Link>
 
             <Link
               href="/dashboard/my-files?create=true"
-              className="group flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-neutral-300 bg-neutral-50 p-6 sm:p-8 transition-all hover:border-secondary-500 hover:bg-secondary-50 dark:border-neutral-600 dark:bg-neutral-700/50 dark:hover:border-secondary-500 dark:hover:bg-secondary-900/20"
+              className="group flex items-center gap-4 rounded-2xl border-2 border-dashed border-neutral-200 bg-neutral-50 p-5 transition-all hover:border-violet-300 hover:bg-violet-50 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:border-violet-500/50 dark:hover:bg-violet-500/10"
             >
-              <Folder className="h-8 w-8 text-neutral-400 transition-colors group-hover:text-secondary-600 dark:text-neutral-500 dark:group-hover:text-secondary-400" />
-              <p className="mt-3 text-sm font-medium text-neutral-700 group-hover:text-secondary-700 dark:text-neutral-300 dark:group-hover:text-secondary-400">
-                {t("createFolder")}
-              </p>
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100 text-violet-600 transition-colors group-hover:bg-violet-500 group-hover:text-white dark:bg-violet-500/20 dark:text-violet-400 dark:group-hover:bg-violet-500">
+                <Folder className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="font-medium text-neutral-900 dark:text-white">{t("createFolder")}</p>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">{t("organizeFiles")}</p>
+              </div>
             </Link>
 
             <Link
               href="/dashboard/search"
-              className="group flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-neutral-300 bg-neutral-50 p-6 sm:p-8 transition-all hover:border-accent-500 hover:bg-accent-50 dark:border-neutral-600 dark:bg-neutral-700/50 dark:hover:border-accent-500 dark:hover:bg-accent-900/20"
+              className="group flex items-center gap-4 rounded-2xl border-2 border-dashed border-neutral-200 bg-neutral-50 p-5 transition-all hover:border-emerald-300 hover:bg-emerald-50 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:border-emerald-500/50 dark:hover:bg-emerald-500/10"
             >
-              <TrendingUp className="h-8 w-8 text-neutral-400 transition-colors group-hover:text-accent-600 dark:text-neutral-500 dark:group-hover:text-accent-400" />
-              <p className="mt-3 text-sm font-medium text-neutral-700 group-hover:text-accent-700 dark:text-neutral-300 dark:group-hover:text-accent-400">
-                {t("search")}
-              </p>
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 transition-colors group-hover:bg-emerald-500 group-hover:text-white dark:bg-emerald-500/20 dark:text-emerald-400 dark:group-hover:bg-emerald-500">
+                <Search className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="font-medium text-neutral-900 dark:text-white">{t("search")}</p>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">{t("findDocuments")}</p>
+              </div>
             </Link>
           </div>
         </div>
 
         {/* Recent Documents */}
-        <div className="rounded-2xl border border-neutral-200 bg-white p-6 sm:p-8 shadow-soft dark:border-neutral-700 dark:bg-neutral-800">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
-              {t("recentDocuments")}
-            </h2>
+        <div className="rounded-3xl bg-white p-6 shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
+          <div className="mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-100 dark:bg-blue-500/20">
+                <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
+                {t("recentDocuments")}
+              </h2>
+            </div>
             {recentDocuments.length > 0 && (
               <Link
                 href="/dashboard/documents"
-                className="text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
               >
                 {t("viewAll")}
+                <ArrowUpRight className="h-4 w-4" />
               </Link>
             )}
           </div>
 
           {recentDocuments.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <FileText className="h-12 w-12 text-neutral-300 dark:text-neutral-600" />
-              <p className="mt-4 text-sm text-neutral-500 dark:text-neutral-400">
-                {t("noDocuments")}
-              </p>
-              <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">
+            <div className="flex flex-col items-center justify-center py-16">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-700">
+                <FileText className="h-8 w-8 text-neutral-400 dark:text-neutral-500" />
+              </div>
+              <p className="text-neutral-600 dark:text-neutral-400">{t("noDocuments")}</p>
+              <p className="mt-1 text-sm text-neutral-400 dark:text-neutral-500">
                 {t("startByAdding")}
               </p>
+              <Link
+                href="/dashboard/upload"
+                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-blue-500 px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-blue-600"
+              >
+                <Plus className="h-4 w-4" />
+                {t("addDocument")}
+              </Link>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {recentDocuments.map((doc) => {
                 const Icon = getFileIcon(doc.fileType);
                 return (
                   <div
                     key={doc.id}
-                    className="flex items-center gap-3 sm:gap-4 rounded-xl border border-neutral-200 bg-neutral-50 p-3 sm:p-4 transition-all hover:bg-white hover:shadow-soft dark:border-neutral-700 dark:bg-neutral-800/50 dark:hover:bg-neutral-700/50"
+                    className="group flex items-center gap-4 rounded-2xl bg-neutral-50 p-4 transition-all hover:bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700/50"
                   >
-                    <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary-50 to-secondary-50 dark:from-primary-900/40 dark:to-secondary-900/40 flex-shrink-0">
-                      <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-primary-600 dark:text-primary-400" />
+                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-100 to-violet-100 dark:from-blue-500/20 dark:to-violet-500/20">
+                      <Icon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                     </div>
 
-                    <div className="flex-1 min-w-0">
-                      <h3 className="truncate text-sm font-medium text-neutral-900 dark:text-white">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="truncate font-medium text-neutral-900 dark:text-white">
                         {doc.displayName}
                       </h3>
-                      <div className="mt-0.5 flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+                      <div className="mt-1 flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
                         <span>{formatFileSize(doc.sizeBytes)}</span>
-                        <span>•</span>
+                        <span className="text-neutral-300 dark:text-neutral-600">•</span>
                         <span>{formatDate(doc.uploadedAt)}</span>
                         {doc.folder && (
                           <>
-                            <span className="hidden sm:inline">•</span>
-                            <div className="hidden sm:flex items-center gap-1">
-                              <Folder
-                                className="h-3 w-3"
-                                style={{ color: doc.folder.color || undefined }}
+                            <span className="hidden text-neutral-300 dark:text-neutral-600 sm:inline">•</span>
+                            <div className="hidden items-center gap-1 sm:flex">
+                              <div
+                                className="h-2 w-2 rounded-full"
+                                style={{ backgroundColor: doc.folder.color || "#6366f1" }}
                               />
-                              <span className="truncate max-w-[100px]">{doc.folder.name}</span>
+                              <span className="max-w-[100px] truncate">{doc.folder.name}</span>
                             </div>
                           </>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex gap-1 sm:gap-2 flex-shrink-0">
+                    <div className="flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
                       <button
                         onClick={() => setPreviewDocument(doc)}
-                        className="rounded-lg bg-primary-50 p-2 text-primary-700 transition-colors hover:bg-primary-100 dark:bg-primary-900/40 dark:text-primary-300 dark:hover:bg-primary-900/60"
+                        className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-100 text-blue-600 transition-colors hover:bg-blue-200 dark:bg-blue-500/20 dark:text-blue-400 dark:hover:bg-blue-500/30"
+                        title={t("preview")}
                       >
                         <Eye className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => handleDownload(doc.id, doc.originalName)}
-                        className="rounded-lg bg-neutral-100 p-2 text-neutral-600 transition-colors hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600"
+                        className="flex h-9 w-9 items-center justify-center rounded-xl bg-neutral-200 text-neutral-600 transition-colors hover:bg-neutral-300 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600"
+                        title={t("download")}
                       >
                         <Download className="h-4 w-4" />
                       </button>

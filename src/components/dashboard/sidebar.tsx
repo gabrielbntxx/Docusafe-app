@@ -10,7 +10,8 @@ import {
   LogOut,
   Upload,
   Search,
-  CreditCard
+  CreditCard,
+  Shield,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -37,66 +38,84 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="hidden lg:fixed lg:left-0 lg:top-0 lg:z-40 lg:block lg:h-screen lg:w-64 lg:border-r lg:border-neutral-200 lg:bg-white dark:lg:border-neutral-700 dark:lg:bg-neutral-800">
-      <div className="flex h-full flex-col">
-        <div className="flex h-16 items-center border-b border-neutral-200 px-6 dark:border-neutral-700">
-          <Link href="/dashboard" className="flex items-center space-x-2">
-            <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary-500 to-secondary-500" />
-            <span className="text-xl font-bold bg-gradient-to-r from-primary-600 to-secondary-500 bg-clip-text text-transparent">
-              Justif'
-            </span>
-          </Link>
-        </div>
+    <aside className="hidden lg:fixed lg:left-0 lg:top-0 lg:z-40 lg:flex lg:h-screen lg:w-72 lg:flex-col lg:bg-white/70 lg:backdrop-blur-xl lg:border-r lg:border-black/5 dark:lg:bg-neutral-900/70 dark:lg:border-white/5">
+      {/* Logo */}
+      <div className="flex h-16 items-center px-6">
+        <Link href="/dashboard" className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/25">
+            <Shield className="h-5 w-5 text-white" />
+          </div>
+          <span className="text-xl font-semibold text-neutral-900 dark:text-white">
+            DocuSafe
+          </span>
+        </Link>
+      </div>
 
-        <div className="p-4">
-          <Link
-            href="/dashboard/upload"
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-3 text-sm font-medium text-white shadow-soft transition-all hover:bg-primary-700 hover:shadow-soft-md active:scale-95"
-          >
-            <Upload className="h-4 w-4" />
-            {t("addDocument")}
-          </Link>
-        </div>
+      {/* Upload Button */}
+      <div className="px-4 py-2">
+        <Link
+          href="/dashboard/upload"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl hover:shadow-blue-500/30 hover:scale-[1.02] active:scale-[0.98]"
+        >
+          <Upload className="h-4 w-4" />
+          {t("addDocument")}
+        </Link>
+      </div>
 
-        <nav className="flex-1 space-y-1 px-3 py-2">
-          {navigation.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.nameKey}
-                href={item.href}
-                className={"flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all " + (isActive ? "bg-primary-50 text-primary-700 shadow-soft dark:bg-primary-900/20 dark:text-primary-400" : "text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-700 dark:hover:text-neutral-100")}
-              >
-                <item.icon className="h-5 w-5" />
-                {t(item.nameKey)}
-              </Link>
-            );
-          })}
-        </nav>
+      {/* Main Navigation */}
+      <nav className="flex-1 space-y-1 px-3 py-4">
+        <p className="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+          Menu
+        </p>
+        {navigation.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={item.nameKey}
+              href={item.href}
+              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+                isActive
+                  ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
+                  : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/5 dark:hover:text-white"
+              }`}
+            >
+              <item.icon className={`h-5 w-5 ${isActive ? "text-blue-500" : ""}`} />
+              {t(item.nameKey)}
+            </Link>
+          );
+        })}
+      </nav>
 
-        <div className="border-t border-neutral-200 p-3 space-y-1 dark:border-neutral-700">
-          {bottomNavigation.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.nameKey}
-                href={item.href}
-                className={"flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all " + (isActive ? "bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400" : "text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-700 dark:hover:text-neutral-100")}
-              >
-                <item.icon className="h-5 w-5" />
-                {t(item.nameKey)}
-              </Link>
-            );
-          })}
+      {/* Bottom Navigation */}
+      <div className="border-t border-black/5 px-3 py-4 space-y-1 dark:border-white/5">
+        <p className="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+          {t("settings")}
+        </p>
+        {bottomNavigation.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={item.nameKey}
+              href={item.href}
+              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+                isActive
+                  ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
+                  : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/5 dark:hover:text-white"
+              }`}
+            >
+              <item.icon className={`h-5 w-5 ${isActive ? "text-blue-500" : ""}`} />
+              {t(item.nameKey)}
+            </Link>
+          );
+        })}
 
-          <button
-            onClick={handleSignOut}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-700 transition-all hover:bg-red-50 hover:text-red-600 dark:text-neutral-300 dark:hover:bg-red-900/20 dark:hover:text-red-400"
-          >
-            <LogOut className="h-5 w-5" />
-            {t("signOut")}
-          </button>
-        </div>
+        <button
+          onClick={handleSignOut}
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-600 transition-all duration-200 hover:bg-red-50 hover:text-red-600 dark:text-neutral-400 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+        >
+          <LogOut className="h-5 w-5" />
+          {t("signOut")}
+        </button>
       </div>
     </aside>
   );

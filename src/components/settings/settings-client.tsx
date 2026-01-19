@@ -13,10 +13,8 @@ import {
   Save,
   Check,
   Shield,
-  ArrowLeft,
+  X,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import Link from "next/link";
 
 type UserSettings = {
@@ -64,11 +62,8 @@ export function SettingsClient({ user }: { user: UserSettings }) {
 
       if (response.ok) {
         setSaveStatus("saved");
-
-        // Update the global theme immediately
         setGlobalTheme(theme as "light" | "dark");
 
-        // Only reload if language changed (to update all translations)
         if (language !== user.language) {
           setTimeout(() => window.location.reload(), 500);
         } else {
@@ -148,34 +143,38 @@ export function SettingsClient({ user }: { user: UserSettings }) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Link
-          href="/dashboard"
-          className="rounded-xl p-2 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800 lg:hidden"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">{t("settings")}</h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            {t("managePreferences")}
-          </p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">{t("settings")}</h1>
+        <p className="mt-1 text-neutral-500 dark:text-neutral-400">
+          {t("managePreferences")}
+        </p>
       </div>
 
       {/* PIN Modal */}
       {showPinModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-0 sm:p-4">
-          <div className="w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl bg-white dark:bg-neutral-900 p-6 shadow-xl">
-            <div className="mb-4 flex items-center gap-3">
-              <div className="rounded-xl bg-primary-100 dark:bg-primary-900/40 p-3">
-                <Shield className="h-6 w-6 text-primary-600 dark:text-primary-400" />
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4">
+          <div className="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl bg-white dark:bg-neutral-900 p-6 shadow-2xl">
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-100 dark:bg-blue-500/20">
+                  <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
+                  Set Folder PIN
+                </h3>
               </div>
-              <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
-                Set Folder PIN
-              </h3>
+              <button
+                onClick={() => {
+                  setShowPinModal(false);
+                  setPin("");
+                  setConfirmPin("");
+                }}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
 
             <p className="mb-4 text-sm text-neutral-600 dark:text-neutral-400">
@@ -187,14 +186,14 @@ export function SettingsClient({ user }: { user: UserSettings }) {
                 <label className="mb-2 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
                   New PIN (4 digits)
                 </label>
-                <Input
+                <input
                   type="password"
                   inputMode="numeric"
                   maxLength={4}
                   value={pin}
                   onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
                   placeholder="••••"
-                  className="text-center text-2xl tracking-widest dark:bg-neutral-800 dark:border-neutral-700 dark:text-white"
+                  className="w-full rounded-xl border-0 bg-neutral-100 px-4 py-3 text-center text-xl tracking-[0.5em] text-neutral-900 placeholder-neutral-400 outline-none transition-all focus:ring-2 focus:ring-blue-500/20 dark:bg-neutral-800 dark:text-white dark:placeholder-neutral-500"
                 />
               </div>
 
@@ -202,36 +201,35 @@ export function SettingsClient({ user }: { user: UserSettings }) {
                 <label className="mb-2 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
                   Confirm PIN
                 </label>
-                <Input
+                <input
                   type="password"
                   inputMode="numeric"
                   maxLength={4}
                   value={confirmPin}
                   onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ""))}
                   placeholder="••••"
-                  className="text-center text-2xl tracking-widest dark:bg-neutral-800 dark:border-neutral-700 dark:text-white"
+                  className="w-full rounded-xl border-0 bg-neutral-100 px-4 py-3 text-center text-xl tracking-[0.5em] text-neutral-900 placeholder-neutral-400 outline-none transition-all focus:ring-2 focus:ring-blue-500/20 dark:bg-neutral-800 dark:text-white dark:placeholder-neutral-500"
                 />
               </div>
 
-              <div className="flex gap-2 pt-2">
-                <Button
-                  variant="outline"
+              <div className="flex gap-3 pt-2">
+                <button
                   onClick={() => {
                     setShowPinModal(false);
                     setPin("");
                     setConfirmPin("");
                   }}
-                  className="flex-1 dark:border-neutral-700 dark:text-neutral-300"
+                  className="flex-1 rounded-xl border border-neutral-200 bg-white py-3 text-sm font-medium text-neutral-700 transition-all hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
                 >
                   Cancel
-                </Button>
-                <Button
+                </button>
+                <button
                   onClick={handleSetPin}
-                  className="flex-1"
                   disabled={pin.length !== 4 || confirmPin.length !== 4}
+                  className="flex-1 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl disabled:opacity-50 disabled:shadow-none"
                 >
                   Set PIN
-                </Button>
+                </button>
               </div>
             </div>
           </div>
@@ -240,15 +238,26 @@ export function SettingsClient({ user }: { user: UserSettings }) {
 
       {/* Remove PIN Modal */}
       {isRemovingPin && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-0 sm:p-4">
-          <div className="w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl bg-white dark:bg-neutral-900 p-6 shadow-xl">
-            <div className="mb-4 flex items-center gap-3">
-              <div className="rounded-xl bg-red-100 dark:bg-red-900/40 p-3">
-                <Shield className="h-6 w-6 text-red-600 dark:text-red-400" />
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4">
+          <div className="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl bg-white dark:bg-neutral-900 p-6 shadow-2xl">
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-100 dark:bg-red-500/20">
+                  <Shield className="h-5 w-5 text-red-600 dark:text-red-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
+                  Remove Folder PIN
+                </h3>
               </div>
-              <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
-                Remove Folder PIN
-              </h3>
+              <button
+                onClick={() => {
+                  setIsRemovingPin(false);
+                  setCurrentPin("");
+                }}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
 
             <p className="mb-4 text-sm text-neutral-600 dark:text-neutral-400">
@@ -260,35 +269,34 @@ export function SettingsClient({ user }: { user: UserSettings }) {
                 <label className="mb-2 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
                   Current PIN
                 </label>
-                <Input
+                <input
                   type="password"
                   inputMode="numeric"
                   maxLength={4}
                   value={currentPin}
                   onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, ""))}
                   placeholder="••••"
-                  className="text-center text-2xl tracking-widest dark:bg-neutral-800 dark:border-neutral-700 dark:text-white"
+                  className="w-full rounded-xl border-0 bg-neutral-100 px-4 py-3 text-center text-xl tracking-[0.5em] text-neutral-900 placeholder-neutral-400 outline-none transition-all focus:ring-2 focus:ring-blue-500/20 dark:bg-neutral-800 dark:text-white dark:placeholder-neutral-500"
                 />
               </div>
 
-              <div className="flex gap-2 pt-2">
-                <Button
-                  variant="outline"
+              <div className="flex gap-3 pt-2">
+                <button
                   onClick={() => {
                     setIsRemovingPin(false);
                     setCurrentPin("");
                   }}
-                  className="flex-1 dark:border-neutral-700 dark:text-neutral-300"
+                  className="flex-1 rounded-xl border border-neutral-200 bg-white py-3 text-sm font-medium text-neutral-700 transition-all hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
                 >
                   Cancel
-                </Button>
-                <Button
+                </button>
+                <button
                   onClick={handleRemovePin}
-                  className="flex-1 bg-red-600 hover:bg-red-700"
                   disabled={currentPin.length !== 4}
+                  className="flex-1 rounded-xl bg-red-500 py-3 text-sm font-semibold text-white shadow-lg shadow-red-500/25 transition-all hover:bg-red-600 hover:shadow-xl disabled:opacity-50 disabled:shadow-none"
                 >
                   Remove PIN
-                </Button>
+                </button>
               </div>
             </div>
           </div>
@@ -297,10 +305,10 @@ export function SettingsClient({ user }: { user: UserSettings }) {
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Language Settings */}
-        <div className="rounded-2xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
+        <div className="rounded-3xl bg-white p-6 shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
           <div className="mb-4 flex items-center gap-3">
-            <div className="rounded-xl bg-primary-100 dark:bg-primary-900/40 p-2.5">
-              <Globe className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-100 dark:bg-blue-500/20">
+              <Globe className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
               <h2 className="font-semibold text-neutral-900 dark:text-white">{t("language")}</h2>
@@ -313,10 +321,10 @@ export function SettingsClient({ user }: { user: UserSettings }) {
               <button
                 key={lang.code}
                 onClick={() => setLanguage(lang.code)}
-                className={`flex w-full items-center gap-3 rounded-xl border-2 p-3 transition-all ${
+                className={`flex w-full items-center gap-3 rounded-xl p-3 transition-all ${
                   language === lang.code
-                    ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30"
-                    : "border-neutral-200 hover:border-neutral-300 dark:border-neutral-700 dark:hover:border-neutral-600"
+                    ? "bg-blue-50 ring-2 ring-blue-500 dark:bg-blue-500/10"
+                    : "bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-700/30 dark:hover:bg-neutral-700/50"
                 }`}
               >
                 <span className="text-xl">{lang.flag}</span>
@@ -324,7 +332,9 @@ export function SettingsClient({ user }: { user: UserSettings }) {
                   {lang.name}
                 </span>
                 {language === lang.code && (
-                  <Check className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500">
+                    <Check className="h-4 w-4 text-white" />
+                  </div>
                 )}
               </button>
             ))}
@@ -332,9 +342,9 @@ export function SettingsClient({ user }: { user: UserSettings }) {
         </div>
 
         {/* Theme Settings */}
-        <div className="rounded-2xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
+        <div className="rounded-3xl bg-white p-6 shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
           <div className="mb-4 flex items-center gap-3">
-            <div className="rounded-xl bg-amber-100 dark:bg-amber-900/40 p-2.5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 dark:bg-amber-500/20">
               {theme === "dark" ? (
                 <Moon className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               ) : (
@@ -350,41 +360,49 @@ export function SettingsClient({ user }: { user: UserSettings }) {
           <div className="space-y-2">
             <button
               onClick={() => setTheme("light")}
-              className={`flex w-full items-center gap-3 rounded-xl border-2 p-3 transition-all ${
+              className={`flex w-full items-center gap-3 rounded-xl p-3 transition-all ${
                 theme === "light"
-                  ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30"
-                  : "border-neutral-200 hover:border-neutral-300 dark:border-neutral-700 dark:hover:border-neutral-600"
+                  ? "bg-amber-50 ring-2 ring-amber-500 dark:bg-amber-500/10"
+                  : "bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-700/30 dark:hover:bg-neutral-700/50"
               }`}
             >
               <Sun className="h-5 w-5 text-neutral-700 dark:text-neutral-300" />
               <span className="flex-1 text-left font-medium text-neutral-900 dark:text-white">
                 {t("lightMode")}
               </span>
-              {theme === "light" && <Check className="h-5 w-5 text-primary-600 dark:text-primary-400" />}
+              {theme === "light" && (
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500">
+                  <Check className="h-4 w-4 text-white" />
+                </div>
+              )}
             </button>
 
             <button
               onClick={() => setTheme("dark")}
-              className={`flex w-full items-center gap-3 rounded-xl border-2 p-3 transition-all ${
+              className={`flex w-full items-center gap-3 rounded-xl p-3 transition-all ${
                 theme === "dark"
-                  ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30"
-                  : "border-neutral-200 hover:border-neutral-300 dark:border-neutral-700 dark:hover:border-neutral-600"
+                  ? "bg-amber-50 ring-2 ring-amber-500 dark:bg-amber-500/10"
+                  : "bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-700/30 dark:hover:bg-neutral-700/50"
               }`}
             >
               <Moon className="h-5 w-5 text-neutral-700 dark:text-neutral-300" />
               <span className="flex-1 text-left font-medium text-neutral-900 dark:text-white">
                 {t("darkMode")}
               </span>
-              {theme === "dark" && <Check className="h-5 w-5 text-primary-600 dark:text-primary-400" />}
+              {theme === "dark" && (
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500">
+                  <Check className="h-4 w-4 text-white" />
+                </div>
+              )}
             </button>
           </div>
         </div>
 
         {/* Notifications Settings */}
-        <div className="rounded-2xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
+        <div className="rounded-3xl bg-white p-6 shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
           <div className="mb-4 flex items-center gap-3">
-            <div className="rounded-xl bg-purple-100 dark:bg-purple-900/40 p-2.5">
-              <Bell className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-100 dark:bg-violet-500/20">
+              <Bell className="h-5 w-5 text-violet-600 dark:text-violet-400" />
             </div>
             <div>
               <h2 className="font-semibold text-neutral-900 dark:text-white">{t("notifications")}</h2>
@@ -394,7 +412,7 @@ export function SettingsClient({ user }: { user: UserSettings }) {
 
           <button
             onClick={() => setNotifications(!notifications)}
-            className="flex w-full items-center justify-between rounded-xl border-2 border-neutral-200 p-3 transition-all hover:border-neutral-300 dark:border-neutral-700 dark:hover:border-neutral-600"
+            className="flex w-full items-center justify-between rounded-xl bg-neutral-50 p-4 transition-all hover:bg-neutral-100 dark:bg-neutral-700/30 dark:hover:bg-neutral-700/50"
           >
             <div className="flex items-center gap-3">
               <Bell className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
@@ -407,7 +425,7 @@ export function SettingsClient({ user }: { user: UserSettings }) {
             </div>
             <div
               className={`relative h-7 w-12 rounded-full transition-colors ${
-                notifications ? "bg-primary-600" : "bg-neutral-300 dark:bg-neutral-600"
+                notifications ? "bg-violet-500" : "bg-neutral-300 dark:bg-neutral-600"
               }`}
             >
               <div
@@ -420,10 +438,10 @@ export function SettingsClient({ user }: { user: UserSettings }) {
         </div>
 
         {/* Security Settings */}
-        <div className="rounded-2xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
+        <div className="rounded-3xl bg-white p-6 shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
           <div className="mb-4 flex items-center gap-3">
-            <div className="rounded-xl bg-green-100 dark:bg-green-900/40 p-2.5">
-              <Lock className="h-5 w-5 text-green-600 dark:text-green-400" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 dark:bg-emerald-500/20">
+              <Lock className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div>
               <h2 className="font-semibold text-neutral-900 dark:text-white">{t("security")}</h2>
@@ -431,7 +449,7 @@ export function SettingsClient({ user }: { user: UserSettings }) {
             </div>
           </div>
 
-          <div className="rounded-xl bg-neutral-50 dark:bg-neutral-800 p-4">
+          <div className="rounded-xl bg-neutral-50 p-4 dark:bg-neutral-700/30">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <h3 className="font-medium text-neutral-900 dark:text-white">{t("folderPin")}</h3>
@@ -439,69 +457,73 @@ export function SettingsClient({ user }: { user: UserSettings }) {
                   {user.hasFolderPin ? t("pinEnabled") : t("pinDisabled")}
                 </p>
               </div>
-              <Shield
-                className={`h-5 w-5 ${
-                  user.hasFolderPin ? "text-green-600 dark:text-green-400" : "text-neutral-400 dark:text-neutral-500"
-                }`}
-              />
+              <div className={`flex h-8 w-8 items-center justify-center rounded-full ${
+                user.hasFolderPin
+                  ? "bg-emerald-100 dark:bg-emerald-500/20"
+                  : "bg-neutral-200 dark:bg-neutral-600"
+              }`}>
+                <Shield
+                  className={`h-4 w-4 ${
+                    user.hasFolderPin ? "text-emerald-600 dark:text-emerald-400" : "text-neutral-400 dark:text-neutral-500"
+                  }`}
+                />
+              </div>
             </div>
 
             <div className="mt-4 flex gap-2">
               {user.hasFolderPin ? (
                 <>
-                  <Button
-                    variant="outline"
+                  <button
                     onClick={() => setShowPinModal(true)}
-                    className="flex-1 dark:border-neutral-600 dark:text-neutral-300"
-                    size="sm"
+                    className="flex-1 rounded-xl border border-neutral-200 bg-white py-2.5 text-sm font-medium text-neutral-700 transition-all hover:bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-600"
                   >
                     {t("changePin")}
-                  </Button>
-                  <Button
-                    variant="outline"
+                  </button>
+                  <button
                     onClick={() => setIsRemovingPin(true)}
-                    className="flex-1 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-                    size="sm"
+                    className="flex-1 rounded-xl border border-red-200 bg-red-50 py-2.5 text-sm font-medium text-red-600 transition-all hover:bg-red-100 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20"
                   >
                     {t("removePin")}
-                  </Button>
+                  </button>
                 </>
               ) : (
-                <Button
+                <button
                   onClick={() => setShowPinModal(true)}
-                  className="w-full"
-                  size="sm"
+                  className="w-full rounded-xl bg-emerald-500 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all hover:bg-emerald-600 hover:shadow-xl"
                 >
                   {t("setPin")}
-                </Button>
+                </button>
               )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Save Button - Fixed at bottom on mobile */}
-      <div className="fixed bottom-0 left-0 right-0 border-t border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900 lg:static lg:border-0 lg:bg-transparent lg:p-0 lg:dark:bg-transparent">
-        <Button
+      {/* Save Button */}
+      <div className="fixed bottom-0 left-0 right-0 border-t border-black/5 bg-white/80 p-4 backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/80 lg:static lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none lg:dark:bg-transparent">
+        <button
           onClick={handleSaveSettings}
           disabled={saveStatus === "saving"}
-          className="w-full lg:w-auto lg:min-w-32"
-          size="lg"
+          className={`w-full rounded-xl py-3 text-sm font-semibold text-white shadow-lg transition-all lg:w-auto lg:px-8 ${
+            saveStatus === "saved"
+              ? "bg-emerald-500 shadow-emerald-500/25"
+              : "bg-gradient-to-r from-blue-500 to-blue-600 shadow-blue-500/25 hover:shadow-xl"
+          } disabled:opacity-50 disabled:shadow-none`}
         >
           {saveStatus === "saving" ? (
             t("saving")
           ) : saveStatus === "saved" ? (
-            <>
-              <Check className="mr-2 h-4 w-4" />
+            <span className="flex items-center justify-center gap-2">
+              <Check className="h-4 w-4" />
               {t("saved")}
-            </>
+            </span>
           ) : (
-            <>
-              <Save className="mr-2 h-4 w-4" />
+            <span className="flex items-center justify-center gap-2">
+              <Save className="h-4 w-4" />
               {t("saveSettings")}
-            </>
+            </span>
           )}
-        </Button>
+        </button>
       </div>
 
       {/* Spacer for fixed button on mobile */}
