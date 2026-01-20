@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useProfileImage } from "@/hooks/useProfileImage";
 import {
   Camera,
   Mail,
@@ -33,7 +34,15 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
   const { t } = useTranslation();
   const { update } = useSession();
   const [isUploading, setIsUploading] = useState(false);
-  const [profileImage, setProfileImage] = useState(user.image);
+  const { imageUrl, refresh: refreshProfileImage } = useProfileImage(user.image);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+
+  // Synchroniser avec l'URL signée
+  useEffect(() => {
+    if (imageUrl) {
+      setProfileImage(imageUrl);
+    }
+  }, [imageUrl]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -62,9 +71,11 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
 
       if (response.ok) {
         const data = await response.json();
+        // L'API retourne une URL signée directement utilisable
         setProfileImage(data.imageUrl);
         await update();
-        window.location.reload();
+        // Rafraîchir pour obtenir la nouvelle URL signée
+        await refreshProfileImage();
       } else {
         const errorData = await response.json();
         alert(errorData.error || "Erreur lors de l'upload de l'image");
