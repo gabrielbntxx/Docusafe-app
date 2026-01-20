@@ -3,8 +3,20 @@
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useTranslation } from "@/hooks/useTranslation";
-import { Camera, Mail, Calendar, Crown, HardDrive, FileText, User } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import {
+  Camera,
+  Mail,
+  Calendar,
+  Crown,
+  HardDrive,
+  FileText,
+  User,
+  ArrowRight,
+  Sparkles,
+  Shield,
+  Settings,
+  CreditCard,
+} from "lucide-react";
 
 type ProfileUser = {
   id: string;
@@ -27,13 +39,11 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Vérifier la taille (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       alert("L'image ne doit pas dépasser 5MB");
       return;
     }
 
-    // Vérifier le type
     if (!file.type.startsWith("image/")) {
       alert("Le fichier doit être une image");
       return;
@@ -53,11 +63,7 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
       if (response.ok) {
         const data = await response.json();
         setProfileImage(data.imageUrl);
-
-        // Rafraîchir la session pour mettre à jour l'image dans le header
         await update();
-
-        // Recharger la page pour voir les changements partout
         window.location.reload();
       } else {
         const errorData = await response.json();
@@ -83,32 +89,50 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return "0 MB";
     const mb = bytes / (1024 * 1024);
+    if (mb >= 1024) {
+      return (mb / 1024).toFixed(2) + " GB";
+    }
     return mb.toFixed(2) + " MB";
   };
 
-  const maxStorage = user.planType === "PRO" ? 10 * 1024 * 1024 * 1024 : 2 * 1024 * 1024; // 10GB ou 2MB
+  const maxStorage =
+    user.planType === "PRO" ? 10 * 1024 * 1024 * 1024 : 2 * 1024 * 1024;
   const storagePercentage = (user.storageUsedBytes / maxStorage) * 100;
+  const maxDocs = user.planType === "PRO" ? 999 : 5;
+  const docsPercentage = (user.documentsCount / maxDocs) * 100;
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-4xl space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100">
+      <div className="text-center">
+        <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-500/10 to-cyan-500/10 px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400">
+          <User className="h-4 w-4" />
+          {t("profile")}
+        </div>
+        <h1 className="text-3xl font-bold text-neutral-900 dark:text-white sm:text-4xl">
           Mon Profil
         </h1>
-        <p className="mt-2 text-neutral-500 dark:text-neutral-400">
-          Gérez vos informations personnelles et votre abonnement
+        <p className="mt-3 text-neutral-500 dark:text-neutral-400">
+          Gérez vos informations personnelles
         </p>
       </div>
 
       {/* Profile Card */}
-      <div className="rounded-2xl border border-neutral-200 bg-white p-8 shadow-soft dark:border-neutral-700 dark:bg-neutral-800">
-        <div className="flex flex-col items-center gap-6 md:flex-row md:items-start">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-500 to-cyan-500 p-8 text-white shadow-xl shadow-blue-500/25">
+        {/* Decorative circles */}
+        <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10" />
+        <div className="absolute -bottom-10 -left-10 h-32 w-32 rounded-full bg-white/5" />
+
+        <div className="relative flex flex-col items-center gap-6 sm:flex-row sm:items-start">
           {/* Photo de profil */}
           <div className="relative">
-            <div className="flex h-32 w-32 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-primary-500 to-secondary-500">
+            <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-white/20 ring-4 ring-white/30 sm:h-32 sm:w-32">
               {profileImage ? (
-                <img src={profileImage} alt={user.name} className="h-full w-full object-cover" />
+                <img
+                  src={profileImage}
+                  alt={user.name}
+                  className="h-full w-full object-cover"
+                />
               ) : (
                 <span className="text-5xl font-bold text-white">
                   {user.name.charAt(0).toUpperCase()}
@@ -119,7 +143,7 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
             {/* Bouton pour changer la photo */}
             <label
               htmlFor="profile-image"
-              className="absolute bottom-0 right-0 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-primary-600 text-white shadow-lg transition-all hover:bg-primary-700 active:scale-95"
+              className="absolute bottom-0 right-0 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white text-blue-600 shadow-lg transition-all hover:scale-105 active:scale-95"
             >
               <Camera className="h-5 w-5" />
               <input
@@ -140,122 +164,233 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
           </div>
 
           {/* Informations */}
-          <div className="flex-1 text-center md:text-left">
-            <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
-              {user.name}
-            </h2>
+          <div className="flex-1 text-center sm:text-left">
+            <div className="flex items-center justify-center gap-3 sm:justify-start">
+              <h2 className="text-2xl font-bold sm:text-3xl">{user.name}</h2>
+              {user.planType === "PRO" && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold backdrop-blur-sm">
+                  <Sparkles className="h-3 w-3" />
+                  PRO
+                </span>
+              )}
+            </div>
 
-            <div className="mt-4 space-y-3">
-              <div className="flex items-center justify-center gap-2 text-neutral-600 dark:text-neutral-400 md:justify-start">
+            <div className="mt-4 space-y-2">
+              <div className="flex items-center justify-center gap-2 text-white/80 sm:justify-start">
                 <Mail className="h-4 w-4" />
                 <span className="text-sm">{user.email}</span>
               </div>
 
-              <div className="flex items-center justify-center gap-2 text-neutral-600 dark:text-neutral-400 md:justify-start">
+              <div className="flex items-center justify-center gap-2 text-white/80 sm:justify-start">
                 <Calendar className="h-4 w-4" />
-                <span className="text-sm">Membre depuis {formatDate(user.createdAt)}</span>
-              </div>
-
-              <div className="flex items-center justify-center gap-2 md:justify-start">
-                <Crown className="h-4 w-4 text-amber-500" />
-                <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">
-                  Plan {user.planType}
+                <span className="text-sm">
+                  Membre depuis {formatDate(user.createdAt)}
                 </span>
               </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="mt-6 flex flex-wrap justify-center gap-3 sm:justify-start">
+              <a
+                href="/dashboard/settings"
+                className="inline-flex items-center gap-2 rounded-xl bg-white/20 px-4 py-2 text-sm font-medium backdrop-blur-sm transition-all hover:bg-white/30"
+              >
+                <Settings className="h-4 w-4" />
+                {t("settings")}
+              </a>
+              <a
+                href="/dashboard/subscription"
+                className="inline-flex items-center gap-2 rounded-xl bg-white/20 px-4 py-2 text-sm font-medium backdrop-blur-sm transition-all hover:bg-white/30"
+              >
+                <CreditCard className="h-4 w-4" />
+                {t("subscription")}
+              </a>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Statistiques */}
-      <div className="grid gap-6 md:grid-cols-2">
+      {/* Stats Grid */}
+      <div className="grid gap-4 sm:grid-cols-2">
         {/* Documents */}
-        <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-soft dark:border-neutral-700 dark:bg-neutral-800">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-100 dark:bg-primary-900/30">
-              <FileText className="h-6 w-6 text-primary-600 dark:text-primary-400" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                Documents déposés
+        <div className="rounded-3xl bg-white p-6 shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
+                {t("documents")}
               </p>
-              <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+              <p className="mt-1 text-3xl font-bold text-neutral-900 dark:text-white">
                 {user.documentsCount}
-                {user.planType === "FREE" && (
-                  <span className="text-sm text-neutral-500"> / 5</span>
-                )}
+                <span className="text-lg font-normal text-neutral-400">
+                  {" "}
+                  / {user.planType === "PRO" ? "∞" : "5"}
+                </span>
               </p>
             </div>
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-100 dark:bg-blue-500/20">
+              <FileText className="h-7 w-7 text-blue-600 dark:text-blue-400" />
+            </div>
+          </div>
+          <div className="mt-4 h-2 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-700">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all"
+              style={{ width: `${Math.min(docsPercentage, 100)}%` }}
+            />
           </div>
         </div>
 
         {/* Stockage */}
-        <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-soft dark:border-neutral-700 dark:bg-neutral-800">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary-100 dark:bg-secondary-900/30">
-              <HardDrive className="h-6 w-6 text-secondary-600 dark:text-secondary-400" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                Stockage utilisé
+        <div className="rounded-3xl bg-white p-6 shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
+                {t("storage")}
               </p>
-              <p className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
+              <p className="mt-1 text-3xl font-bold text-neutral-900 dark:text-white">
                 {formatBytes(user.storageUsedBytes)}
+                <span className="text-lg font-normal text-neutral-400">
+                  {" "}
+                  / {user.planType === "PRO" ? "10 GB" : "2 MB"}
+                </span>
               </p>
-              <p className="text-xs text-neutral-500">
-                sur {formatBytes(maxStorage)}
-              </p>
-
-              {/* Barre de progression */}
-              <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-700">
-                <div
-                  className={`h-full transition-all ${
-                    storagePercentage > 80
-                      ? "bg-red-500"
-                      : storagePercentage > 50
-                      ? "bg-amber-500"
-                      : "bg-green-500"
-                  }`}
-                  style={{ width: `${Math.min(storagePercentage, 100)}%` }}
-                />
-              </div>
             </div>
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100 dark:bg-emerald-500/20">
+              <HardDrive className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
+            </div>
+          </div>
+          <div className="mt-4 h-2 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-700">
+            <div
+              className={`h-full rounded-full transition-all ${
+                storagePercentage > 80
+                  ? "bg-red-500"
+                  : "bg-gradient-to-r from-emerald-500 to-emerald-600"
+              }`}
+              style={{ width: `${Math.min(storagePercentage, 100)}%` }}
+            />
           </div>
         </div>
       </div>
 
-      {/* Abonnement */}
-      <div className="rounded-2xl border border-neutral-200 bg-gradient-to-br from-primary-50 to-secondary-50 p-8 dark:border-neutral-700 dark:from-primary-900/20 dark:to-secondary-900/20">
-        <div className="flex items-start justify-between">
-          <div>
-            <h3 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">
-              {user.planType === "PRO" ? "Plan Pro 💎" : "Plan Gratuit"}
-            </h3>
-            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-              {user.planType === "PRO"
-                ? "Profitez de tous les avantages premium"
-                : "Passez à Pro pour débloquer toutes les fonctionnalités"}
-            </p>
+      {/* Plan Card */}
+      <div
+        className={`relative overflow-hidden rounded-3xl p-8 ${
+          user.planType === "PRO"
+            ? "bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-xl shadow-violet-500/25"
+            : "bg-white shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none"
+        }`}
+      >
+        {user.planType === "PRO" && (
+          <>
+            <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10" />
+            <div className="absolute -bottom-10 -left-10 h-32 w-32 rounded-full bg-white/5" />
+          </>
+        )}
 
-            {user.planType === "FREE" && (
-              <ul className="mt-4 space-y-2 text-sm text-neutral-600 dark:text-neutral-300">
-                <li>✨ Fichiers illimités</li>
-                <li>💾 10 GB de stockage</li>
-                <li>🤖 OCR alimenté par IA</li>
-                <li>🏷️ Tags intelligents</li>
-                <li>🔍 Recherche avancée</li>
-              </ul>
-            )}
+        <div className="relative flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
+          <div className="flex items-start gap-4">
+            <div
+              className={`flex h-14 w-14 items-center justify-center rounded-2xl ${
+                user.planType === "PRO"
+                  ? "bg-white/20"
+                  : "bg-amber-100 dark:bg-amber-500/20"
+              }`}
+            >
+              <Crown
+                className={`h-7 w-7 ${
+                  user.planType === "PRO"
+                    ? "text-white"
+                    : "text-amber-600 dark:text-amber-400"
+                }`}
+              />
+            </div>
+            <div>
+              <h3
+                className={`text-xl font-bold ${
+                  user.planType === "PRO"
+                    ? "text-white"
+                    : "text-neutral-900 dark:text-white"
+                }`}
+              >
+                Plan {user.planType === "PRO" ? "Pro" : "Gratuit"}
+              </h3>
+              <p
+                className={`mt-1 text-sm ${
+                  user.planType === "PRO"
+                    ? "text-violet-200"
+                    : "text-neutral-500 dark:text-neutral-400"
+                }`}
+              >
+                {user.planType === "PRO"
+                  ? "Profitez de tous les avantages premium"
+                  : "Passez à Pro pour débloquer toutes les fonctionnalités"}
+              </p>
+            </div>
           </div>
 
-          {user.planType === "FREE" && (
-            <Button
-              onClick={() => (window.location.href = "/dashboard/subscription")}
-              className="bg-gradient-to-r from-primary-600 to-secondary-600 hover:from-primary-700 hover:to-secondary-700"
+          {user.planType === "FREE" ? (
+            <a
+              href="/dashboard/subscription"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition-all hover:shadow-xl hover:shadow-violet-500/30 active:scale-[0.98]"
             >
-              Passer à Pro
-            </Button>
+              {t("upgradeNow")}
+              <ArrowRight className="h-4 w-4" />
+            </a>
+          ) : (
+            <div className="inline-flex items-center gap-2 rounded-xl bg-white/20 px-4 py-2 text-sm font-medium text-white backdrop-blur-sm">
+              <Shield className="h-4 w-4" />
+              Actif
+            </div>
           )}
+        </div>
+
+        {user.planType === "FREE" && (
+          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-300">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-500/20">
+                <FileText className="h-3 w-3 text-violet-600 dark:text-violet-400" />
+              </div>
+              <span className="text-sm">{t("unlimitedFiles")}</span>
+            </div>
+            <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-300">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-500/20">
+                <HardDrive className="h-3 w-3 text-violet-600 dark:text-violet-400" />
+              </div>
+              <span className="text-sm">10 GB {t("storageLimit")}</span>
+            </div>
+            <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-300">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-500/20">
+                <Sparkles className="h-3 w-3 text-violet-600 dark:text-violet-400" />
+              </div>
+              <span className="text-sm">{t("aiOcr")}</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Security Section */}
+      <div className="rounded-3xl bg-white p-8 shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
+        <div className="flex items-start gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-green-100 dark:bg-green-500/20">
+            <Shield className="h-6 w-6 text-green-600 dark:text-green-400" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
+              {t("security")}
+            </h3>
+            <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+              Votre compte est sécurisé
+            </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700 dark:bg-green-500/20 dark:text-green-400">
+                <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                Email vérifié
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700 dark:bg-green-500/20 dark:text-green-400">
+                <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                Connexion sécurisée
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
