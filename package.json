@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "next dev",
-    "build": "npx prisma generate && next build",
+    "build": "npx prisma generate && npx prisma db push --skip-generate && next build",
     "build:mobile": "next build && npx cap sync",
     "start": "./start.sh",
     "lint": "next lint",

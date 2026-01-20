@@ -2,5 +2,12 @@ node_modules
 # Keep environment variables out of version control
 .env
 
+# Next.js build output
+.next/
+out/
+
+# Build files
+tsconfig.tsbuildinfo
+
 /src/generated/prisma
 uploads/
