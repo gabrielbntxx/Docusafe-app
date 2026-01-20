@@ -7,9 +7,14 @@ import {
   uploadToR2,
   generateStorageKey,
   checkStorageLimit,
-  checkFileSizeLimit,
   checkDocumentLimit,
 } from "@/lib/storage";
+import {
+  validateFile,
+  checkRateLimit,
+  getClientIdentifier,
+  generateSecureFilename,
+} from "@/lib/security";
 
 export async function POST(req: Request) {
   try {
@@ -19,6 +24,23 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { error: "Non authentifié" },
         { status: 401 }
+      );
+    }
+
+    // Rate limiting pour les uploads
+    const clientId = await getClientIdentifier(session.user.id);
+    const rateLimit = checkRateLimit(clientId, "upload");
+
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: rateLimit.error },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(rateLimit.resetIn),
+            "X-RateLimit-Remaining": "0",
+          },
+        }
       );
     }
 
@@ -50,28 +72,20 @@ export async function POST(req: Request) {
       );
     }
 
-    // Vérifier le type de fichier
-    const validTypes = [
-      "application/pdf",
-      "image/jpeg",
-      "image/jpg",
-      "image/png",
-      "image/gif",
-    ];
+    // Convertir le fichier en buffer pour validation
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
 
-    if (!validTypes.includes(file.type)) {
+    // Validation complète du fichier (type, taille, magic bytes, nom)
+    const fileValidation = await validateFile(file, buffer);
+
+    if (!fileValidation.valid) {
       return NextResponse.json(
-        { error: "Type de fichier non supporté. Formats acceptés: PDF, JPG, PNG, GIF" },
+        {
+          error: "Fichier invalide",
+          details: fileValidation.errors,
+        },
         { status: 400 }
-      );
-    }
-
-    // Vérifier la limite de taille du fichier
-    const fileSizeCheck = checkFileSizeLimit(user.planType, file.size);
-    if (!fileSizeCheck.allowed) {
-      return NextResponse.json(
-        { error: fileSizeCheck.reason },
-        { status: 403 }
       );
     }
 
@@ -97,12 +111,14 @@ export async function POST(req: Request) {
       );
     }
 
-    // Convertir le fichier en buffer
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    // Générer un nom de fichier sécurisé pour le stockage
+    const secureFilename = generateSecureFilename(
+      fileValidation.sanitizedName,
+      session.user.id
+    );
 
-    // Générer la clé de stockage
-    const storageKey = generateStorageKey(session.user.id, file.name);
+    // Générer la clé de stockage avec le nom sécurisé
+    const storageKey = generateStorageKey(session.user.id, secureFilename);
 
     // Upload vers R2
     await uploadToR2(storageKey, buffer, file.type);
@@ -112,12 +128,12 @@ export async function POST(req: Request) {
     if (file.type === "application/pdf") fileType = "pdf";
     else if (file.type.startsWith("image/")) fileType = "image";
 
-    // Créer l'entrée dans la DB
+    // Créer l'entrée dans la DB avec le nom sanitisé
     const document = await db.document.create({
       data: {
         userId: session.user.id,
-        originalName: file.name,
-        displayName: file.name,
+        originalName: fileValidation.sanitizedName, // Nom sanitisé
+        displayName: fileValidation.sanitizedName,
         fileType,
         mimeType: file.type,
         sizeBytes: BigInt(file.size),
@@ -140,7 +156,7 @@ export async function POST(req: Request) {
     await createNotification(
       session.user.id,
       "document_uploaded",
-      file.name
+      fileValidation.sanitizedName
     );
 
     return NextResponse.json(
@@ -152,7 +168,12 @@ export async function POST(req: Request) {
           type: fileType,
         },
       },
-      { status: 201 }
+      {
+        status: 201,
+        headers: {
+          "X-RateLimit-Remaining": String(rateLimit.remaining),
+        },
+      }
     );
   } catch (error) {
     console.error("Upload error:", error);

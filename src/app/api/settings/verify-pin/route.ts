@@ -3,6 +3,12 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
+import {
+  checkRateLimit,
+  getClientIdentifier,
+  resetRateLimit,
+  validatePin,
+} from "@/lib/security";
 
 // POST - Verify folder PIN
 export async function POST(req: Request) {
@@ -11,6 +17,26 @@ export async function POST(req: Request) {
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Rate limiting pour les tentatives de PIN
+    const clientId = await getClientIdentifier(session.user.id);
+    const rateLimit = checkRateLimit(clientId, "pinVerify");
+
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        {
+          error: rateLimit.error,
+          valid: false,
+          blocked: true,
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(rateLimit.resetIn),
+          },
+        }
+      );
     }
 
     const { pin } = await req.json();
@@ -27,9 +53,10 @@ export async function POST(req: Request) {
     }
 
     // Validate PIN format
-    if (!pin || !/^\d{4}$/.test(pin)) {
+    const pinValidation = validatePin(pin);
+    if (!pinValidation.valid) {
       return NextResponse.json(
-        { error: "Invalid PIN format", valid: false },
+        { error: pinValidation.error, valid: false },
         { status: 400 }
       );
     }
@@ -39,10 +66,17 @@ export async function POST(req: Request) {
 
     if (!isValid) {
       return NextResponse.json(
-        { error: "Incorrect PIN", valid: false },
+        {
+          error: "Code PIN incorrect",
+          valid: false,
+          attemptsRemaining: rateLimit.remaining,
+        },
         { status: 401 }
       );
     }
+
+    // Reset rate limit on successful verification
+    resetRateLimit(clientId, "pinVerify");
 
     return NextResponse.json({ valid: true });
   } catch (error) {

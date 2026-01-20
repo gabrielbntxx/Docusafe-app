@@ -1,29 +1,67 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
+import {
+  checkRateLimit,
+  getClientIdentifier,
+  validateEmail,
+  validatePassword,
+  validateName,
+} from "@/lib/security";
 
 export async function POST(req: Request) {
   try {
+    // Rate limiting
+    const clientId = await getClientIdentifier();
+    const rateLimit = checkRateLimit(clientId, "register");
+
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: rateLimit.error },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(rateLimit.resetIn),
+          },
+        }
+      );
+    }
+
     const { name, email, password } = await req.json();
 
-    // Validation
-    if (!name || !email || !password) {
+    // Validation du nom
+    const nameValidation = validateName(name);
+    if (!nameValidation.valid) {
       return NextResponse.json(
-        { error: "Tous les champs sont requis" },
+        { error: nameValidation.error },
         { status: 400 }
       );
     }
 
-    if (password.length < 8) {
+    // Validation de l'email
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.valid) {
       return NextResponse.json(
-        { error: "Le mot de passe doit contenir au moins 8 caractères" },
+        { error: emailValidation.error },
         { status: 400 }
       );
     }
+
+    // Validation du mot de passe
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+      return NextResponse.json(
+        { error: passwordValidation.error },
+        { status: 400 }
+      );
+    }
+
+    // Normaliser l'email
+    const normalizedEmail = email.trim().toLowerCase();
 
     // Check if user already exists
     const existingUser = await db.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (existingUser) {
@@ -33,14 +71,14 @@ export async function POST(req: Request) {
       );
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Hash password avec un coût plus élevé
+    const hashedPassword = await bcrypt.hash(password, 12);
 
     // Create user
     const user = await db.user.create({
       data: {
-        name,
-        email,
+        name: name.trim(),
+        email: normalizedEmail,
         password: hashedPassword,
       },
     });
