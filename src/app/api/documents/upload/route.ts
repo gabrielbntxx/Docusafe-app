@@ -15,6 +15,13 @@ import {
   getClientIdentifier,
   generateSecureFilename,
 } from "@/lib/security";
+import {
+  encryptDocument,
+  addEncryptionMarker,
+  generateUserEncryptionKey,
+  encryptUserKey,
+  decryptUserKey,
+} from "@/lib/encryption";
 
 export async function POST(req: Request) {
   try {
@@ -44,13 +51,14 @@ export async function POST(req: Request) {
       );
     }
 
-    // Récupérer les infos utilisateur
+    // Récupérer les infos utilisateur avec la clé de chiffrement
     const user = await db.user.findUnique({
       where: { id: session.user.id },
       select: {
         planType: true,
         documentsCount: true,
         storageUsedBytes: true,
+        encryptionKey: true,
       },
     });
 
@@ -120,8 +128,27 @@ export async function POST(req: Request) {
     // Générer la clé de stockage avec le nom sécurisé
     const storageKey = generateStorageKey(session.user.id, secureFilename);
 
-    // Upload vers R2
-    await uploadToR2(storageKey, buffer, file.type);
+    // Obtenir ou créer la clé de chiffrement utilisateur
+    let userEncryptionKey: string;
+    if (user.encryptionKey) {
+      // Déchiffrer la clé existante
+      userEncryptionKey = decryptUserKey(user.encryptionKey);
+    } else {
+      // Générer une nouvelle clé pour l'utilisateur
+      userEncryptionKey = generateUserEncryptionKey();
+      const encryptedKey = encryptUserKey(userEncryptionKey);
+      await db.user.update({
+        where: { id: session.user.id },
+        data: { encryptionKey: encryptedKey },
+      });
+    }
+
+    // Chiffrer le document
+    const encryptedBuffer = encryptDocument(buffer, userEncryptionKey);
+    const finalBuffer = addEncryptionMarker(encryptedBuffer);
+
+    // Upload vers R2 (données chiffrées)
+    await uploadToR2(storageKey, finalBuffer, "application/octet-stream");
 
     // Déterminer le type de fichier
     let fileType = "other";
@@ -140,6 +167,7 @@ export async function POST(req: Request) {
         storageKey,
         storageUrl: `r2://${storageKey}`,
         ocrStatus: "PENDING",
+        isEncrypted: 1, // Document chiffré
       },
     });
 

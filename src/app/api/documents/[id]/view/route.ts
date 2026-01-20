@@ -3,6 +3,12 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getFromR2 } from "@/lib/storage";
+import {
+  decryptDocument,
+  decryptUserKey,
+  isEncrypted,
+  removeEncryptionMarker,
+} from "@/lib/encryption";
 
 export async function GET(
   req: Request,
@@ -20,9 +26,16 @@ export async function GET(
 
     const { id } = await params;
 
-    // Récupérer le document
+    // Récupérer le document avec les infos utilisateur
     const document = await db.document.findUnique({
       where: { id },
+      include: {
+        user: {
+          select: {
+            encryptionKey: true,
+          },
+        },
+      },
     });
 
     if (!document) {
@@ -41,14 +54,28 @@ export async function GET(
     }
 
     // Récupérer le fichier depuis R2
-    const fileBuffer = await getFromR2(document.storageKey);
+    let fileBuffer = await getFromR2(document.storageKey);
+
+    // Déchiffrer si le document est chiffré
+    if (document.isEncrypted === 1 && isEncrypted(fileBuffer)) {
+      if (!document.user.encryptionKey) {
+        return NextResponse.json(
+          { error: "Clé de chiffrement manquante" },
+          { status: 500 }
+        );
+      }
+
+      const userKey = decryptUserKey(document.user.encryptionKey);
+      const encryptedData = removeEncryptionMarker(fileBuffer);
+      fileBuffer = decryptDocument(encryptedData, userKey);
+    }
 
     // Retourner le fichier pour visualisation (inline)
     return new NextResponse(new Uint8Array(fileBuffer), {
       headers: {
         "Content-Type": document.mimeType,
         "Content-Disposition": `inline; filename="${encodeURIComponent(document.originalName)}"`,
-        "Content-Length": document.sizeBytes.toString(),
+        "Content-Length": String(fileBuffer.length),
         "Cache-Control": "private, max-age=3600",
       },
     });

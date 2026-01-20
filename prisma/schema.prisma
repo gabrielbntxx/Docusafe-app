@@ -35,6 +35,9 @@ model User {
   theme                String    @default("light")
   notificationsEnabled Int       @default(1) // 1 = enabled, 0 = disabled
 
+  // Encryption
+  encryptionKey        String?   // User's encryption key (encrypted with master key)
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -116,6 +119,7 @@ model Document {
   storageKey      String   @unique  // S3/R2 object key
   storageUrl      String?  // Optional CDN URL
   thumbnailUrl    String?
+  isEncrypted     Int      @default(0) // 1 = encrypted, 0 = not encrypted
 
   // OCR & Categorization
   ocrStatus       String   @default("PENDING")
