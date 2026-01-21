@@ -64,7 +64,7 @@ export function PinModal({ folderName, onVerify, onClose }: PinModalProps) {
           Dossier protégé
         </h2>
         <p className="mt-2 text-center text-sm text-neutral-500 dark:text-neutral-400">
-          "{folderName}" est protégé par un code PIN
+          {`"${folderName}" est protégé par un code PIN`}
         </p>
 
         {/* Form */}
