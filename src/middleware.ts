@@ -102,13 +102,19 @@ export function middleware(request: NextRequest) {
 
   // Security headers
   response.headers.set("X-Content-Type-Options", "nosniff");
-  response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("X-XSS-Protection", "1; mode=block");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set(
     "Permissions-Policy",
     "camera=(), microphone=(), geolocation=()"
   );
+
+  // Permettre l'affichage en iframe pour la prévisualisation des documents
+  const isDocumentView = /^\/api\/documents\/[^/]+\/view$/.test(pathname);
+
+  if (!isDocumentView) {
+    response.headers.set("X-Frame-Options", "DENY");
+  }
 
   // Content Security Policy (ajuster selon vos besoins)
   if (!pathname.startsWith("/api/")) {
@@ -121,7 +127,7 @@ export function middleware(request: NextRequest) {
         "img-src 'self' data: blob: https:",
         "font-src 'self' data:",
         "connect-src 'self' https:",
-        "frame-ancestors 'none'",
+        "frame-ancestors 'self'", // Permettre les iframes depuis le même domaine
       ].join("; ")
     );
   }
