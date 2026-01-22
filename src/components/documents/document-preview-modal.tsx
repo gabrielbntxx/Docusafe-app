@@ -31,6 +31,8 @@ export function DocumentPreviewModal({
 
   // Fetch document and create blob URL
   useEffect(() => {
+    let currentBlobUrl: string | null = null;
+
     if (document && isOpen) {
       setIsLoading(true);
       setHasError(false);
@@ -42,8 +44,8 @@ export function DocumentPreviewModal({
           return response.blob();
         })
         .then((blob) => {
-          const url = URL.createObjectURL(blob);
-          setBlobUrl(url);
+          currentBlobUrl = URL.createObjectURL(blob);
+          setBlobUrl(currentBlobUrl);
           setIsLoading(false);
         })
         .catch(() => {
@@ -54,8 +56,8 @@ export function DocumentPreviewModal({
 
     // Cleanup blob URL when component unmounts or document changes
     return () => {
-      if (blobUrl) {
-        URL.revokeObjectURL(blobUrl);
+      if (currentBlobUrl) {
+        URL.revokeObjectURL(currentBlobUrl);
       }
     };
   }, [document?.id, isOpen]);
@@ -215,7 +217,7 @@ export function DocumentPreviewModal({
                 {t("download")}
               </Button>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
     </div>
