@@ -9,6 +9,42 @@ import {
   getOrCreateCategoryFolder,
   calculateFileHash,
 } from "@/lib/ai-analysis";
+import {
+  isEncrypted,
+  removeEncryptionMarker,
+  decryptDocument,
+  decryptUserKey,
+} from "@/lib/encryption";
+
+/**
+ * Decrypt file buffer if encrypted
+ */
+async function getDecryptedBuffer(
+  fileBuffer: Buffer,
+  userId: string
+): Promise<Buffer> {
+  // Check if document is encrypted
+  if (!isEncrypted(fileBuffer)) {
+    return fileBuffer;
+  }
+
+  // Get user's encryption key
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { encryptionKey: true },
+  });
+
+  if (!user?.encryptionKey) {
+    throw new Error("User encryption key not found");
+  }
+
+  // Decrypt the user's key first
+  const userKey = decryptUserKey(user.encryptionKey);
+
+  // Remove encryption marker and decrypt document
+  const encryptedData = removeEncryptionMarker(fileBuffer);
+  return decryptDocument(encryptedData, userKey);
+}
 
 // POST /api/documents/analyze - Analyze a document with AI
 export async function POST(req: Request) {
@@ -62,9 +98,12 @@ export async function POST(req: Request) {
     }
 
     // Get file from storage
-    const fileBuffer = await getFromR2(document.storageKey);
+    const encryptedBuffer = await getFromR2(document.storageKey);
 
-    // Analyze document
+    // Decrypt the document before analysis
+    const fileBuffer = await getDecryptedBuffer(encryptedBuffer, session.user.id);
+
+    // Analyze document (now decrypted)
     const analysis = await analyzeDocument(
       session.user.id,
       fileBuffer,
@@ -110,7 +149,7 @@ export async function POST(req: Request) {
   }
 }
 
-// POST /api/documents/analyze/auto-sort - Analyze and auto-sort a document
+// PUT /api/documents/analyze - Analyze and auto-sort a document
 export async function PUT(req: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -146,9 +185,12 @@ export async function PUT(req: Request) {
     }
 
     // Get file from storage
-    const fileBuffer = await getFromR2(document.storageKey);
+    const encryptedBuffer = await getFromR2(document.storageKey);
 
-    // Analyze document
+    // Decrypt the document before analysis
+    const fileBuffer = await getDecryptedBuffer(encryptedBuffer, session.user.id);
+
+    // Analyze document (now decrypted)
     const analysis = await analyzeDocument(
       session.user.id,
       fileBuffer,
