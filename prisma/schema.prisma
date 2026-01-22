@@ -34,6 +34,7 @@ model User {
   folderPin            String?   // 4-digit PIN for folder creation (hashed)
   theme                String    @default("light")
   notificationsEnabled Int       @default(1) // 1 = enabled, 0 = disabled
+  aiSortingEnabled     Int       @default(1) // 1 = enabled, 0 = disabled (user preference)
 
   // Encryption
   encryptionKey        String?   // User's encryption key (encrypted with master key)
@@ -121,11 +122,13 @@ model Document {
   thumbnailUrl    String?
   isEncrypted     Int      @default(0) // 1 = encrypted, 0 = not encrypted
 
-  // OCR & Categorization
-  ocrStatus       String   @default("PENDING")
-  ocrText         String?
-  ocrConfidence   Float?
-  suggestedCategory String?
+  // AI Analysis & Categorization
+  aiAnalyzed      Int      @default(0) // 1 = analyzed by AI, 0 = not analyzed
+  aiDocumentType  String?  // Type detected by AI (facture, contrat, etc.)
+  aiCategory      String?  // Category detected by AI
+  aiConfidence    Float?   // AI confidence score
+  aiExtractedData String?  // JSON with extracted metadata (date, amount, issuer)
+  fileHash        String?  // SHA-256 hash for cache lookup
 
   // Metadata
   tags            String   @default("")
@@ -138,7 +141,7 @@ model Document {
 
   @@index([userId])
   @@index([folderId])
-  @@index([ocrStatus])
+  @@index([aiAnalyzed])
 }
 
 model Notification {
@@ -154,4 +157,57 @@ model Notification {
 
   @@index([userId])
   @@index([read])
+}
+
+// ============================================
+// AI DOCUMENT ANALYSIS
+// ============================================
+
+// Cache for AI analysis results (avoid re-analyzing same documents)
+model DocumentAnalysisCache {
+  id            String   @id @default(cuid())
+  fileHash      String   @unique // SHA-256 hash of file content
+
+  // Analysis results
+  documentType  String   // facture, fiche_de_paie, contrat, etc.
+  category      String   // Finances, Emploi, Administratif, etc.
+  confidence    Float    // 0-1 confidence score
+  suggestedName String?  // Suggested display name
+  extractedDate String?  // Date found in document
+  extractedAmount String? // Amount found (for invoices)
+  extractedIssuer String? // Company/person who issued the document
+  rawResponse   String?  // Full AI response (JSON)
+
+  createdAt     DateTime @default(now())
+
+  @@index([fileHash])
+}
+
+// Track AI usage per user per month
+model AIUsage {
+  id        String   @id @default(cuid())
+  userId    String
+  month     String   // Format: "2024-01" for January 2024
+  count     Int      @default(0) // Number of AI analyses this month
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, month])
+  @@index([userId])
+}
+
+// Document categories for auto-sorting
+model DocumentCategory {
+  id          String   @id @default(cuid())
+  name        String   // Factures, Fiches de paie, etc.
+  nameEn      String   // Invoices, Pay slips, etc.
+  slug        String   @unique // factures, fiches-de-paie, etc.
+  icon        String   @default("file")
+  color       String   @default("#3B82F6")
+  keywords    String   // Comma-separated keywords for matching
+
+  createdAt   DateTime @default(now())
+
+  @@index([slug])
 }

@@ -1,8 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, X, FileText, File, Image as ImageIcon, FileCheck, Cloud, Sparkles } from "lucide-react";
+import { Upload, X, FileText, File, Image as ImageIcon, FileCheck, Cloud, Sparkles, Wand2, FolderOpen, Loader2 } from "lucide-react";
+
+type AIStatus = {
+  allowed: boolean;
+  remaining: number;
+  limit: number;
+  aiSortingEnabled: boolean;
+  planType: string;
+};
 
 export default function UploadPage() {
   const router = useRouter();
@@ -12,6 +20,22 @@ export default function UploadPage() {
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
   const [error, setError] = useState<string | null>(null);
   const [fileErrors, setFileErrors] = useState<{ [key: string]: string }>({});
+
+  // AI sorting state
+  const [aiSortingEnabled, setAiSortingEnabled] = useState(false);
+  const [aiStatus, setAiStatus] = useState<AIStatus | null>(null);
+  const [aiResults, setAiResults] = useState<{ [key: string]: { category: string; type: string } }>({});
+
+  // Fetch AI status on mount
+  useEffect(() => {
+    fetch("/api/documents/analyze")
+      .then((res) => res.json())
+      .then((data) => {
+        setAiStatus(data);
+        setAiSortingEnabled(data.aiSortingEnabled && data.allowed);
+      })
+      .catch(console.error);
+  }, []);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -53,6 +77,7 @@ export default function UploadPage() {
     setIsUploading(true);
     setError(null);
     setFileErrors({});
+    setAiResults({});
 
     let hasError = false;
 
@@ -61,12 +86,41 @@ export default function UploadPage() {
       formData.append("file", file);
 
       try {
+        // Step 1: Upload the file
         const response = await fetch("/api/documents/upload", {
           method: "POST",
           body: formData,
         });
 
         if (response.ok) {
+          const uploadData = await response.json();
+          setUploadProgress(prev => ({ ...prev, [file.name]: aiSortingEnabled ? 50 : 100 }));
+
+          // Step 2: If AI sorting is enabled, analyze and sort
+          if (aiSortingEnabled && uploadData.document?.id) {
+            try {
+              const analyzeResponse = await fetch("/api/documents/analyze", {
+                method: "PUT", // PUT for auto-sort
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ documentId: uploadData.document.id }),
+              });
+
+              if (analyzeResponse.ok) {
+                const analyzeData = await analyzeResponse.json();
+                setAiResults(prev => ({
+                  ...prev,
+                  [file.name]: {
+                    category: analyzeData.result?.category || "Autres",
+                    type: analyzeData.result?.documentType || "autre",
+                  },
+                }));
+              }
+            } catch (aiError) {
+              console.error("AI analysis error:", aiError);
+              // Don't fail the upload if AI fails
+            }
+          }
+
           setUploadProgress(prev => ({ ...prev, [file.name]: 100 }));
         } else {
           const errorData = await response.json();
@@ -91,7 +145,7 @@ export default function UploadPage() {
     if (!hasError) {
       setTimeout(() => {
         router.push("/dashboard/documents");
-      }, 1000);
+      }, 1500);
     }
   };
 
@@ -184,6 +238,54 @@ export default function UploadPage() {
         </div>
       </div>
 
+      {/* AI Sorting Toggle */}
+      {files.length > 0 && aiStatus && (
+        <div className="rounded-3xl border border-violet-200 bg-gradient-to-r from-violet-50 to-purple-50 p-5 dark:border-violet-500/20 dark:from-violet-500/10 dark:to-purple-500/10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-500/20">
+                <Wand2 className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-neutral-900 dark:text-white">
+                  Tri automatique par IA
+                </h3>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                  {aiStatus.limit === -1
+                    ? "Illimité avec votre plan"
+                    : `${aiStatus.remaining}/${aiStatus.limit} analyses restantes ce mois`}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setAiSortingEnabled(!aiSortingEnabled)}
+              disabled={!aiStatus.allowed || isUploading}
+              className={`relative h-7 w-12 rounded-full transition-colors ${
+                aiSortingEnabled
+                  ? "bg-violet-500"
+                  : "bg-neutral-300 dark:bg-neutral-600"
+              } ${!aiStatus.allowed ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              <span
+                className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                  aiSortingEnabled ? "left-6" : "left-1"
+                }`}
+              />
+            </button>
+          </div>
+          {aiSortingEnabled && (
+            <p className="mt-3 text-xs text-violet-600 dark:text-violet-400">
+              Les documents seront analysés et classés automatiquement dans des dossiers appropriés.
+            </p>
+          )}
+          {!aiStatus.allowed && aiStatus.remaining === 0 && (
+            <p className="mt-3 text-xs text-amber-600 dark:text-amber-400">
+              Limite mensuelle atteinte. Passez à Premium pour un tri illimité.
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Files List */}
       {files.length > 0 && (
         <div className="space-y-4 rounded-3xl bg-white p-6 shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
@@ -205,6 +307,7 @@ export default function UploadPage() {
               const FileIcon = getFileIcon(file);
               const progress = uploadProgress[file.name] || 0;
               const fileError = fileErrors[file.name];
+              const aiResult = aiResults[file.name];
 
               return (
                 <div
@@ -226,6 +329,8 @@ export default function UploadPage() {
                       <X className="h-6 w-6 text-red-600 dark:text-red-400" />
                     ) : progress === 100 ? (
                       <FileCheck className="h-6 w-6 text-green-600 dark:text-green-400" />
+                    ) : isUploading && progress > 0 && progress < 100 ? (
+                      <Loader2 className="h-6 w-6 text-blue-600 dark:text-blue-400 animate-spin" />
                     ) : (
                       <FileIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                     )}
@@ -245,17 +350,37 @@ export default function UploadPage() {
                       </p>
                     )}
 
+                    {/* AI Result Badge */}
+                    {aiResult && progress === 100 && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-medium text-violet-700 dark:bg-violet-500/20 dark:text-violet-300">
+                          <FolderOpen className="h-3 w-3" />
+                          {aiResult.category}
+                        </span>
+                        <span className="text-xs text-neutral-400">
+                          Classé automatiquement
+                        </span>
+                      </div>
+                    )}
+
                     {isUploading && progress > 0 && !fileError && progress < 100 && (
-                      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-600">
-                        <div
-                          className="h-full bg-blue-500 transition-all"
-                          style={{ width: `${progress}%` }}
-                        />
+                      <div className="mt-2">
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-600">
+                          <div
+                            className="h-full bg-gradient-to-r from-blue-500 to-violet-500 transition-all"
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                        {aiSortingEnabled && progress >= 50 && progress < 100 && (
+                          <p className="mt-1 text-xs text-violet-600 dark:text-violet-400">
+                            Analyse IA en cours...
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>
 
-                  {progress !== 100 && (
+                  {progress !== 100 && !isUploading && (
                     <button
                       onClick={() => removeFile(index)}
                       disabled={isUploading}

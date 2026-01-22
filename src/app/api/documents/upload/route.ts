@@ -166,7 +166,7 @@ export async function POST(req: Request) {
         sizeBytes: BigInt(file.size),
         storageKey,
         storageUrl: `r2://${storageKey}`,
-        ocrStatus: "PENDING",
+        aiAnalyzed: 0, // Not analyzed yet
         isEncrypted: 1, // Document chiffré
       },
     });

@@ -29,7 +29,8 @@ type Document = {
   mimeType: string;
   sizeBytes: number;
   storageUrl: string | null;
-  ocrStatus: string;
+  aiAnalyzed?: number;
+  aiCategory?: string | null;
   uploadedAt: string;
   folder: {
     id: string;
