@@ -27,14 +27,38 @@ export function DocumentPreviewModal({
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
 
-  // Reset states when document changes
+  // Fetch document and create blob URL
   useEffect(() => {
-    if (document) {
+    if (document && isOpen) {
       setIsLoading(true);
       setHasError(false);
+      setBlobUrl(null);
+
+      fetch(`/api/documents/${document.id}/view`)
+        .then((response) => {
+          if (!response.ok) throw new Error("Failed to fetch document");
+          return response.blob();
+        })
+        .then((blob) => {
+          const url = URL.createObjectURL(blob);
+          setBlobUrl(url);
+          setIsLoading(false);
+        })
+        .catch(() => {
+          setHasError(true);
+          setIsLoading(false);
+        });
     }
-  }, [document?.id]);
+
+    // Cleanup blob URL when component unmounts or document changes
+    return () => {
+      if (blobUrl) {
+        URL.revokeObjectURL(blobUrl);
+      }
+    };
+  }, [document?.id, isOpen]);
 
   if (!isOpen || !document) return null;
 
@@ -66,20 +90,6 @@ export function DocumentPreviewModal({
       console.error("Download error:", error);
       setHasError(true);
     }
-  };
-
-  const handleImageLoad = () => {
-    setIsLoading(false);
-    setHasError(false);
-  };
-
-  const handleImageError = () => {
-    setIsLoading(false);
-    setHasError(true);
-  };
-
-  const handleIframeLoad = () => {
-    setIsLoading(false);
   };
 
   // Handle click outside to close
@@ -142,7 +152,7 @@ export function DocumentPreviewModal({
         {/* Content */}
         <div className="relative flex-1 overflow-auto bg-neutral-100 dark:bg-neutral-950">
           {/* Loading indicator */}
-          {isLoading && !hasError && (document.fileType === "pdf" || document.fileType === "image") && (
+          {isLoading && (document.fileType === "pdf" || document.fileType === "image") && (
             <div className="absolute inset-0 flex items-center justify-center bg-neutral-100 dark:bg-neutral-950 z-10">
               <div className="flex flex-col items-center gap-3">
                 <Loader2 className="h-8 w-8 text-primary-600 dark:text-primary-400 animate-spin" />
@@ -171,25 +181,21 @@ export function DocumentPreviewModal({
                 {t("close") || "Fermer"}
               </Button>
             </div>
-          ) : document.fileType === "pdf" ? (
+          ) : document.fileType === "pdf" && blobUrl ? (
             <iframe
-              src={`/api/documents/${document.id}/view`}
+              src={blobUrl}
               className="h-full w-full min-h-[60vh]"
               title={document.displayName}
-              onLoad={handleIframeLoad}
-              onError={() => setHasError(true)}
             />
-          ) : document.fileType === "image" ? (
+          ) : document.fileType === "image" && blobUrl ? (
             <div className="flex items-center justify-center h-full min-h-[60vh] p-4 sm:p-8">
               <img
-                src={`/api/documents/${document.id}/view`}
+                src={blobUrl}
                 alt={document.displayName}
-                className={`max-h-full max-w-full rounded-xl object-contain shadow-2xl transition-opacity duration-300 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
-                onLoad={handleImageLoad}
-                onError={handleImageError}
+                className="max-h-full max-w-full rounded-xl object-contain shadow-2xl"
               />
             </div>
-          ) : (
+          ) : !isLoading && !hasError ? (
             <div className="flex flex-col items-center justify-center h-full min-h-[60vh] text-center p-8">
               <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-2xl bg-neutral-200 dark:bg-neutral-800">
                 <Icon className="h-12 w-12 text-neutral-400 dark:text-neutral-500" />

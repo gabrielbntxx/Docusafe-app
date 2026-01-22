@@ -37,6 +37,24 @@ export function RegisterForm() {
       return;
     }
 
+    if (!/[a-z]/.test(formData.password)) {
+      setError("Le mot de passe doit contenir au moins 1 minuscule");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!/[A-Z]/.test(formData.password)) {
+      setError("Le mot de passe doit contenir au moins 1 majuscule");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!/\d/.test(formData.password)) {
+      setError("Le mot de passe doit contenir au moins 1 chiffre");
+      setIsLoading(false);
+      return;
+    }
+
     try {
       // Call API to create user
       const response = await fetch("/api/auth/register", {
@@ -136,30 +154,35 @@ export function RegisterForm() {
           </div>
 
           {/* Password Input */}
-          <div className="relative">
-            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type={showPassword ? "text" : "password"}
-              placeholder="Mot de passe (min. 8 caractères)"
-              value={formData.password}
-              onChange={(e) =>
-                setFormData({ ...formData, password: e.target.value })
-              }
-              required
-              disabled={isLoading}
-              className="w-full pl-12 pr-12 py-4 bg-gray-50 border border-gray-300 rounded-2xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 disabled:opacity-50"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              {showPassword ? (
-                <EyeOff className="w-5 h-5" />
-              ) : (
-                <Eye className="w-5 h-5" />
-              )}
-            </button>
+          <div>
+            <div className="relative">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Mot de passe"
+                value={formData.password}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
+                required
+                disabled={isLoading}
+                className="w-full pl-12 pr-12 py-4 bg-gray-50 border border-gray-300 rounded-2xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 disabled:opacity-50"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                {showPassword ? (
+                  <EyeOff className="w-5 h-5" />
+                ) : (
+                  <Eye className="w-5 h-5" />
+                )}
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-gray-500">
+              Min. 8 caractères, 1 majuscule, 1 minuscule, 1 chiffre
+            </p>
           </div>
 
           {/* Confirm Password Input */}
