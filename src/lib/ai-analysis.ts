@@ -219,50 +219,63 @@ export async function analyzeDocumentWithAI(
 ): Promise<AIAnalysisResult> {
   const apiKey = process.env.GEMINI_API_KEY;
 
+  console.log("[AI Analysis] Starting analysis for:", fileName, "mimeType:", mimeType, "size:", fileBuffer.length);
+
   if (!apiKey) {
+    console.error("[AI Analysis] GEMINI_API_KEY not configured!");
     throw new Error("GEMINI_API_KEY not configured");
   }
 
   // Convert buffer to base64
   const base64Data = fileBuffer.toString("base64");
+  console.log("[AI Analysis] Base64 data length:", base64Data.length);
 
-  // Prepare the prompt
-  const prompt = `Analyse ce document et retourne un JSON avec les informations suivantes.
-Tu dois identifier le type de document et extraire les métadonnées pertinentes.
-
-Types de documents possibles:
-- cv (curriculum vitae, CV, résumé, lettre de motivation)
-- fiche_de_paie (bulletin de salaire, fiche de paie)
-- diplome (diplôme, certificat, attestation de formation, relevé de notes)
-- contrat (contrat de travail, bail, contrat de service)
-- facture (facture, reçu, ticket de caisse, devis)
-- impots (avis d'imposition, déclaration de revenus, taxe foncière, taxe d'habitation)
-- assurance (contrat d'assurance, attestation d'assurance, carte verte)
-- releve_bancaire (relevé de compte, RIB, relevé bancaire)
-- attestation (attestation employeur, attestation de domicile, attestation Pôle Emploi)
-- document_identite (carte d'identité, passeport, permis de conduire, titre de séjour)
-- document_medical (ordonnance, compte-rendu médical, carte vitale, analyse médicale)
-- correspondance (lettre administrative, courrier officiel)
-- autre (si aucun type ne correspond)
-
-Retourne UNIQUEMENT un JSON valide (sans markdown) avec cette structure:
-{
-  "documentType": "type_du_document",
-  "confidence": 0.95,
-  "suggestedName": "Nom suggéré pour le fichier",
-  "extractedData": {
-    "date": "2024-01-15",
-    "amount": "150.00 EUR",
-    "issuer": "Nom de l'émetteur",
-    "recipient": "Nom du destinataire",
-    "reference": "Numéro de référence si présent"
+  // Determine the correct mime type for Gemini
+  let geminiMimeType = mimeType;
+  if (mimeType === "application/pdf") {
+    geminiMimeType = "application/pdf";
+  } else if (mimeType.startsWith("image/")) {
+    geminiMimeType = mimeType;
+  } else {
+    // Default to PDF if unknown
+    geminiMimeType = "application/pdf";
   }
-}
+  console.log("[AI Analysis] Using mimeType for Gemini:", geminiMimeType);
 
-Si une information n'est pas trouvée, mets null.
-Le nom suggéré doit être descriptif et inclure la date si possible (ex: "Facture EDF Janvier 2024", "CV Jean Dupont 2024").`;
+  // Prepare the prompt - more explicit and directive
+  const prompt = `Tu es un expert en classification de documents. Analyse attentivement le CONTENU VISUEL de ce document.
+
+REGARDE LE DOCUMENT ET IDENTIFIE:
+1. De quel type de document s'agit-il en lisant son contenu
+2. Extrait les informations clés visibles
+
+TYPES DE DOCUMENTS (choisis UN seul):
+- cv : Si tu vois un curriculum vitae, CV, profil professionnel, expériences professionnelles, compétences, formation d'une personne
+- fiche_de_paie : Bulletin de salaire avec salaire brut/net, cotisations
+- diplome : Diplôme, certificat, attestation de formation, relevé de notes
+- contrat : Contrat de travail, bail, contrat de service avec signatures
+- facture : Facture, reçu, ticket de caisse, devis avec montants
+- impots : Avis d'imposition, déclaration de revenus, taxes
+- assurance : Contrat ou attestation d'assurance
+- releve_bancaire : Relevé de compte bancaire, RIB
+- attestation : Attestation employeur, domicile, Pôle Emploi
+- document_identite : Carte d'identité, passeport, permis de conduire
+- document_medical : Ordonnance, compte-rendu médical, carte vitale
+- correspondance : Lettre administrative, courrier officiel
+- autre : UNIQUEMENT si aucun autre type ne correspond
+
+IMPORTANT:
+- Lis le texte visible dans le document
+- Si tu vois "CV", "Curriculum Vitae", "Expérience professionnelle", "Compétences", c'est un CV
+- Si tu vois "Facture", "Total", "TVA", c'est une facture
+- Ne réponds PAS "autre" si tu peux identifier le document
+
+Retourne UNIQUEMENT ce JSON (sans markdown, sans \`\`\`):
+{"documentType":"type_choisi","confidence":0.95,"suggestedName":"Nom descriptif","extractedData":{"date":null,"amount":null,"issuer":null,"recipient":null,"reference":null}}`;
 
   try {
+    console.log("[AI Analysis] Calling Gemini API...");
+
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
       {
@@ -277,7 +290,7 @@ Le nom suggéré doit être descriptif et inclure la date si possible (ex: "Fact
                 { text: prompt },
                 {
                   inline_data: {
-                    mime_type: mimeType,
+                    mime_type: geminiMimeType,
                     data: base64Data,
                   },
                 },
@@ -292,17 +305,31 @@ Le nom suggéré doit être descriptif et inclure la date si possible (ex: "Fact
       }
     );
 
+    console.log("[AI Analysis] Gemini response status:", response.status);
+
     if (!response.ok) {
-      const error = await response.text();
-      console.error("Gemini API error:", error);
-      throw new Error(`Gemini API error: ${response.status}`);
+      const errorText = await response.text();
+      console.error("[AI Analysis] Gemini API error response:", errorText);
+      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
+    console.log("[AI Analysis] Gemini raw response:", JSON.stringify(data, null, 2));
+
+    // Check for blocked content or errors
+    if (data.candidates?.[0]?.finishReason === "SAFETY") {
+      console.error("[AI Analysis] Content blocked by safety filters");
+      throw new Error("Content blocked by safety filters");
+    }
 
     // Extract text from response
-    const textResponse =
-      data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    console.log("[AI Analysis] Extracted text response:", textResponse);
+
+    if (!textResponse) {
+      console.error("[AI Analysis] Empty response from Gemini");
+      throw new Error("Empty response from Gemini");
+    }
 
     // Parse JSON from response (handle potential markdown wrapping)
     let jsonStr = textResponse.trim();
@@ -312,12 +339,19 @@ Le nom suggéré doit être descriptif et inclure la date si possible (ex: "Fact
       jsonStr = jsonStr.replace(/^```\n?/, "").replace(/\n?```$/, "");
     }
 
+    // Clean up any extra whitespace
+    jsonStr = jsonStr.trim();
+    console.log("[AI Analysis] Cleaned JSON string:", jsonStr);
+
     const parsed = JSON.parse(jsonStr);
+    console.log("[AI Analysis] Parsed result:", parsed);
 
     // Map document type to category
     const documentType = parsed.documentType || "autre";
     const categoryKey = TYPE_TO_CATEGORY[documentType] || "AUTRE";
     const category = DOCUMENT_CATEGORIES[categoryKey].name;
+
+    console.log("[AI Analysis] Final classification:", documentType, "->", category);
 
     return {
       documentType,
@@ -335,15 +369,15 @@ Le nom suggéré doit être descriptif et inclure la date si possible (ex: "Fact
       rawResponse: textResponse,
     };
   } catch (error) {
-    console.error("AI analysis error:", error);
+    console.error("[AI Analysis] CRITICAL ERROR:", error);
 
-    // Return default result on error
+    // Return default result on error - BUT log it clearly
     return {
       documentType: "autre",
       category: DOCUMENT_CATEGORIES.AUTRE.name,
       confidence: 0,
       extractedData: {},
-      rawResponse: error instanceof Error ? error.message : "Unknown error",
+      rawResponse: `ERROR: ${error instanceof Error ? error.message : "Unknown error"}`,
     };
   }
 }
