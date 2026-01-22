@@ -105,28 +105,8 @@ export async function canUseAIAnalysis(userId: string): Promise<{
     return { allowed: false, remaining: 0, limit: 0, reason: "AI sorting disabled" };
   }
 
-  // Premium users have unlimited
-  if (user.planType === "PREMIUM" || user.planType === "PRO") {
-    return { allowed: true, remaining: -1, limit: -1 }; // -1 = unlimited
-  }
-
-  // Free users: check monthly limit
-  const currentMonth = getCurrentMonth();
-  const usage = await db.aIUsage.findUnique({
-    where: {
-      userId_month: { userId, month: currentMonth },
-    },
-  });
-
-  const currentCount = usage?.count || 0;
-  const remaining = Math.max(0, FREE_AI_LIMIT - currentCount);
-
-  return {
-    allowed: remaining > 0,
-    remaining,
-    limit: FREE_AI_LIMIT,
-    reason: remaining === 0 ? "Monthly limit reached" : undefined,
-  };
+  // TEMPORARILY UNLIMITED FOR ALL USERS (for testing)
+  return { allowed: true, remaining: -1, limit: -1 };
 }
 
 /**
