@@ -5,12 +5,16 @@ import crypto from "crypto";
 export const DOCUMENT_TYPES = {
   FACTURE: "facture",
   FICHE_DE_PAIE: "fiche_de_paie",
+  CV: "cv",
   CONTRAT: "contrat",
   ATTESTATION: "attestation",
   RELEVE_BANCAIRE: "releve_bancaire",
   DOCUMENT_IDENTITE: "document_identite",
   DOCUMENT_MEDICAL: "document_medical",
   CORRESPONDANCE: "correspondance",
+  DIPLOME: "diplome",
+  ASSURANCE: "assurance",
+  IMPOTS: "impots",
   AUTRE: "autre",
 } as const;
 
@@ -29,12 +33,16 @@ export const DOCUMENT_CATEGORIES = {
 export const TYPE_TO_CATEGORY: Record<string, keyof typeof DOCUMENT_CATEGORIES> = {
   facture: "FINANCES",
   fiche_de_paie: "EMPLOI",
+  cv: "EMPLOI",
   contrat: "ADMINISTRATIF",
   attestation: "ADMINISTRATIF",
   releve_bancaire: "BANQUE",
   document_identite: "IDENTITE",
   document_medical: "SANTE",
   correspondance: "ADMINISTRATIF",
+  diplome: "EMPLOI",
+  assurance: "FINANCES",
+  impots: "FINANCES",
   autre: "AUTRE",
 };
 
@@ -223,13 +231,17 @@ export async function analyzeDocumentWithAI(
 Tu dois identifier le type de document et extraire les métadonnées pertinentes.
 
 Types de documents possibles:
-- facture (facture, reçu, ticket de caisse)
-- fiche_de_paie (bulletin de salaire)
+- cv (curriculum vitae, CV, résumé, lettre de motivation)
+- fiche_de_paie (bulletin de salaire, fiche de paie)
+- diplome (diplôme, certificat, attestation de formation, relevé de notes)
 - contrat (contrat de travail, bail, contrat de service)
-- attestation (attestation employeur, attestation de domicile, attestation d'assurance)
-- releve_bancaire (relevé de compte, RIB)
-- document_identite (carte d'identité, passeport, permis de conduire)
-- document_medical (ordonnance, compte-rendu médical, carte vitale)
+- facture (facture, reçu, ticket de caisse, devis)
+- impots (avis d'imposition, déclaration de revenus, taxe foncière, taxe d'habitation)
+- assurance (contrat d'assurance, attestation d'assurance, carte verte)
+- releve_bancaire (relevé de compte, RIB, relevé bancaire)
+- attestation (attestation employeur, attestation de domicile, attestation Pôle Emploi)
+- document_identite (carte d'identité, passeport, permis de conduire, titre de séjour)
+- document_medical (ordonnance, compte-rendu médical, carte vitale, analyse médicale)
 - correspondance (lettre administrative, courrier officiel)
 - autre (si aucun type ne correspond)
 
@@ -248,7 +260,7 @@ Retourne UNIQUEMENT un JSON valide (sans markdown) avec cette structure:
 }
 
 Si une information n'est pas trouvée, mets null.
-Le nom suggéré doit être descriptif et inclure la date si possible (ex: "Facture EDF Janvier 2024").`;
+Le nom suggéré doit être descriptif et inclure la date si possible (ex: "Facture EDF Janvier 2024", "CV Jean Dupont 2024").`;
 
   try {
     const response = await fetch(
