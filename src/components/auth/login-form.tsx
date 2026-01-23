@@ -30,8 +30,8 @@ export function LoginForm() {
       if (result?.error) {
         setError("Email ou mot de passe incorrect");
       } else {
-        router.push("/dashboard");
-        router.refresh();
+        // Full page redirect to ensure session is loaded
+        window.location.href = "/dashboard";
       }
     } catch (error) {
       setError("Une erreur est survenue. Veuillez réessayer.");
