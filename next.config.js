@@ -3,6 +3,7 @@ const nextConfig = {
   // Use SWC minifier instead of Terser to handle modern JS syntax
   swcMinify: true,
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
