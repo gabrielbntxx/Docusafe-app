@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   Menu,
@@ -17,7 +18,6 @@ import {
   User,
   Bell,
   ChevronRight,
-  Shield,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -73,8 +73,8 @@ export function MobileNav() {
       {/* Mobile Header */}
       <header className="fixed top-0 left-0 right-0 z-50 flex h-16 items-center justify-between border-b border-black/5 bg-white/80 backdrop-blur-xl px-4 dark:border-white/5 dark:bg-neutral-900/80 lg:hidden">
         <Link href="/dashboard" className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/25">
-            <Shield className="h-4.5 w-4.5 text-white" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl overflow-hidden bg-white shadow-lg">
+            <Image src="/logo.png" alt="DocuSafe" width={36} height={36} className="object-contain" />
           </div>
           <span className="text-lg font-semibold text-neutral-900 dark:text-white">
             DocuSafe

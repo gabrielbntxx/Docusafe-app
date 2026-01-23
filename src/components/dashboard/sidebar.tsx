@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -11,7 +12,6 @@ import {
   Upload,
   Search,
   CreditCard,
-  Shield,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -42,8 +42,8 @@ export function Sidebar() {
       {/* Logo */}
       <div className="flex h-16 items-center px-6">
         <Link href="/dashboard" className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/25">
-            <Shield className="h-5 w-5 text-white" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl overflow-hidden bg-white shadow-lg">
+            <Image src="/logo.png" alt="DocuSafe" width={40} height={40} className="object-contain" />
           </div>
           <span className="text-xl font-semibold text-neutral-900 dark:text-white">
             DocuSafe

@@ -1,6 +1,6 @@
 import { RegisterForm } from "@/components/auth/register-form";
 import Link from "next/link";
-import { Shield } from "lucide-react";
+import Image from "next/image";
 
 export default function RegisterPage() {
   return (
@@ -13,8 +13,8 @@ export default function RegisterPage() {
 
       {/* Logo */}
       <Link href="/" className="mb-10 flex items-center gap-3">
-        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-violet-500 rounded-2xl flex items-center justify-center shadow-lg">
-          <Shield className="w-6 h-6 text-white" />
+        <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden bg-white">
+          <Image src="/logo.png" alt="DocuSafe" width={48} height={48} className="object-contain" priority />
         </div>
         <span className="text-2xl font-bold text-gray-900">DocuSafe</span>
       </Link>

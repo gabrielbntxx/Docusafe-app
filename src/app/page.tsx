@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Shield, FolderOpen, Bell, ChevronRight, Upload } from "lucide-react";
+import Image from "next/image";
+import { FolderOpen, Bell, ChevronRight, Upload, Shield } from "lucide-react";
 
 export default function Home() {
   return (
@@ -15,8 +16,8 @@ export default function Home() {
       <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-white/70 border-b border-gray-200">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-violet-500 rounded-2xl flex items-center justify-center">
-              <Shield className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-2xl flex items-center justify-center overflow-hidden bg-white shadow-md">
+              <Image src="/logo.png" alt="DocuSafe" width={40} height={40} className="object-contain" />
             </div>
             <span className="text-xl font-bold text-gray-900">DocuSafe</span>
           </Link>
@@ -234,8 +235,8 @@ export default function Home() {
       <footer className="py-12 px-6 border-t border-gray-200">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-violet-500 rounded-xl flex items-center justify-center">
-              <Shield className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center overflow-hidden bg-white shadow-sm">
+              <Image src="/logo.png" alt="DocuSafe" width={32} height={32} className="object-contain" />
             </div>
             <span className="font-semibold text-gray-900">DocuSafe</span>
           </div>
