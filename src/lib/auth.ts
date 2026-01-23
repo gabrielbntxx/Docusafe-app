@@ -36,9 +36,12 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Email and password required");
         }
 
+        // Normalize email to lowercase (same as registration)
+        const normalizedEmail = credentials.email.trim().toLowerCase();
+
         const user = await db.user.findUnique({
           where: {
-            email: credentials.email,
+            email: normalizedEmail,
           },
         });
 
