@@ -17,6 +17,8 @@ import {
   Shield,
   Settings,
   CreditCard,
+  X,
+  AlertTriangle,
 } from "lucide-react";
 
 type ProfileUser = {
@@ -36,6 +38,8 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
   const [isUploading, setIsUploading] = useState(false);
   const { imageUrl, refresh: refreshProfileImage } = useProfileImage(user.image);
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [isCanceling, setIsCanceling] = useState(false);
 
   // Synchroniser avec l'URL signée
   useEffect(() => {
@@ -104,6 +108,30 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
       return (mb / 1024).toFixed(2) + " GB";
     }
     return mb.toFixed(2) + " MB";
+  };
+
+  const handleCancelSubscription = async () => {
+    setIsCanceling(true);
+    try {
+      const response = await fetch("/api/subscription/cancel", {
+        method: "POST",
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(data.message || "Abonnement annulé avec succès");
+        setShowCancelModal(false);
+        window.location.reload();
+      } else {
+        alert(data.error || "Erreur lors de l'annulation");
+      }
+    } catch (error) {
+      console.error("Cancel subscription error:", error);
+      alert("Erreur lors de l'annulation de l'abonnement");
+    } finally {
+      setIsCanceling(false);
+    }
   };
 
   const maxStorage =
@@ -347,9 +375,17 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
               <ArrowRight className="h-4 w-4" />
             </a>
           ) : (
-            <div className="inline-flex items-center gap-2 rounded-xl bg-white/20 px-4 py-2 text-sm font-medium text-white backdrop-blur-sm">
-              <Shield className="h-4 w-4" />
-              Actif
+            <div className="flex items-center gap-3">
+              <div className="inline-flex items-center gap-2 rounded-xl bg-white/20 px-4 py-2 text-sm font-medium text-white backdrop-blur-sm">
+                <Shield className="h-4 w-4" />
+                Actif
+              </div>
+              <button
+                onClick={() => setShowCancelModal(true)}
+                className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2 text-sm font-medium text-white/80 backdrop-blur-sm transition-all hover:bg-red-500/30 hover:text-white"
+              >
+                Se désabonner
+              </button>
             </div>
           )}
         </div>
@@ -404,6 +440,73 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
           </div>
         </div>
       </div>
+
+      {/* Modal de confirmation de désabonnement */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl dark:bg-neutral-800">
+            {/* Bouton fermer */}
+            <button
+              onClick={() => setShowCancelModal(false)}
+              className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            {/* Icône */}
+            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-500/20">
+              <AlertTriangle className="h-8 w-8 text-red-500" />
+            </div>
+
+            {/* Titre */}
+            <h3 className="text-center text-xl font-bold text-neutral-900 dark:text-white">
+              Vous êtes sûr de vouloir nous quitter ?
+            </h3>
+
+            {/* Description */}
+            <p className="mt-3 text-center text-sm text-neutral-500 dark:text-neutral-400">
+              En annulant votre abonnement Pro, vous perdrez accès à :
+            </p>
+
+            {/* Liste des avantages perdus */}
+            <ul className="mt-4 space-y-2 text-sm text-neutral-600 dark:text-neutral-300">
+              <li className="flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                Documents illimités
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                10 GB de stockage
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                OCR intelligent
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                Support prioritaire
+              </li>
+            </ul>
+
+            {/* Boutons */}
+            <div className="mt-8 flex gap-3">
+              <button
+                onClick={() => setShowCancelModal(false)}
+                className="flex-1 rounded-xl bg-neutral-100 py-3 text-sm font-semibold text-neutral-700 transition-colors hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-600"
+              >
+                Rester Pro
+              </button>
+              <button
+                onClick={handleCancelSubscription}
+                disabled={isCanceling}
+                className="flex-1 rounded-xl bg-red-500 py-3 text-sm font-semibold text-white transition-colors hover:bg-red-600 disabled:opacity-50"
+              >
+                {isCanceling ? "Annulation..." : "Confirmer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
