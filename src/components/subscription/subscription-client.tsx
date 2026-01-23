@@ -45,7 +45,7 @@ export function SubscriptionClient({
 
   const proPlanFeatures = [
     { icon: FileText, text: t("unlimitedFiles"), included: true },
-    { icon: HardDrive, text: "10 GB " + t("storageLimit"), included: true },
+    { icon: HardDrive, text: "100 GB " + t("storageLimit"), included: true },
     { icon: Tag, text: t("smartTags"), included: true },
     { icon: Search, text: t("advancedSearch"), included: true },
     { icon: Zap, text: t("aiOcr"), included: true },
@@ -53,7 +53,7 @@ export function SubscriptionClient({
   ];
 
   const maxDocs = currentPlan === "FREE" ? 5 : 999;
-  const maxStorage = currentPlan === "FREE" ? 2 : 10240;
+  const maxStorage = currentPlan === "FREE" ? 2 : 102400; // 100 GB in MB
   const docsPercentage = (documentsCount / maxDocs) * 100;
   const storagePercentage = (storageUsedBytes / (1024 * 1024)) / maxStorage * 100;
 
@@ -111,7 +111,7 @@ export function SubscriptionClient({
                 {formatStorage(storageUsedBytes)} MB
                 <span className="text-lg font-normal text-neutral-400">
                   {" "}
-                  / {currentPlan === "FREE" ? "2 MB" : "10 GB"}
+                  / {currentPlan === "FREE" ? "2 MB" : "100 GB"}
                 </span>
               </p>
             </div>
@@ -327,7 +327,7 @@ export function SubscriptionClient({
             </div>
             <div>
               <h4 className="font-medium text-neutral-900 dark:text-white">
-                10 GB de stockage
+                100 GB de stockage
               </h4>
               <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
                 Espace de stockage étendu pour vos fichiers

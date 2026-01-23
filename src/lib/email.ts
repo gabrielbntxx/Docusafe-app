@@ -130,7 +130,7 @@ function getWelcomeProEmailHtml(name: string): string {
                       <tr>
                         <td style="padding: 8px 0;">
                           <span style="color: #8b5cf6; font-size: 18px; margin-right: 10px;">✓</span>
-                          <span style="color: #3f3f46; font-size: 15px;">10 GB de stockage sécurisé</span>
+                          <span style="color: #3f3f46; font-size: 15px;">100 GB de stockage sécurisé</span>
                         </td>
                       </tr>
                       <tr>

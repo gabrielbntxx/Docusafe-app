@@ -135,7 +135,7 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
   };
 
   const maxStorage =
-    user.planType === "PRO" ? 10 * 1024 * 1024 * 1024 : 2 * 1024 * 1024;
+    user.planType === "PRO" ? 100 * 1024 * 1024 * 1024 : 2 * 1024 * 1024;
   const storagePercentage = (user.storageUsedBytes / maxStorage) * 100;
   const maxDocs = user.planType === "PRO" ? 999 : 5;
   const docsPercentage = (user.documentsCount / maxDocs) * 100;
@@ -289,7 +289,7 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
                 {formatBytes(user.storageUsedBytes)}
                 <span className="text-lg font-normal text-neutral-400">
                   {" "}
-                  / {user.planType === "PRO" ? "10 GB" : "2 MB"}
+                  / {user.planType === "PRO" ? "100 GB" : "2 MB"}
                 </span>
               </p>
             </div>
@@ -402,7 +402,7 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
               <div className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-500/20">
                 <HardDrive className="h-3 w-3 text-violet-600 dark:text-violet-400" />
               </div>
-              <span className="text-sm">10 GB {t("storageLimit")}</span>
+              <span className="text-sm">100 GB {t("storageLimit")}</span>
             </div>
             <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-300">
               <div className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-500/20">
@@ -476,7 +476,7 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
               </li>
               <li className="flex items-center gap-2">
                 <div className="h-1.5 w-1.5 rounded-full bg-red-500" />
-                10 GB de stockage
+                100 GB de stockage
               </li>
               <li className="flex items-center gap-2">
                 <div className="h-1.5 w-1.5 rounded-full bg-red-500" />
