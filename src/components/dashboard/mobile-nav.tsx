@@ -71,9 +71,9 @@ export function MobileNav() {
   return (
     <>
       {/* Mobile Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 flex h-16 items-center justify-between border-b border-black/5 bg-white/80 backdrop-blur-xl px-4 dark:border-white/5 dark:bg-neutral-900/80 lg:hidden">
+      <header className="fixed top-0 left-0 right-0 z-50 flex h-16 items-center justify-between border-b border-black/5 bg-white/80 backdrop-blur-xl px-4 dark:border-white/5 dark:bg-neutral-950/90 lg:hidden">
         <Link href="/dashboard" className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl overflow-hidden bg-white shadow-lg">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl overflow-hidden bg-white dark:bg-neutral-800 shadow-lg">
             <Image src="/logo.png" alt="DocuSafe" width={36} height={36} className="object-contain" />
           </div>
           <span className="text-lg font-semibold text-neutral-900 dark:text-white">
@@ -124,7 +124,7 @@ export function MobileNav() {
 
       {/* Slide-out Menu */}
       <aside
-        className={`fixed top-0 right-0 bottom-0 z-50 w-[85vw] max-w-sm transform bg-white/95 backdrop-blur-xl shadow-2xl transition-transform duration-300 ease-out dark:bg-neutral-900/95 lg:hidden ${
+        className={`fixed top-0 right-0 bottom-0 z-50 w-[85vw] max-w-sm transform bg-white/95 backdrop-blur-xl shadow-2xl transition-transform duration-300 ease-out dark:bg-neutral-950/98 lg:hidden ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >

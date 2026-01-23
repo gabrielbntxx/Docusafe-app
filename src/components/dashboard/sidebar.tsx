@@ -38,11 +38,11 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="hidden lg:fixed lg:left-0 lg:top-0 lg:z-40 lg:flex lg:h-screen lg:w-72 lg:flex-col lg:bg-white/70 lg:backdrop-blur-xl lg:border-r lg:border-black/5 dark:lg:bg-neutral-900/70 dark:lg:border-white/5">
+    <aside className="hidden lg:fixed lg:left-0 lg:top-0 lg:z-40 lg:flex lg:h-screen lg:w-72 lg:flex-col lg:bg-white/70 lg:backdrop-blur-xl lg:border-r lg:border-black/5 dark:lg:bg-neutral-950/95 dark:lg:border-white/5">
       {/* Logo */}
       <div className="flex h-16 items-center px-6">
         <Link href="/dashboard" className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl overflow-hidden bg-white shadow-lg">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl overflow-hidden bg-white dark:bg-neutral-800 shadow-lg">
             <Image src="/logo.png" alt="DocuSafe" width={40} height={40} className="object-contain" />
           </div>
           <span className="text-xl font-semibold text-neutral-900 dark:text-white">
