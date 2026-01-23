@@ -144,8 +144,8 @@ export function NotificationsDropdown() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-96 rounded-2xl border border-neutral-200 bg-white shadow-2xl dark:border-neutral-700 dark:bg-neutral-800 z-50">
-          <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
+        <div className="absolute right-0 top-full mt-2 w-96 rounded-2xl border border-neutral-200 bg-white shadow-2xl dark:border-neutral-800 dark:bg-neutral-950 z-50">
+          <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
             <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">{t("notificationsTitle")}</h3>
             {unreadCount > 0 && (
               <button onClick={markAllAsRead} className="flex items-center gap-1 text-xs font-medium text-primary-600 transition-colors hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
@@ -158,7 +158,7 @@ export function NotificationsDropdown() {
           <div className="max-h-96 overflow-y-auto scrollbar-thin">
             {loading ? (
               <div className="flex items-center justify-center py-12">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-neutral-200 border-t-primary-600 dark:border-neutral-700 dark:border-t-primary-400"></div>
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-neutral-200 border-t-primary-600 dark:border-neutral-800 dark:border-t-primary-400"></div>
               </div>
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12">
@@ -166,15 +166,15 @@ export function NotificationsDropdown() {
                 <p className="mt-3 text-sm text-neutral-500 dark:text-neutral-400">{t("noNotifications")}</p>
               </div>
             ) : (
-              <div className="divide-y divide-neutral-100 dark:divide-neutral-700">
+              <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
                 {notifications.map((notification) => (
                   <button
                     key={notification.id}
                     onClick={() => markAsRead(notification.id)}
-                    className={"w-full px-4 py-3 text-left transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-700/50 " + (!notification.read ? "bg-primary-50/50 dark:bg-primary-900/10" : "")}
+                    className={"w-full px-4 py-3 text-left transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-900 " + (!notification.read ? "bg-primary-50/50 dark:bg-primary-900/10" : "")}
                   >
                     <div className="flex gap-3">
-                      <div className={"mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full " + (!notification.read ? "bg-primary-100 dark:bg-primary-900/30" : "bg-neutral-100 dark:bg-neutral-700")}>
+                      <div className={"mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full " + (!notification.read ? "bg-primary-100 dark:bg-primary-900/30" : "bg-neutral-100 dark:bg-neutral-800")}>
                         {getNotificationIcon(notification.type)}
                       </div>
                       <div className="flex-1 min-w-0">

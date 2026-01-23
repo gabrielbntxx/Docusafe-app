@@ -124,7 +124,7 @@ export function MobileNav() {
 
       {/* Slide-out Menu */}
       <aside
-        className={`fixed top-0 right-0 bottom-0 z-50 w-[85vw] max-w-sm transform bg-white/95 backdrop-blur-xl shadow-2xl transition-transform duration-300 ease-out dark:bg-neutral-950/98 lg:hidden ${
+        className={`fixed top-0 right-0 bottom-0 z-50 w-[85vw] max-w-sm transform bg-white shadow-2xl transition-transform duration-300 ease-out dark:bg-neutral-950 lg:hidden ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
