@@ -413,26 +413,28 @@ export default function UploadPage() {
         </div>
       )}
 
-      {/* Info Card */}
-      <div className="rounded-3xl bg-gradient-to-br from-violet-500 to-purple-600 p-6 text-white shadow-xl shadow-violet-500/20">
-        <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
-            <Sparkles className="h-6 w-6" />
-          </div>
-          <div>
-            <h3 className="font-semibold">Limites du plan FREE</h3>
-            <ul className="mt-3 space-y-1.5 text-sm text-violet-100">
-              <li>Formats: PDF, JPG, PNG, GIF</li>
-              <li>Taille max: 2 MB par fichier</li>
-              <li>Maximum 5 fichiers</li>
-              <li>Stockage total: 2 MB</li>
-            </ul>
-            <button className="mt-4 rounded-xl bg-white/20 px-4 py-2 text-sm font-medium backdrop-blur-sm transition-colors hover:bg-white/30">
-              Passer à Pro
-            </button>
+      {/* Info Card - Only show for FREE users */}
+      {aiStatus && aiStatus.planType !== "PRO" && (
+        <div className="rounded-3xl bg-gradient-to-br from-violet-500 to-purple-600 p-6 text-white shadow-xl shadow-violet-500/20">
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
+              <Sparkles className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="font-semibold">Limites du plan FREE</h3>
+              <ul className="mt-3 space-y-1.5 text-sm text-violet-100">
+                <li>Formats: PDF, JPG, PNG, GIF</li>
+                <li>Taille max: 2 MB par fichier</li>
+                <li>Maximum 5 fichiers</li>
+                <li>Stockage total: 2 MB</li>
+              </ul>
+              <a href="/dashboard/subscription" className="mt-4 inline-block rounded-xl bg-white/20 px-4 py-2 text-sm font-medium backdrop-blur-sm transition-colors hover:bg-white/30">
+                Passer à Pro
+              </a>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

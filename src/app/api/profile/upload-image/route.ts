@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { writeFile } from "fs/promises";
-import { join } from "path";
+import { uploadToR2, getSignedViewUrl } from "@/lib/storage";
 import { randomBytes } from "crypto";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -50,26 +49,27 @@ export async function POST(req: Request) {
     const buffer = Buffer.from(bytes);
 
     const uniqueId = randomBytes(16).toString("hex");
-    const fileExtension = file.name.split(".").pop();
-    const storageKey = `profile_${uniqueId}.${fileExtension}`;
+    const fileExtension = file.name.split(".").pop() || "jpg";
+    const storageKey = `profiles/${session.user.id}/avatar_${uniqueId}.${fileExtension}`;
 
-    // Sauvegarder le fichier localement
-    const uploadDir = join(process.cwd(), "uploads");
-    const filePath = join(uploadDir, storageKey);
+    // Upload vers R2
+    await uploadToR2(storageKey, buffer, file.type);
 
-    await writeFile(filePath, buffer);
-
-    const imageUrl = `/uploads/${storageKey}`;
+    // Stocker la référence R2 dans la base de données
+    const imageReference = `r2://${storageKey}`;
 
     // Mettre à jour l'utilisateur
     await db.user.update({
       where: { id: session.user.id },
       data: {
-        image: imageUrl,
+        image: imageReference,
       },
     });
 
-    return NextResponse.json({ imageUrl }, { status: 200 });
+    // Générer une URL signée pour affichage immédiat
+    const signedUrl = await getSignedViewUrl(storageKey, 86400); // 24h
+
+    return NextResponse.json({ imageUrl: signedUrl }, { status: 200 });
   } catch (error) {
     console.error("Upload error:", error);
     return NextResponse.json(
