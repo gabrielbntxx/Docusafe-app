@@ -2,9 +2,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { db } from "@/lib/db";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-12-18.acacia",
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
@@ -133,12 +131,14 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   if (status === "trialing") status = "active";
 
   // Update subscription status
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const periodEnd = (subscription as any).current_period_end;
   await db.user.update({
     where: { id: user.id },
     data: {
       subscriptionStatus: status,
-      subscriptionEndsAt: subscription.current_period_end
-        ? new Date(subscription.current_period_end * 1000)
+      subscriptionEndsAt: periodEnd
+        ? new Date(periodEnd * 1000)
         : null,
     },
   });
