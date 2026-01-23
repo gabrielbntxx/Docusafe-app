@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { NotificationsDropdown } from "./notifications-dropdown";
@@ -7,9 +8,29 @@ import { useRouter } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 
 export function Header() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const { t } = useTranslation();
   const router = useRouter();
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+
+  // Fetch profile image URL from API
+  useEffect(() => {
+    const fetchProfileImage = async () => {
+      if (session?.user?.id) {
+        try {
+          const response = await fetch("/api/profile/image");
+          if (response.ok) {
+            const data = await response.json();
+            setProfileImageUrl(data.imageUrl);
+          }
+        } catch (error) {
+          console.error("Error fetching profile image:", error);
+        }
+      }
+    };
+
+    fetchProfileImage();
+  }, [session?.user?.id]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -17,6 +38,26 @@ export function Header() {
     if (hour < 18) return t("goodAfternoon");
     return t("goodEvening");
   };
+
+  // Show loading state while session is loading
+  if (status === "loading") {
+    return (
+      <header className="sticky top-0 z-30 hidden lg:block">
+        <div className="border-b border-black/5 bg-white/70 backdrop-blur-xl dark:border-white/5 dark:bg-neutral-950/90">
+          <div className="flex h-16 items-center justify-between px-8">
+            <div className="animate-pulse">
+              <div className="h-5 w-48 bg-neutral-200 dark:bg-neutral-700 rounded mb-2"></div>
+              <div className="h-4 w-32 bg-neutral-200 dark:bg-neutral-700 rounded"></div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 bg-neutral-200 dark:bg-neutral-700 rounded-xl animate-pulse"></div>
+              <div className="h-10 w-32 bg-neutral-200 dark:bg-neutral-700 rounded-2xl animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header className="sticky top-0 z-30 hidden lg:block">
@@ -40,10 +81,10 @@ export function Header() {
               onClick={() => router.push("/dashboard/profile")}
               className="group flex items-center gap-3 rounded-2xl bg-neutral-100/80 px-3 py-2 transition-all hover:bg-neutral-200/80 active:scale-[0.98] dark:bg-white/5 dark:hover:bg-white/10"
             >
-              {session?.user?.image ? (
+              {profileImageUrl ? (
                 <img
-                  src={session.user.image}
-                  alt={session.user.name || "User"}
+                  src={profileImageUrl}
+                  alt={session?.user?.name || "User"}
                   className="h-8 w-8 rounded-full object-cover ring-2 ring-white dark:ring-neutral-800"
                 />
               ) : (

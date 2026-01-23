@@ -39,6 +39,7 @@ const secondaryNavigation: Array<{ nameKey: TranslationKey; href: string; icon: 
 export function MobileNav() {
   const [isOpen, setIsOpen] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const pathname = usePathname();
   const { t } = useTranslation();
   const { data: session } = useSession();
@@ -61,6 +62,25 @@ export function MobileNav() {
       fetchNotifications();
     }
   }, [session]);
+
+  // Fetch profile image URL
+  useEffect(() => {
+    const fetchProfileImage = async () => {
+      if (session?.user?.id) {
+        try {
+          const response = await fetch("/api/profile/image");
+          if (response.ok) {
+            const data = await response.json();
+            setProfileImageUrl(data.imageUrl);
+          }
+        } catch (error) {
+          console.error("Error fetching profile image:", error);
+        }
+      }
+    };
+
+    fetchProfileImage();
+  }, [session?.user?.id]);
 
   const handleSignOut = async () => {
     await signOut({ callbackUrl: "/" });
@@ -98,9 +118,13 @@ export function MobileNav() {
           {/* Profile Button */}
           <Link
             href="/dashboard/profile"
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-sm font-semibold text-white shadow-lg shadow-blue-500/25"
+            className="flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden bg-gradient-to-br from-blue-500 to-blue-600 text-sm font-semibold text-white shadow-lg shadow-blue-500/25"
           >
-            {session?.user?.name?.charAt(0).toUpperCase() || "U"}
+            {profileImageUrl ? (
+              <img src={profileImageUrl} alt="Profile" className="h-10 w-10 object-cover" />
+            ) : (
+              session?.user?.name?.charAt(0).toUpperCase() || "U"
+            )}
           </Link>
 
           {/* Menu Button */}
@@ -146,8 +170,12 @@ export function MobileNav() {
             onClick={closeMenu}
             className="mx-4 mt-4 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-blue-50 to-violet-50 p-4 dark:from-blue-500/10 dark:to-violet-500/10"
           >
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 text-xl font-bold text-white shadow-lg shadow-blue-500/25">
-              {session?.user?.name?.charAt(0).toUpperCase() || "U"}
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl overflow-hidden bg-gradient-to-br from-blue-500 to-blue-600 text-xl font-bold text-white shadow-lg shadow-blue-500/25">
+              {profileImageUrl ? (
+                <img src={profileImageUrl} alt="Profile" className="h-14 w-14 object-cover" />
+              ) : (
+                session?.user?.name?.charAt(0).toUpperCase() || "U"
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-neutral-900 dark:text-white truncate">
