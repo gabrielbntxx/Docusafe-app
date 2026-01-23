@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "npx prisma generate && next build",
-    "postinstall": "npx prisma generate",
+    "postinstall": "npx prisma generate && npx prisma db push --skip-generate",
     "db:push": "npx prisma db push",
     "build:mobile": "next build && npx cap sync",
     "start": "./start.sh",
