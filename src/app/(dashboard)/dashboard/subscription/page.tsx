@@ -19,6 +19,7 @@ export default async function SubscriptionPage() {
   const user = await db.user.findUnique({
     where: { id: session.user.id },
     select: {
+      email: true,
       planType: true,
       documentsCount: true,
       storageUsedBytes: true,
@@ -34,6 +35,7 @@ export default async function SubscriptionPage() {
       currentPlan={user.planType as "FREE" | "PRO"}
       documentsCount={user.documentsCount || 0}
       storageUsedBytes={Number(user.storageUsedBytes) || 0}
+      userEmail={user.email}
     />
   );
 }

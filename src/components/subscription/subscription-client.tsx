@@ -19,12 +19,14 @@ type SubscriptionProps = {
   currentPlan: "FREE" | "PRO";
   documentsCount: number;
   storageUsedBytes: number;
+  userEmail: string;
 };
 
 export function SubscriptionClient({
   currentPlan,
   documentsCount,
   storageUsedBytes,
+  userEmail,
 }: SubscriptionProps) {
   const { t } = useTranslation();
 
@@ -274,7 +276,7 @@ export function SubscriptionClient({
 
             {currentPlan === "FREE" ? (
               <a
-                href="https://buy.stripe.com/eVq9AUaaE2DB3HtbFrgYU00"
+                href={`https://buy.stripe.com/eVq9AUaaE2DB3HtbFrgYU00?prefilled_email=${encodeURIComponent(userEmail)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3.5 text-sm font-semibold text-violet-600 shadow-lg transition-all hover:bg-violet-50 hover:shadow-xl active:scale-[0.98]"
