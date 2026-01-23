@@ -131,8 +131,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   if (status === "trialing") status = "active";
 
   // Update subscription status
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const periodEnd = (subscription as any).current_period_end;
+  const periodEnd = (subscription as unknown as { current_period_end?: number }).current_period_end;
   await db.user.update({
     where: { id: user.id },
     data: {
