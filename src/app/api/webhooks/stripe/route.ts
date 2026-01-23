@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { db } from "@/lib/db";
+import { sendWelcomeProEmail, sendCancellationEmail } from "@/lib/email";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -106,6 +107,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   });
 
   console.log("[Stripe Webhook] User upgraded to PRO:", user.email);
+
+  // Send welcome email
+  await sendWelcomeProEmail(user.email, user.name || undefined);
 }
 
 /**
@@ -174,6 +178,9 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   });
 
   console.log("[Stripe Webhook] User downgraded to FREE:", user.email);
+
+  // Send cancellation email
+  await sendCancellationEmail(user.email, user.name || undefined);
 }
 
 /**
