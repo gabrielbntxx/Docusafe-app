@@ -3,11 +3,18 @@ import Stripe from "stripe";
 import { db } from "@/lib/db";
 import { sendWelcomeProEmail, sendCancellationEmail } from "@/lib/email";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY)
+  : null;
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "";
 
 export async function POST(req: Request) {
+  if (!stripe || !webhookSecret) {
+    console.error("[Stripe Webhook] Stripe not configured");
+    return NextResponse.json({ error: "Stripe not configured" }, { status: 500 });
+  }
+
   const body = await req.text();
   const signature = req.headers.get("stripe-signature");
 

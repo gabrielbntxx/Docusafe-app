@@ -1,6 +1,9 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Only initialize Resend if API key is available
+const resend = process.env.RESEND_API_KEY
+  ? new Resend(process.env.RESEND_API_KEY)
+  : null;
 
 const FROM_EMAIL = process.env.FROM_EMAIL || "DocuSafe <noreply@docusafe.app>";
 
@@ -8,6 +11,11 @@ const FROM_EMAIL = process.env.FROM_EMAIL || "DocuSafe <noreply@docusafe.app>";
  * Send welcome email when user upgrades to Pro
  */
 export async function sendWelcomeProEmail(userEmail: string, userName?: string) {
+  if (!resend) {
+    console.warn("[Email] Resend not configured, skipping welcome email");
+    return { success: false, error: "Email service not configured" };
+  }
+
   const name = userName || "cher utilisateur";
 
   try {
@@ -35,6 +43,11 @@ export async function sendWelcomeProEmail(userEmail: string, userName?: string) 
  * Send cancellation confirmation email
  */
 export async function sendCancellationEmail(userEmail: string, userName?: string) {
+  if (!resend) {
+    console.warn("[Email] Resend not configured, skipping cancellation email");
+    return { success: false, error: "Email service not configured" };
+  }
+
   const name = userName || "cher utilisateur";
 
   try {
@@ -161,6 +174,130 @@ function getWelcomeProEmailHtml(name: string): string {
               <p style="margin: 0 0 8px; color: #71717a; font-size: 14px;">
                 Une question ? Contactez-nous à tout moment.
               </p>
+              <p style="margin: 0; color: #a1a1aa; font-size: 12px;">
+                © 2024 DocuSafe. Tous droits réservés.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+}
+
+/**
+ * Send password reset email
+ */
+export async function sendPasswordResetEmail(userEmail: string, token: string, userName?: string) {
+  if (!resend) {
+    console.warn("[Email] Resend not configured, skipping password reset email");
+    return { success: false, error: "Email service not configured" };
+  }
+
+  const name = userName || "cher utilisateur";
+  const baseUrl = process.env.NEXTAUTH_URL || "https://justif-app-production.up.railway.app";
+  const resetUrl = `${baseUrl}/reset-password?token=${token}`;
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: userEmail,
+      subject: "Réinitialisation de votre mot de passe - DocuSafe",
+      html: getPasswordResetEmailHtml(name, resetUrl),
+    });
+
+    if (error) {
+      console.error("[Email] Error sending password reset email:", error);
+      return { success: false, error };
+    }
+
+    console.log("[Email] Password reset email sent to:", userEmail);
+    return { success: true, data };
+  } catch (error) {
+    console.error("[Email] Failed to send password reset email:", error);
+    return { success: false, error };
+  }
+}
+
+/**
+ * Password reset email HTML template
+ */
+function getPasswordResetEmailHtml(name: string, resetUrl: string): string {
+  return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Réinitialisation de mot de passe</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); padding: 40px 40px 30px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">
+                DocuSafe
+              </h1>
+              <p style="margin: 10px 0 0; color: rgba(255, 255, 255, 0.9); font-size: 16px;">
+                Réinitialisation de mot de passe
+              </p>
+            </td>
+          </tr>
+
+          <!-- Main content -->
+          <tr>
+            <td style="padding: 40px;">
+              <h2 style="margin: 0 0 20px; color: #18181b; font-size: 24px;">
+                Bonjour ${name},
+              </h2>
+
+              <p style="margin: 0 0 20px; color: #52525b; font-size: 16px; line-height: 1.6;">
+                Vous avez demandé la réinitialisation de votre mot de passe. Cliquez sur le bouton ci-dessous pour créer un nouveau mot de passe.
+              </p>
+
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="${resetUrl}"
+                       style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 10px; font-size: 16px; font-weight: 600;">
+                      Réinitialiser mon mot de passe
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Warning box -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #fef3c7; border-radius: 12px; margin: 30px 0;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <p style="margin: 0; color: #92400e; font-size: 14px;">
+                      <strong>Ce lien expire dans 1 heure.</strong><br>
+                      Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 0; color: #71717a; font-size: 14px; line-height: 1.6;">
+                Si le bouton ne fonctionne pas, copiez et collez ce lien dans votre navigateur :<br>
+                <a href="${resetUrl}" style="color: #3b82f6; word-break: break-all;">${resetUrl}</a>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f4f4f5; padding: 24px 40px; text-align: center;">
               <p style="margin: 0; color: #a1a1aa; font-size: 12px;">
                 © 2024 DocuSafe. Tous droits réservés.
               </p>

@@ -1,0 +1,32 @@
+import { ResetPasswordForm } from "@/components/auth/reset-password-form";
+import Link from "next/link";
+import { Shield } from "lucide-react";
+import { Suspense } from "react";
+
+function ResetPasswordContent() {
+  return <ResetPasswordForm />;
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-white p-4 relative overflow-hidden">
+      {/* Background Blobs */}
+      <div className="fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-500/20 to-violet-500/20 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-br from-violet-500/15 to-blue-500/15 rounded-full blur-3xl" />
+      </div>
+
+      {/* Logo */}
+      <Link href="/" className="mb-10 flex items-center gap-3">
+        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-violet-500 rounded-2xl flex items-center justify-center shadow-lg">
+          <Shield className="w-6 h-6 text-white" />
+        </div>
+        <span className="text-2xl font-bold text-gray-900">DocuSafe</span>
+      </Link>
+
+      <Suspense fallback={<div className="text-gray-500">Chargement...</div>}>
+        <ResetPasswordContent />
+      </Suspense>
+    </div>
+  );
+}

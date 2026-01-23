@@ -4,7 +4,9 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY)
+  : null;
 
 export async function POST() {
   try {
@@ -40,8 +42,8 @@ export async function POST() {
       );
     }
 
-    if (!user.stripeSubscriptionId) {
-      // If no subscription ID but user is PRO, just downgrade them
+    if (!user.stripeSubscriptionId || !stripe) {
+      // If no subscription ID or Stripe not configured, just downgrade them
       await db.user.update({
         where: { id: user.id },
         data: {
