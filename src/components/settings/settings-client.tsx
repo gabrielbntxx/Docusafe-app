@@ -564,7 +564,7 @@ export function SettingsClient({ user }: { user: UserSettings }) {
       </div>
 
       {/* Save Button */}
-      <div className="fixed bottom-0 left-0 right-0 border-t border-black/5 bg-white/80 p-4 backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/80 lg:static lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none lg:dark:bg-transparent">
+      <div className="fixed bottom-20 left-0 right-0 border-t border-black/5 bg-white/95 p-4 backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/95 lg:static lg:bottom-0 lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none lg:dark:bg-transparent z-40">
         <button
           onClick={handleSaveSettings}
           disabled={saveStatus === "saving"}
@@ -594,7 +594,7 @@ export function SettingsClient({ user }: { user: UserSettings }) {
       </div>
 
       {/* Spacer for fixed button on mobile */}
-      <div className="h-24 lg:hidden" />
+      <div className="h-32 lg:hidden" />
     </div>
   );
 }
