@@ -117,64 +117,60 @@ export function DashboardClient({
         onClose={() => setPreviewDocument(null)}
       />
 
-      <div className="mx-auto max-w-6xl space-y-8">
+      <div className="mx-auto max-w-6xl space-y-6 lg:space-y-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 lg:gap-4 lg:grid-cols-4">
           {/* Documents */}
-          <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-500 to-blue-600 p-6 text-white shadow-xl shadow-blue-500/20 transition-all hover:shadow-2xl hover:shadow-blue-500/30">
-            <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
-            <div className="absolute -bottom-6 -right-6 h-32 w-32 rounded-full bg-white/5" />
+          <div className="group relative overflow-hidden rounded-2xl lg:rounded-3xl bg-gradient-to-br from-blue-500 to-blue-600 p-4 lg:p-6 text-white shadow-lg shadow-blue-500/20">
+            <div className="absolute -right-4 -top-4 h-16 lg:h-24 w-16 lg:w-24 rounded-full bg-white/10" />
             <div className="relative">
-              <div className="mb-4 inline-flex rounded-2xl bg-white/20 p-3">
-                <FileText className="h-6 w-6" />
+              <div className="mb-2 lg:mb-4 inline-flex rounded-xl lg:rounded-2xl bg-white/20 p-2 lg:p-3">
+                <FileText className="h-4 w-4 lg:h-6 lg:w-6" />
               </div>
-              <p className="text-3xl font-bold">{stats.documentsCount || 0}</p>
-              <p className="mt-1 text-sm text-blue-100">{t("documents")}</p>
+              <p className="text-2xl lg:text-3xl font-bold">{stats.documentsCount || 0}</p>
+              <p className="mt-0.5 lg:mt-1 text-xs lg:text-sm text-blue-100">{t("documents")}</p>
             </div>
           </div>
 
           {/* Folders */}
-          <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-500 to-purple-600 p-6 text-white shadow-xl shadow-violet-500/20 transition-all hover:shadow-2xl hover:shadow-violet-500/30">
-            <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
-            <div className="absolute -bottom-6 -right-6 h-32 w-32 rounded-full bg-white/5" />
+          <div className="group relative overflow-hidden rounded-2xl lg:rounded-3xl bg-gradient-to-br from-violet-500 to-purple-600 p-4 lg:p-6 text-white shadow-lg shadow-violet-500/20">
+            <div className="absolute -right-4 -top-4 h-16 lg:h-24 w-16 lg:w-24 rounded-full bg-white/10" />
             <div className="relative">
-              <div className="mb-4 inline-flex rounded-2xl bg-white/20 p-3">
-                <Folder className="h-6 w-6" />
+              <div className="mb-2 lg:mb-4 inline-flex rounded-xl lg:rounded-2xl bg-white/20 p-2 lg:p-3">
+                <Folder className="h-4 w-4 lg:h-6 lg:w-6" />
               </div>
-              <p className="text-3xl font-bold">{stats.foldersCount || 0}</p>
-              <p className="mt-1 text-sm text-violet-100">{t("folders")}</p>
+              <p className="text-2xl lg:text-3xl font-bold">{stats.foldersCount || 0}</p>
+              <p className="mt-0.5 lg:mt-1 text-xs lg:text-sm text-violet-100">{t("folders")}</p>
             </div>
           </div>
 
           {/* Storage */}
-          <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 to-teal-600 p-6 text-white shadow-xl shadow-emerald-500/20 transition-all hover:shadow-2xl hover:shadow-emerald-500/30">
-            <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
-            <div className="absolute -bottom-6 -right-6 h-32 w-32 rounded-full bg-white/5" />
+          <div className="group relative overflow-hidden rounded-2xl lg:rounded-3xl bg-gradient-to-br from-emerald-500 to-teal-600 p-4 lg:p-6 text-white shadow-lg shadow-emerald-500/20">
+            <div className="absolute -right-4 -top-4 h-16 lg:h-24 w-16 lg:w-24 rounded-full bg-white/10" />
             <div className="relative">
-              <div className="mb-4 inline-flex rounded-2xl bg-white/20 p-3">
-                <HardDrive className="h-6 w-6" />
+              <div className="mb-2 lg:mb-4 inline-flex rounded-xl lg:rounded-2xl bg-white/20 p-2 lg:p-3">
+                <HardDrive className="h-4 w-4 lg:h-6 lg:w-6" />
               </div>
-              <p className="text-3xl font-bold">{formatStorageSize(stats.storageUsedBytes || 0)}</p>
-              <p className="mt-1 text-sm text-emerald-100">{t("storage")}</p>
+              <p className="text-xl lg:text-3xl font-bold">{formatStorageSize(stats.storageUsedBytes || 0)}</p>
+              <p className="mt-0.5 lg:mt-1 text-xs lg:text-sm text-emerald-100">{t("storage")}</p>
             </div>
           </div>
 
           {/* Plan */}
-          <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-500 to-orange-600 p-6 text-white shadow-xl shadow-amber-500/20 transition-all hover:shadow-2xl hover:shadow-amber-500/30">
-            <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
-            <div className="absolute -bottom-6 -right-6 h-32 w-32 rounded-full bg-white/5" />
+          <div className="group relative overflow-hidden rounded-2xl lg:rounded-3xl bg-gradient-to-br from-amber-500 to-orange-600 p-4 lg:p-6 text-white shadow-lg shadow-amber-500/20">
+            <div className="absolute -right-4 -top-4 h-16 lg:h-24 w-16 lg:w-24 rounded-full bg-white/10" />
             <div className="relative">
-              <div className="mb-4 inline-flex rounded-2xl bg-white/20 p-3">
-                <Crown className="h-6 w-6" />
+              <div className="mb-2 lg:mb-4 inline-flex rounded-xl lg:rounded-2xl bg-white/20 p-2 lg:p-3">
+                <Crown className="h-4 w-4 lg:h-6 lg:w-6" />
               </div>
-              <p className="text-3xl font-bold">{stats.planType || "FREE"}</p>
-              <p className="mt-1 text-sm text-amber-100">{t("currentPlan")}</p>
+              <p className="text-2xl lg:text-3xl font-bold">{stats.planType || "FREE"}</p>
+              <p className="mt-0.5 lg:mt-1 text-xs lg:text-sm text-amber-100">{t("currentPlan")}</p>
             </div>
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="rounded-3xl bg-white p-6 shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
+        {/* Quick Actions - Hidden on mobile since we have bottom nav */}
+        <div className="hidden lg:block rounded-3xl bg-white p-6 shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
           <h2 className="mb-6 text-lg font-semibold text-neutral-900 dark:text-white">
             {t("quickActions")}
           </h2>
@@ -221,94 +217,82 @@ export function DashboardClient({
         </div>
 
         {/* Recent Documents */}
-        <div className="rounded-3xl bg-white p-6 shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
-          <div className="mb-6 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-100 dark:bg-blue-500/20">
-                <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+        <div className="rounded-2xl lg:rounded-3xl bg-white p-4 lg:p-6 shadow-lg lg:shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
+          <div className="mb-4 lg:mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-2 lg:gap-3">
+              <div className="flex h-8 w-8 lg:h-10 lg:w-10 items-center justify-center rounded-xl lg:rounded-2xl bg-blue-100 dark:bg-blue-500/20">
+                <Clock className="h-4 w-4 lg:h-5 lg:w-5 text-blue-600 dark:text-blue-400" />
               </div>
-              <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
+              <h2 className="text-base lg:text-lg font-semibold text-neutral-900 dark:text-white">
                 {t("recentDocuments")}
               </h2>
             </div>
             {recentDocuments.length > 0 && (
               <Link
                 href="/dashboard/documents"
-                className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                className="flex items-center gap-1 text-xs lg:text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
               >
                 {t("viewAll")}
-                <ArrowUpRight className="h-4 w-4" />
+                <ArrowUpRight className="h-3 w-3 lg:h-4 lg:w-4" />
               </Link>
             )}
           </div>
 
           {recentDocuments.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16">
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-700">
-                <FileText className="h-8 w-8 text-neutral-400 dark:text-neutral-500" />
+            <div className="flex flex-col items-center justify-center py-12 lg:py-16">
+              <div className="mb-4 flex h-14 w-14 lg:h-16 lg:w-16 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-700">
+                <FileText className="h-7 w-7 lg:h-8 lg:w-8 text-neutral-400 dark:text-neutral-500" />
               </div>
-              <p className="text-neutral-600 dark:text-neutral-400">{t("noDocuments")}</p>
-              <p className="mt-1 text-sm text-neutral-400 dark:text-neutral-500">
+              <p className="text-sm lg:text-base text-neutral-600 dark:text-neutral-400">{t("noDocuments")}</p>
+              <p className="mt-1 text-xs lg:text-sm text-neutral-400 dark:text-neutral-500">
                 {t("startByAdding")}
               </p>
               <Link
                 href="/dashboard/upload"
-                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-blue-500 px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-blue-600"
+                className="mt-4 lg:mt-6 inline-flex items-center gap-2 rounded-xl bg-blue-500 px-4 lg:px-5 py-2 lg:py-2.5 text-sm font-medium text-white transition-all hover:bg-blue-600"
               >
                 <Plus className="h-4 w-4" />
                 {t("addDocument")}
               </Link>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2 lg:space-y-3">
               {recentDocuments.map((doc) => {
                 const Icon = getFileIcon(doc.fileType);
                 return (
                   <div
                     key={doc.id}
-                    className="group flex items-center gap-4 rounded-2xl bg-neutral-50 p-4 transition-all hover:bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700/50"
+                    className="group flex items-center gap-3 lg:gap-4 rounded-xl lg:rounded-2xl bg-neutral-50 p-3 lg:p-4 transition-all hover:bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700/50"
                   >
-                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-100 to-violet-100 dark:from-blue-500/20 dark:to-violet-500/20">
-                      <Icon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                    <div className="flex h-10 w-10 lg:h-12 lg:w-12 flex-shrink-0 items-center justify-center rounded-lg lg:rounded-xl bg-gradient-to-br from-blue-100 to-violet-100 dark:from-blue-500/20 dark:to-violet-500/20">
+                      <Icon className="h-5 w-5 lg:h-6 lg:w-6 text-blue-600 dark:text-blue-400" />
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <h3 className="truncate font-medium text-neutral-900 dark:text-white">
+                      <h3 className="truncate text-sm lg:text-base font-medium text-neutral-900 dark:text-white">
                         {doc.displayName}
                       </h3>
-                      <div className="mt-1 flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
+                      <div className="mt-0.5 lg:mt-1 flex items-center gap-1.5 lg:gap-2 text-xs lg:text-sm text-neutral-500 dark:text-neutral-400">
                         <span>{formatFileSize(doc.sizeBytes)}</span>
                         <span className="text-neutral-300 dark:text-neutral-600">•</span>
                         <span>{formatDate(doc.uploadedAt)}</span>
-                        {doc.folder && (
-                          <>
-                            <span className="hidden text-neutral-300 dark:text-neutral-600 sm:inline">•</span>
-                            <div className="hidden items-center gap-1 sm:flex">
-                              <div
-                                className="h-2 w-2 rounded-full"
-                                style={{ backgroundColor: doc.folder.color || "#6366f1" }}
-                              />
-                              <span className="max-w-[100px] truncate">{doc.folder.name}</span>
-                            </div>
-                          </>
-                        )}
                       </div>
                     </div>
 
-                    <div className="flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                    <div className="flex gap-1.5 lg:gap-2 lg:opacity-0 transition-opacity lg:group-hover:opacity-100">
                       <button
                         onClick={() => setPreviewDocument(doc)}
-                        className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-100 text-blue-600 transition-colors hover:bg-blue-200 dark:bg-blue-500/20 dark:text-blue-400 dark:hover:bg-blue-500/30"
+                        className="flex h-8 w-8 lg:h-9 lg:w-9 items-center justify-center rounded-lg lg:rounded-xl bg-blue-100 text-blue-600 transition-colors hover:bg-blue-200 dark:bg-blue-500/20 dark:text-blue-400 dark:hover:bg-blue-500/30"
                         title={t("preview")}
                       >
-                        <Eye className="h-4 w-4" />
+                        <Eye className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
                       </button>
                       <button
                         onClick={() => handleDownload(doc.id, doc.originalName)}
-                        className="flex h-9 w-9 items-center justify-center rounded-xl bg-neutral-200 text-neutral-600 transition-colors hover:bg-neutral-300 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600"
+                        className="flex h-8 w-8 lg:h-9 lg:w-9 items-center justify-center rounded-lg lg:rounded-xl bg-neutral-200 text-neutral-600 transition-colors hover:bg-neutral-300 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600"
                         title={t("download")}
                       >
-                        <Download className="h-4 w-4" />
+                        <Download className="h-3.5 w-3.5 lg:h-4 lg:w-4" />
                       </button>
                     </div>
                   </div>
