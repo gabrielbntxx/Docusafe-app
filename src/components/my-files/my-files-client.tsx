@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { PinModal } from "@/components/folders/pin-modal";
+import { DocuBotWidget } from "@/components/docubot/docubot-widget";
 
 type FolderType = {
   id: string;
@@ -655,6 +656,9 @@ export function MyFilesClient({
           }}
         />
       )}
+
+      {/* DocuBot Assistant */}
+      <DocuBotWidget />
     </div>
   );
 }
