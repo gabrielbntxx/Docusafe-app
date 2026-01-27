@@ -183,31 +183,25 @@ export function DashboardClient({
           </Link>
         </div>
 
-        {/* DocuBot Card - Prominent feature */}
+        {/* DocuBot Card */}
         <Link
           href="/dashboard/docubot"
-          className="group relative overflow-hidden rounded-2xl lg:rounded-3xl bg-gradient-to-r from-blue-500 via-blue-600 to-violet-600 p-4 lg:p-6 text-white shadow-lg shadow-blue-500/25 transition-all hover:scale-[1.01] hover:shadow-xl active:scale-[0.99]"
+          className="group flex items-center gap-4 rounded-2xl lg:rounded-3xl bg-gradient-to-r from-blue-500 to-blue-600 p-4 lg:p-5 text-white shadow-lg shadow-blue-500/20 transition-all hover:shadow-xl hover:scale-[1.01] active:scale-[0.99]"
         >
-          <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10 blur-2xl transition-transform group-hover:scale-150" />
-          <div className="absolute -bottom-4 -left-4 h-24 w-24 rounded-full bg-violet-500/30 blur-xl" />
-          <div className="relative flex items-center gap-4">
-            <div className="flex h-14 w-14 lg:h-16 lg:w-16 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm shadow-inner">
-              <Bot className="h-7 w-7 lg:h-8 lg:w-8" />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg lg:text-xl font-bold">DocuBot</h3>
-                <span className="flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-[10px] lg:text-xs font-medium">
-                  <Sparkles className="h-3 w-3" />
-                  IA
-                </span>
-              </div>
-              <p className="mt-0.5 text-sm lg:text-base text-blue-100">
-                Ton assistant intelligent pour gérer tes documents
-              </p>
-            </div>
-            <ArrowUpRight className="h-5 w-5 lg:h-6 lg:w-6 opacity-60 transition-all group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1" />
+          <div className="flex h-12 w-12 lg:h-14 lg:w-14 shrink-0 items-center justify-center rounded-xl lg:rounded-2xl bg-white/20">
+            <Bot className="h-6 w-6 lg:h-7 lg:w-7" />
           </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="text-base lg:text-lg font-semibold">DocuBot</h3>
+              <span className="flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-medium">
+                <Sparkles className="h-2.5 w-2.5" />
+                IA
+              </span>
+            </div>
+            <p className="text-xs lg:text-sm text-blue-100">Ton assistant intelligent</p>
+          </div>
+          <ArrowUpRight className="h-5 w-5 shrink-0 opacity-70 transition-all group-hover:opacity-100" />
         </Link>
 
         {/* Quick Actions - Hidden on mobile since we have bottom nav */}
