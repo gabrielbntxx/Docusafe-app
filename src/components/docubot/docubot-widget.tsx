@@ -28,15 +28,15 @@ type Message = {
 const WELCOME_MESSAGE: Message = {
   id: "welcome",
   role: "assistant",
-  content: "Salut ! Je suis DocuBot, ton assistant intelligent. Je peux t'aider \u00e0 :\n\n\u2022 Chercher des documents\n\u2022 Analyser leur contenu\n\u2022 Les d\u00e9placer dans des dossiers\n\u2022 R\u00e9pondre \u00e0 tes questions\n\nQue puis-je faire pour toi ?",
+  content: "Salut ! Je suis DocuBot, ton assistant. Je peux t'aider à :\n\n• Chercher des documents\n• Analyser leur contenu\n• Les déplacer dans des dossiers\n• Répondre à tes questions\n\nQue puis-je faire pour toi ?",
   timestamp: new Date(),
 };
 
 const QUICK_ACTIONS = [
-  { label: "Documents r\u00e9cents", icon: FileSearch, query: "Montre-moi mes documents r\u00e9cents" },
+  { label: "Documents récents", icon: FileSearch, query: "Montre-moi mes documents récents" },
   { label: "Mes dossiers", icon: FolderOpen, query: "Liste mes dossiers" },
   { label: "Chercher facture", icon: Receipt, query: "Cherche mes factures" },
-  { label: "R\u00e9sumer un doc", icon: FileText, query: "R\u00e9sume mon dernier document" },
+  { label: "Résumer un doc", icon: FileText, query: "Résume mon dernier document" },
 ];
 
 export function DocuBotWidget() {
@@ -123,7 +123,7 @@ export function DocuBotWidget() {
           m.id === loadingId
             ? {
                 ...m,
-                content: data.response || "D\u00e9sol\u00e9, je n'ai pas pu traiter ta demande.",
+                content: data.response || "Désolé, je n'ai pas pu traiter ta demande.",
                 isLoading: false,
               }
             : m
@@ -136,7 +136,7 @@ export function DocuBotWidget() {
           m.id === loadingId
             ? {
                 ...m,
-                content: "Oups, une erreur s'est produite. R\u00e9essaie !",
+                content: "Oups, une erreur s'est produite. Réessaie !",
                 isLoading: false,
               }
             : m
@@ -164,7 +164,7 @@ export function DocuBotWidget() {
     return (
       <button
         onClick={handleOpen}
-        className="fixed bottom-24 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/30 transition-all duration-300 hover:scale-110 hover:shadow-xl hover:shadow-violet-500/40 active:scale-95 lg:bottom-6 lg:right-6 lg:h-16 lg:w-16"
+        className="fixed bottom-24 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30 transition-all duration-300 hover:scale-110 hover:shadow-xl hover:shadow-blue-500/40 active:scale-95 lg:bottom-6 lg:right-6 lg:h-16 lg:w-16"
       >
         <MessageCircle className="h-6 w-6 lg:h-7 lg:w-7" />
         <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold shadow-md">
@@ -177,7 +177,7 @@ export function DocuBotWidget() {
   // Minimized state
   if (isMinimized) {
     return (
-      <div className="fixed bottom-24 right-4 z-50 flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-500 to-purple-600 py-2 pl-4 pr-2 text-white shadow-lg shadow-violet-500/30 lg:bottom-6 lg:right-6">
+      <div className="fixed bottom-24 right-4 z-50 flex items-center gap-2 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 py-2 pl-4 pr-2 text-white shadow-lg shadow-blue-500/30 lg:bottom-6 lg:right-6">
         <Bot className="h-5 w-5" />
         <span className="text-sm font-medium">DocuBot</span>
         <button
@@ -204,7 +204,7 @@ export function DocuBotWidget() {
       }`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between bg-gradient-to-r from-violet-500 to-purple-600 px-4 py-3 text-white safe-area-top lg:rounded-t-2xl">
+      <div className="flex items-center justify-between bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3 text-white safe-area-top lg:rounded-t-2xl">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
             <Bot className="h-5 w-5" />
@@ -245,7 +245,7 @@ export function DocuBotWidget() {
               className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
                 message.role === "user"
                   ? "bg-blue-500 text-white"
-                  : "bg-gradient-to-br from-violet-500 to-purple-600 text-white"
+                  : "bg-gradient-to-br from-blue-500 to-blue-600 text-white"
               }`}
             >
               {message.role === "user" ? (
@@ -266,7 +266,7 @@ export function DocuBotWidget() {
               {message.isLoading ? (
                 <div className="flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  <span className="text-sm">R\u00e9flexion en cours...</span>
+                  <span className="text-sm">Réflexion en cours...</span>
                 </div>
               ) : (
                 <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
@@ -288,7 +288,7 @@ export function DocuBotWidget() {
                 <button
                   key={action.label}
                   onClick={() => handleQuickAction(action.query)}
-                  className="flex shrink-0 items-center gap-2 rounded-full border border-neutral-200 bg-white px-3.5 py-2 text-xs font-medium text-neutral-700 transition-all hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700 active:scale-95 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-violet-600 dark:hover:bg-violet-900/30 dark:hover:text-violet-300"
+                  className="flex shrink-0 items-center gap-2 rounded-full border border-neutral-200 bg-white px-3.5 py-2 text-xs font-medium text-neutral-700 transition-all hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 active:scale-95 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-blue-500 dark:hover:bg-blue-900/30 dark:hover:text-blue-300"
                 >
                   <action.icon className="h-3.5 w-3.5" />
                   {action.label}
@@ -310,12 +310,12 @@ export function DocuBotWidget() {
             onKeyDown={handleKeyDown}
             placeholder="Pose-moi une question..."
             disabled={isLoading}
-            className="flex-1 rounded-full border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 placeholder-neutral-500 outline-none transition-all focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white dark:placeholder-neutral-400 dark:focus:border-violet-500"
+            className="flex-1 rounded-full border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 placeholder-neutral-500 outline-none transition-all focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white dark:placeholder-neutral-400 dark:focus:border-blue-500"
           />
           <button
             onClick={handleSend}
             disabled={!input.trim() || isLoading}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-md transition-all hover:shadow-lg active:scale-95 disabled:opacity-50 disabled:shadow-none"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md transition-all hover:shadow-lg active:scale-95 disabled:opacity-50 disabled:shadow-none"
           >
             {isLoading ? (
               <Loader2 className="h-5 w-5 animate-spin" />
@@ -325,7 +325,7 @@ export function DocuBotWidget() {
           </button>
         </div>
         <p className="mt-3 text-center text-[10px] text-neutral-400 dark:text-neutral-500">
-          DocuBot peut faire des erreurs. V\u00e9rifie les informations importantes.
+          DocuBot peut faire des erreurs. Vérifie les informations importantes.
         </p>
       </div>
     </div>
