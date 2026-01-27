@@ -249,7 +249,7 @@ export const translations = {
 
     // My Documents
     myDocuments: "Mes documents",
-    myFiles: "Mes fichiers",
+    myFiles: "Dossiers",
     totalDocuments: "document(s) au total",
     searchDocuments: "Rechercher un document...",
     allFolders: "Tous les dossiers",
