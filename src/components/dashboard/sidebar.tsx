@@ -12,6 +12,7 @@ import {
   Upload,
   Search,
   CreditCard,
+  Bot,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -25,6 +26,7 @@ const navigation: Array<{ nameKey: TranslationKey; href: string; icon: any }> = 
 ];
 
 const bottomNavigation: Array<{ nameKey: TranslationKey; href: string; icon: any }> = [
+  { nameKey: "docubot", href: "/dashboard/docubot", icon: Bot },
   { nameKey: "subscription", href: "/dashboard/subscription", icon: CreditCard },
   { nameKey: "settings", href: "/dashboard/settings", icon: Settings },
 ];

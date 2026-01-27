@@ -200,6 +200,10 @@ export const translations = {
     preview: "Preview",
     protected: "Protected",
     noFoldersYet: "No folders yet",
+
+    // DocuBot
+    docubot: "DocuBot",
+    docubotDescription: "Your AI assistant",
   },
 
   fr: {
@@ -403,6 +407,10 @@ export const translations = {
     preview: "Aperçu",
     protected: "Protégé",
     noFoldersYet: "Aucun dossier",
+
+    // DocuBot
+    docubot: "DocuBot",
+    docubotDescription: "Ton assistant IA",
   },
 } as const;
 

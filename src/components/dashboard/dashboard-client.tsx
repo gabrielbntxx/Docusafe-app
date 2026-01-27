@@ -16,6 +16,8 @@ import {
   Search,
   ArrowUpRight,
   Clock,
+  Bot,
+  Sparkles,
 } from "lucide-react";
 import { DocumentPreviewModal } from "@/components/documents/document-preview-modal";
 
@@ -181,12 +183,39 @@ export function DashboardClient({
           </Link>
         </div>
 
+        {/* DocuBot Card - Prominent feature */}
+        <Link
+          href="/dashboard/docubot"
+          className="group relative overflow-hidden rounded-2xl lg:rounded-3xl bg-gradient-to-r from-blue-500 via-blue-600 to-violet-600 p-4 lg:p-6 text-white shadow-lg shadow-blue-500/25 transition-all hover:scale-[1.01] hover:shadow-xl active:scale-[0.99]"
+        >
+          <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10 blur-2xl transition-transform group-hover:scale-150" />
+          <div className="absolute -bottom-4 -left-4 h-24 w-24 rounded-full bg-violet-500/30 blur-xl" />
+          <div className="relative flex items-center gap-4">
+            <div className="flex h-14 w-14 lg:h-16 lg:w-16 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm shadow-inner">
+              <Bot className="h-7 w-7 lg:h-8 lg:w-8" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg lg:text-xl font-bold">DocuBot</h3>
+                <span className="flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-[10px] lg:text-xs font-medium">
+                  <Sparkles className="h-3 w-3" />
+                  IA
+                </span>
+              </div>
+              <p className="mt-0.5 text-sm lg:text-base text-blue-100">
+                Ton assistant intelligent pour gérer tes documents
+              </p>
+            </div>
+            <ArrowUpRight className="h-5 w-5 lg:h-6 lg:w-6 opacity-60 transition-all group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1" />
+          </div>
+        </Link>
+
         {/* Quick Actions - Hidden on mobile since we have bottom nav */}
         <div className="hidden lg:block rounded-3xl bg-white p-6 shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
           <h2 className="mb-6 text-lg font-semibold text-neutral-900 dark:text-white">
             {t("quickActions")}
           </h2>
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-4">
             <Link
               href="/dashboard/upload"
               className="group flex items-center gap-4 rounded-2xl border-2 border-dashed border-neutral-200 bg-neutral-50 p-5 transition-all hover:border-blue-300 hover:bg-blue-50 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:border-blue-500/50 dark:hover:bg-blue-500/10"
@@ -223,6 +252,19 @@ export function DashboardClient({
               <div>
                 <p className="font-medium text-neutral-900 dark:text-white">{t("search")}</p>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400">{t("findDocuments")}</p>
+              </div>
+            </Link>
+
+            <Link
+              href="/dashboard/docubot"
+              className="group flex items-center gap-4 rounded-2xl border-2 border-dashed border-neutral-200 bg-neutral-50 p-5 transition-all hover:border-blue-300 hover:bg-blue-50 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:border-blue-500/50 dark:hover:bg-blue-500/10"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-100 to-violet-100 text-blue-600 transition-colors group-hover:from-blue-500 group-hover:to-violet-500 group-hover:text-white dark:from-blue-500/20 dark:to-violet-500/20 dark:text-blue-400 dark:group-hover:from-blue-500 dark:group-hover:to-violet-500">
+                <Bot className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="font-medium text-neutral-900 dark:text-white">{t("docubot")}</p>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">{t("docubotDescription")}</p>
               </div>
             </Link>
           </div>
