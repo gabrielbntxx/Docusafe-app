@@ -19,40 +19,46 @@ async function getUserEncryptionKey(userId: string): Promise<string | null> {
 // ============================================================================
 // DOCUBOT SYSTEM PROMPT
 // ============================================================================
-const DOCUBOT_SYSTEM_PROMPT = `Tu es DocuBot, l'assistant intelligent de DocuSafe. Tu aides les utilisateurs à gérer leurs documents.
+const DOCUBOT_SYSTEM_PROMPT = `Tu es DocuBot, l'assistant de DocuSafe. Tu aides les utilisateurs à gérer leurs documents de manière simple.
 
-## TON RÔLE
-- Répondre aux questions sur les documents de l'utilisateur
-- Chercher des documents spécifiques
-- Lire et analyser le contenu des documents
-- Déplacer des documents dans des dossiers
-- Résumer des documents
-- Reclasser automatiquement des documents mal triés
-
-## TON STYLE
+## TON STYLE DE COMMUNICATION
+- Parle de manière simple et chaleureuse, comme à un ami
 - Tutoie l'utilisateur
-- Sois concis et amical
-- Utilise des emojis avec modération (1-2 max par message)
-- Réponds en français
+- JAMAIS de jargon technique (pas d'ID, pas de "type: pdf", pas de termes informatiques)
+- Utilise 1-2 emojis maximum par message
+- Réponds en français, phrases courtes et claires
+- Sois rassurant et patient
 
-## CONTEXTE UTILISATEUR
+## CE QUE TU NE DOIS JAMAIS MONTRER
+- Les identifiants (ID) des documents ou dossiers
+- Les types techniques (pdf, image, application/pdf, etc.)
+- Les termes comme "base de données", "serveur", "API"
+- Les pourcentages de confiance IA
+
+## CE QUE TU PEUX MENTIONNER
+- Le nom des documents
+- Le nom des dossiers
+- Le nombre de documents dans un dossier
+- Les dates en format simple (ex: "ajouté hier", "du 15 janvier")
+
+## CONTEXTE (pour ton usage interne uniquement)
 {context}
 
-## FONCTIONS DISPONIBLES
-Tu peux utiliser ces fonctions pour aider l'utilisateur:
+## EXEMPLES DE BONNES RÉPONSES
+- "J'ai trouvé ta facture EDF du mois dernier !"
+- "Tu as 3 documents dans ton dossier Santé."
+- "Voici tes 5 derniers documents ajoutés."
+- "J'ai bien déplacé ton document dans le dossier Impôts."
 
-1. **searchDocuments(query)** - Chercher des documents par nom ou type
-2. **getDocumentContent(documentId)** - Lire le contenu d'un document
-3. **summarizeDocument(documentId)** - Résumer un document
-4. **moveDocument(documentId, folderId)** - Déplacer un document
-5. **reclassifyDocument(documentId)** - Reclasser un document avec l'IA
-6. **listFolders()** - Lister tous les dossiers
+## EXEMPLES DE MAUVAISES RÉPONSES (à éviter)
+- "Document ID: abc123 de type application/pdf" ❌
+- "Confiance: 95%" ❌
+- "Le document a été reclassé avec succès dans la catégorie FACTURES" ❌
 
 ## INSTRUCTIONS
-1. Quand l'utilisateur demande une action, utilise la fonction appropriée
-2. Confirme toujours avant de déplacer ou modifier un document
-3. Donne des réponses concises mais complètes
-4. Si tu ne trouves pas un document, suggère des alternatives`;
+1. Utilise les fonctions disponibles pour aider l'utilisateur
+2. Présente les résultats de manière simple et naturelle
+3. Si tu ne trouves pas quelque chose, propose gentiment des alternatives`;
 
 // ============================================================================
 // FUNCTION DEFINITIONS FOR GEMINI
@@ -174,16 +180,24 @@ async function searchDocuments(userId: string, query: string) {
     return { success: true, message: "Aucun document trouvé pour cette recherche.", documents: [] };
   }
 
+  // Format date in a friendly way
+  const formatFriendlyDate = (date: Date) => {
+    const now = new Date();
+    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return "aujourd'hui";
+    if (diffDays === 1) return "hier";
+    if (diffDays < 7) return `il y a ${diffDays} jours`;
+    return `le ${date.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}`;
+  };
+
   return {
     success: true,
     message: `${documents.length} document(s) trouvé(s)`,
     documents: documents.map((d) => ({
-      id: d.id,
+      id: d.id, // Needed for internal operations, but DocuBot won't show this
       name: d.displayName,
-      type: d.aiDocumentType || d.fileType,
-      category: d.aiCategory || "Non classé",
-      folder: d.folder?.name || "Aucun dossier",
-      date: new Date(d.uploadedAt).toLocaleDateString("fr-FR"),
+      folder: d.folder?.name || "non classé",
+      addedDate: formatFriendlyDate(new Date(d.uploadedAt)),
     })),
   };
 }
@@ -666,27 +680,32 @@ export async function POST(request: NextRequest) {
       );
 
       if (!response.ok) {
-        // If second call fails, format result ourselves
+        // If second call fails, format result ourselves (simple, human-friendly)
         if (functionResult.success) {
           let formattedResponse = "";
           if (functionCall.name === "searchDocuments" && functionResult.documents) {
-            formattedResponse = functionResult.documents.length
-              ? `J'ai trouvé ${functionResult.documents.length} document(s) :\n\n${functionResult.documents.map((d: any) => `📄 **${d.name}**\n   Type: ${d.type} | Dossier: ${d.folder}`).join("\n\n")}`
-              : "Je n'ai pas trouvé de documents correspondants.";
+            if (functionResult.documents.length === 0) {
+              formattedResponse = "Je n'ai pas trouvé de documents correspondants. Tu veux que je cherche autre chose ?";
+            } else if (functionResult.documents.length === 1) {
+              const d = functionResult.documents[0];
+              formattedResponse = `J'ai trouvé "${d.name}" dans le dossier ${d.folder || "non classé"}.`;
+            } else {
+              formattedResponse = `J'ai trouvé ${functionResult.documents.length} documents :\n\n${functionResult.documents.map((d: any) => `• ${d.name}`).join("\n")}`;
+            }
           } else if (functionCall.name === "summarizeDocument") {
-            formattedResponse = `📋 **Résumé de "${functionResult.document}"**\n\n${functionResult.summary}`;
+            formattedResponse = `Voici le résumé de "${functionResult.document}" :\n\n${functionResult.summary}`;
           } else if (functionCall.name === "moveDocument") {
-            formattedResponse = `✅ ${functionResult.message}`;
+            formattedResponse = `C'est fait ! J'ai bien déplacé ton document.`;
           } else if (functionCall.name === "reclassifyDocument") {
-            formattedResponse = `✅ ${functionResult.message}\n\nNouveau type: ${functionResult.newType}\nConfiance: ${functionResult.confidence}%`;
+            formattedResponse = `J'ai reclassé ton document. Il est maintenant dans le bon dossier !`;
           } else if (functionCall.name === "listFolders") {
-            formattedResponse = `📁 Tes dossiers :\n\n${functionResult.folders.map((f: any) => `• ${f.name} (${f.documentCount} documents)`).join("\n")}`;
+            formattedResponse = `Tu as ${functionResult.folders.length} dossier(s) :\n\n${functionResult.folders.map((f: any) => `• ${f.name} (${f.documentCount} document${f.documentCount > 1 ? 's' : ''})`).join("\n")}`;
           } else {
-            formattedResponse = functionResult.message || "Action effectuée !";
+            formattedResponse = "C'est fait !";
           }
           return NextResponse.json({ response: formattedResponse });
         }
-        return NextResponse.json({ response: functionResult.error || "Erreur lors de l'action." });
+        return NextResponse.json({ response: "Désolé, je n'ai pas réussi à faire ça. Tu peux réessayer ?" });
       }
 
       data = await response.json();
