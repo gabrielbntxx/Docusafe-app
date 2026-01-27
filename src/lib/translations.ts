@@ -266,7 +266,7 @@ export const translations = {
     profile: "Profil",
 
     // My Folders
-    myFolders: "Mes dossiers",
+    myFolders: "Dossiers",
     organizeFolders: "Organisez vos documents en dossiers",
     newFolder: "Nouveau dossier",
     editFolder: "Modifier le dossier",
