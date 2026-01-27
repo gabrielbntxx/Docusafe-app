@@ -264,6 +264,8 @@ async function getDocumentContent(userId: string, documentId: string) {
 }
 
 async function summarizeDocument(userId: string, documentId: string) {
+  console.log("[DocuBot] summarizeDocument called with:", { userId, documentId });
+
   const document = await db.document.findFirst({
     where: { id: documentId, userId },
     select: {
@@ -275,34 +277,45 @@ async function summarizeDocument(userId: string, documentId: string) {
     },
   });
 
+  console.log("[DocuBot] Document found:", document);
+
   if (!document) {
     return { success: false, error: "Document non trouvé" };
   }
 
   try {
-    const encryptedData = await getFromR2(document.storageKey);
-    if (!encryptedData) {
-      return { success: false, error: "Fichier non trouvé" };
-    }
+    console.log("[DocuBot] Fetching from R2:", document.storageKey);
+    const fileData = await getFromR2(document.storageKey);
+    console.log("[DocuBot] File fetched, size:", fileData?.length || 0, "bytes");
 
     let fileBuffer: Buffer;
+    console.log("[DocuBot] isEncrypted value:", document.isEncrypted, "type:", typeof document.isEncrypted);
+
     if (document.isEncrypted === 1) {
+      console.log("[DocuBot] Document is encrypted, getting user key...");
       const userKey = await getUserEncryptionKey(userId);
       if (!userKey) {
+        console.error("[DocuBot] No encryption key found");
         return { success: false, error: "Clé de chiffrement non trouvée" };
       }
-      fileBuffer = decryptDocument(encryptedData, userKey);
+      console.log("[DocuBot] Decrypting document...");
+      fileBuffer = decryptDocument(fileData, userKey);
+      console.log("[DocuBot] Decrypted, size:", fileBuffer.length, "bytes");
     } else {
-      fileBuffer = encryptedData;
+      console.log("[DocuBot] Document is not encrypted");
+      fileBuffer = fileData;
     }
 
     // Call Gemini for summary
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
+      console.error("[DocuBot] No GEMINI_API_KEY");
       return { success: false, error: "Service IA non disponible" };
     }
 
     const base64Data = fileBuffer.toString("base64");
+    console.log("[DocuBot] Calling Gemini API, mime:", document.mimeType, "base64 length:", base64Data.length);
+
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
       {
@@ -329,6 +342,8 @@ async function summarizeDocument(userId: string, documentId: string) {
       }
     );
 
+    console.log("[DocuBot] Gemini response status:", response.status);
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error("[DocuBot] Summarize API error:", response.status, errorText);
@@ -349,14 +364,15 @@ async function summarizeDocument(userId: string, documentId: string) {
       return { success: false, error: "Pas de résumé généré" };
     }
 
+    console.log("[DocuBot] Summary generated successfully");
     return {
       success: true,
       document: document.displayName,
       summary,
     };
   } catch (error) {
-    console.error("Error summarizing document:", error);
-    return { success: false, error: "Erreur lors du résumé" };
+    console.error("[DocuBot] Error summarizing document:", error);
+    return { success: false, error: `Erreur: ${error instanceof Error ? error.message : 'inconnu'}` };
   }
 }
 
