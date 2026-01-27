@@ -19,66 +19,76 @@ async function getUserEncryptionKey(userId: string): Promise<string | null> {
 // ============================================================================
 // DOCUBOT SYSTEM PROMPT
 // ============================================================================
-const DOCUBOT_SYSTEM_PROMPT = `Tu es DocuBot, l'assistant de DocuSafe. Tu aides les utilisateurs à gérer leurs documents de manière simple.
+const DOCUBOT_SYSTEM_PROMPT = `Tu es DocuBot, l'assistant de DocuSafe. Tu aides les utilisateurs à gérer leurs documents.
 
-## TON STYLE DE COMMUNICATION
-- Parle de manière simple et chaleureuse, comme à un ami
+## RÈGLES DE COMMUNICATION
+- Parle simplement, comme à un ami
 - Tutoie l'utilisateur
-- JAMAIS de jargon technique (pas d'ID, pas de "type: pdf", pas de termes informatiques)
-- Utilise 1-2 emojis maximum par message
-- Réponds en français, phrases courtes et claires
-- Sois rassurant et patient
+- 1-2 emojis max par message
+- Phrases courtes en français
+- JAMAIS d'ID, de termes techniques ou de jargon
 
-## CE QUE TU NE DOIS JAMAIS MONTRER
-- Les identifiants (ID) des documents ou dossiers
-- Les types techniques (pdf, image, application/pdf, etc.)
-- Les termes comme "base de données", "serveur", "API"
-- Les pourcentages de confiance IA
+## INTELLIGENCE - COMPRENDRE LES DEMANDES
+Tu dois être INTELLIGENT et comprendre ce que l'utilisateur veut même s'il ne donne pas tous les détails :
 
-## CE QUE TU PEUX MENTIONNER
-- Le nom des documents
-- Le nom des dossiers
-- Le nombre de documents dans un dossier
-- Les dates en format simple (ex: "ajouté hier", "du 15 janvier")
+### Expressions courantes et leur signification :
+- "mon dernier document" / "le dernier" → Le document le plus récent (position 1 dans la liste)
+- "ma facture" / "une facture" → Chercher dans les documents de type facture
+- "mon CV" / "le CV" → Chercher un document contenant "CV" dans le nom
+- "mes impôts" / "déclaration" → Documents liés aux impôts
+- "quittance" / "loyer" → Documents de loyer
+- "carte d'identité" / "pièce d'identité" → Documents d'identité
+- "le document dont on parlait" → Utiliser le contexte de la conversation
 
-## CONTEXTE (pour ton usage interne uniquement)
+### Comment trouver le bon document :
+1. Si l'utilisateur dit "mon dernier" → Prends le PREMIER document de la liste (le plus récent)
+2. Si l'utilisateur mentionne un type (facture, CV, etc.) → Cherche par ce mot-clé
+3. Si l'utilisateur donne un nom partiel → Cherche le document qui contient ce mot
+4. En cas de doute → Propose les 2-3 documents les plus probables
+
+## CONTEXTE UTILISATEUR
 {context}
 
-## EXEMPLES DE BONNES RÉPONSES
-- "J'ai trouvé ta facture EDF du mois dernier !"
-- "Tu as 3 documents dans ton dossier Santé."
-- "Voici tes 5 derniers documents ajoutés."
-- "J'ai bien déplacé ton document dans le dossier Impôts."
+## ACTIONS DIRECTES
+FAIS les actions IMMÉDIATEMENT, ne demande JAMAIS confirmation :
+- "Résume mon dernier document" → Tu prends le 1er de la liste et résumes
+- "Cherche mes factures" → Tu cherches tout de suite
+- "Déplace ça dans Impôts" → Tu déplaces tout de suite
 
-## EXEMPLES DE MAUVAISES RÉPONSES (à éviter)
-- "Document ID: abc123 de type application/pdf" ❌
-- "Confiance: 95%" ❌
-- "Le document a été reclassé avec succès dans la catégorie FACTURES" ❌
-
-## INSTRUCTIONS
-1. Quand l'utilisateur demande une action, FAIS-LA DIRECTEMENT sans demander confirmation
-2. Ne demande JAMAIS "Tu veux que je le fasse ?" - fais-le tout de suite
-3. Présente les résultats de manière simple et naturelle
-4. Si tu ne trouves pas quelque chose, propose gentiment des alternatives
-
-## EXEMPLES D'ACTIONS DIRECTES
-- "Résume mon dernier document" → Tu résumes immédiatement
-- "Déplace ce document dans Impôts" → Tu déplaces immédiatement
-- "Cherche mes factures" → Tu cherches immédiatement`;
+## RÉPONSES SIMPLES
+✅ "J'ai trouvé ta facture EDF !"
+✅ "Voici le résumé de ton document..."
+✅ "C'est fait, j'ai déplacé ton fichier !"
+❌ "Document ID: abc123"
+❌ "Type: application/pdf"
+❌ "Confiance: 95%"`;
 
 // ============================================================================
 // FUNCTION DEFINITIONS FOR GEMINI
 // ============================================================================
 const FUNCTION_DECLARATIONS = [
   {
+    name: "getRecentDocuments",
+    description: "Obtient les documents les plus récents. Utilise cette fonction quand l'utilisateur dit 'mes documents récents', 'mon dernier document', 'mes derniers fichiers', etc.",
+    parameters: {
+      type: "object",
+      properties: {
+        count: {
+          type: "number",
+          description: "Nombre de documents à récupérer (1 pour le dernier, 5 pour les 5 derniers, etc.). Par défaut: 5",
+        },
+      },
+    },
+  },
+  {
     name: "searchDocuments",
-    description: "Recherche des documents par nom, type ou catégorie",
+    description: "Recherche des documents par nom, type ou catégorie. Utilise cette fonction quand l'utilisateur cherche un document spécifique par mot-clé (facture, CV, impôts, etc.)",
     parameters: {
       type: "object",
       properties: {
         query: {
           type: "string",
-          description: "Terme de recherche (nom, type de document, catégorie)",
+          description: "Terme de recherche (nom partiel, type comme 'facture', 'CV', 'impôts', etc.)",
         },
       },
       required: ["query"],
@@ -86,13 +96,13 @@ const FUNCTION_DECLARATIONS = [
   },
   {
     name: "getDocumentContent",
-    description: "Récupère et analyse le contenu d'un document spécifique",
+    description: "Récupère et analyse le contenu d'un document",
     parameters: {
       type: "object",
       properties: {
         documentId: {
           type: "string",
-          description: "L'ID du document à lire",
+          description: "L'ID du document",
         },
       },
       required: ["documentId"],
@@ -100,7 +110,7 @@ const FUNCTION_DECLARATIONS = [
   },
   {
     name: "summarizeDocument",
-    description: "Génère un résumé d'un document",
+    description: "Génère un résumé d'un document. Pour 'résume mon dernier document', utilise d'abord getRecentDocuments(1) pour avoir l'ID",
     parameters: {
       type: "object",
       properties: {
@@ -158,6 +168,49 @@ const FUNCTION_DECLARATIONS = [
 // FUNCTION IMPLEMENTATIONS
 // ============================================================================
 
+// Helper: format date in friendly way
+function formatFriendlyDate(date: Date): string {
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return "aujourd'hui";
+  if (diffDays === 1) return "hier";
+  if (diffDays < 7) return `il y a ${diffDays} jours`;
+  return `le ${date.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}`;
+}
+
+async function getRecentDocuments(userId: string, count: number = 5) {
+  const documents = await db.document.findMany({
+    where: { userId },
+    select: {
+      id: true,
+      displayName: true,
+      aiCategory: true,
+      uploadedAt: true,
+      folder: { select: { name: true } },
+    },
+    orderBy: { uploadedAt: "desc" },
+    take: Math.min(count, 10),
+  });
+
+  if (documents.length === 0) {
+    return { success: true, message: "Tu n'as pas encore de documents.", documents: [] };
+  }
+
+  return {
+    success: true,
+    message: count === 1
+      ? `Ton dernier document est "${documents[0].displayName}"`
+      : `Tes ${documents.length} derniers documents`,
+    documents: documents.map((d, index) => ({
+      id: d.id,
+      name: d.displayName,
+      folder: d.folder?.name || "non classé",
+      addedDate: formatFriendlyDate(new Date(d.uploadedAt)),
+      isLatest: index === 0,
+    })),
+  };
+}
+
 async function searchDocuments(userId: string, query: string) {
   const documents = await db.document.findMany({
     where: {
@@ -185,16 +238,6 @@ async function searchDocuments(userId: string, query: string) {
   if (documents.length === 0) {
     return { success: true, message: "Aucun document trouvé pour cette recherche.", documents: [] };
   }
-
-  // Format date in a friendly way
-  const formatFriendlyDate = (date: Date) => {
-    const now = new Date();
-    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffDays === 0) return "aujourd'hui";
-    if (diffDays === 1) return "hier";
-    if (diffDays < 7) return `il y a ${diffDays} jours`;
-    return `le ${date.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}`;
-  };
 
   return {
     success: true,
@@ -526,6 +569,8 @@ async function executeFunction(
   args: Record<string, any>
 ): Promise<any> {
   switch (functionName) {
+    case "getRecentDocuments":
+      return getRecentDocuments(userId, args.count || 5);
     case "searchDocuments":
       return searchDocuments(userId, args.query);
     case "getDocumentContent":
@@ -583,21 +628,37 @@ export async function POST(request: NextRequest) {
       }),
     ]);
 
-    // Build context
+    // Build smart context with numbered documents and helpful info
     const foldersContext = folders.length
-      ? folders.map((f) => `- ${f.name} (${f._count.documents} docs) [ID: ${f.id}]`).join("\n")
+      ? folders.map((f) => `• ${f.name} (${f._count.documents} docs) [ID:${f.id}]`).join("\n")
       : "Aucun dossier";
 
+    // Format date in friendly way
+    const formatSmartDate = (date: Date) => {
+      const now = new Date();
+      const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+      if (diffDays === 0) return "aujourd'hui";
+      if (diffDays === 1) return "hier";
+      if (diffDays < 7) return `il y a ${diffDays} jours`;
+      return date.toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
+    };
+
+    // Number documents (1 = most recent = "dernier document")
     const docsContext = recentDocs.length
       ? recentDocs
-          .map((d) => {
-            const date = new Date(d.uploadedAt).toLocaleDateString("fr-FR");
-            return `- "${d.displayName}" | Type: ${d.aiDocumentType || "inconnu"} | Dossier: ${d.folder?.name || "aucun"} | ${date} [ID: ${d.id}]`;
+          .map((d, index) => {
+            const position = index + 1;
+            const dateStr = formatSmartDate(new Date(d.uploadedAt));
+            const category = d.aiCategory || "";
+            const type = d.aiDocumentType || "";
+            // Build searchable keywords
+            const keywords = [d.displayName.toLowerCase(), category.toLowerCase(), type.toLowerCase()].filter(Boolean).join(" ");
+            return `${position}. "${d.displayName}" | ${category || type || "Document"} | Dossier: ${d.folder?.name || "non classé"} | ${dateStr} [ID:${d.id}] (mots-clés: ${keywords})`;
           })
           .join("\n")
       : "Aucun document";
 
-    const context = `DOSSIERS:\n${foldersContext}\n\nDOCUMENTS RÉCENTS:\n${docsContext}`;
+    const context = `DOSSIERS DISPONIBLES:\n${foldersContext}\n\nDOCUMENTS (1 = le plus récent = "dernier document"):\n${docsContext}\n\nRAPPEL: Position 1 = document le plus récent. Quand l'utilisateur dit "mon dernier document", utilise celui en position 1.`;
     const systemPrompt = DOCUBOT_SYSTEM_PROMPT.replace("{context}", context);
 
     // Build conversation
