@@ -249,7 +249,7 @@ export const translations = {
 
     // My Documents
     myDocuments: "Mes documents",
-    myFiles: "Dossiers",
+    myFiles: "Mes dossiers",
     totalDocuments: "document(s) au total",
     searchDocuments: "Rechercher un document...",
     allFolders: "Tous les dossiers",
@@ -266,7 +266,7 @@ export const translations = {
     profile: "Profil",
 
     // My Folders
-    myFolders: "Dossiers",
+    myFolders: "Mes dossiers",
     organizeFolders: "Organisez vos documents en dossiers",
     newFolder: "Nouveau dossier",
     editFolder: "Modifier le dossier",
