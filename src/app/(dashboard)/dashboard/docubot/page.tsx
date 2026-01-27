@@ -143,9 +143,9 @@ export default function DocuBotPage() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] lg:h-screen flex-col">
+    <div className="fixed inset-0 top-14 bottom-16 lg:top-0 lg:bottom-0 lg:left-72 flex flex-col bg-white dark:bg-neutral-900">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-neutral-200 bg-white px-4 py-4 dark:border-neutral-800 dark:bg-neutral-900 lg:px-6">
+      <div className="flex shrink-0 items-center justify-between border-b border-neutral-200 bg-white px-4 py-3 dark:border-neutral-800 dark:bg-neutral-900 lg:px-6 lg:py-4">
         <div className="flex items-center gap-3">
           <Link
             href="/dashboard"
@@ -153,12 +153,12 @@ export default function DocuBotPage() {
           >
             <ArrowLeft className="h-4 w-4" />
           </Link>
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25">
-            <Bot className="h-6 w-6" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md shadow-blue-500/20">
+            <Bot className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-neutral-900 dark:text-white">DocuBot</h1>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">Ton assistant intelligent</p>
+            <h1 className="text-base font-semibold text-neutral-900 dark:text-white">DocuBot</h1>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">Ton assistant intelligent</p>
           </div>
         </div>
         <button
@@ -171,7 +171,7 @@ export default function DocuBotPage() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto bg-neutral-50 p-4 dark:bg-neutral-950 lg:p-6">
+      <div className="flex-1 overflow-y-auto overscroll-contain bg-neutral-50 p-4 dark:bg-neutral-950 lg:p-6">
         <div className="mx-auto max-w-3xl space-y-4">
           {messages.map((message) => (
             <div
@@ -238,7 +238,7 @@ export default function DocuBotPage() {
       </div>
 
       {/* Input */}
-      <div className="border-t border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900 safe-area-bottom">
+      <div className="shrink-0 border-t border-neutral-200 bg-white px-4 py-3 dark:border-neutral-800 dark:bg-neutral-900">
         <div className="mx-auto max-w-3xl">
           <div className="flex items-center gap-3">
             <input
@@ -254,7 +254,7 @@ export default function DocuBotPage() {
             <button
               onClick={handleSend}
               disabled={!input.trim() || isLoading}
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md transition-all hover:shadow-lg active:scale-95 disabled:opacity-50 disabled:shadow-none"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md transition-all hover:shadow-lg active:scale-95 disabled:opacity-50 disabled:shadow-none"
             >
               {isLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -263,9 +263,6 @@ export default function DocuBotPage() {
               )}
             </button>
           </div>
-          <p className="mt-3 text-center text-xs text-neutral-400 dark:text-neutral-500">
-            DocuBot peut faire des erreurs. Vérifie les informations importantes.
-          </p>
         </div>
       </div>
     </div>
