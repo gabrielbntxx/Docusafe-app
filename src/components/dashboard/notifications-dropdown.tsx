@@ -61,9 +61,9 @@ export function NotificationsDropdown() {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const getNotificationIcon = (type: string) => {
-    if (type === "document_uploaded") return <FileText className="h-5 w-5 text-primary-600 dark:text-primary-400" />;
+    if (type === "document_uploaded") return <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />;
     if (type === "document_deleted") return <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400" />;
-    if (type === "folder_created") return <Folder className="h-5 w-5 text-secondary-600 dark:text-secondary-400" />;
+    if (type === "folder_created") return <Folder className="h-5 w-5 text-violet-600 dark:text-violet-400" />;
     if (type === "folder_deleted") return <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400" />;
     if (type === "folder_updated") return <Folder className="h-5 w-5 text-blue-600 dark:text-blue-400" />;
     if (type === "plan_upgraded") return <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400" />;
@@ -137,28 +137,28 @@ export function NotificationsDropdown() {
       >
         <Bell className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
         {unreadCount > 0 && (
-          <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent-500 text-[10px] font-bold text-white">
+          <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-[10px] font-bold text-white">
             {unreadCount}
           </span>
         )}
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-96 rounded-2xl border border-neutral-200 bg-white shadow-2xl dark:border-neutral-800 dark:bg-neutral-950 z-50">
-          <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
-            <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">{t("notificationsTitle")}</h3>
+        <div className="absolute right-0 top-full mt-2 w-80 lg:w-96 rounded-2xl border border-neutral-200 bg-white shadow-2xl dark:border-neutral-700 dark:bg-neutral-900 z-50 overflow-hidden">
+          <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-700">
+            <h3 className="font-semibold text-neutral-900 dark:text-white">{t("notificationsTitle")}</h3>
             {unreadCount > 0 && (
-              <button onClick={markAllAsRead} className="flex items-center gap-1 text-xs font-medium text-primary-600 transition-colors hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
+              <button onClick={markAllAsRead} className="flex items-center gap-1 text-xs font-medium text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
                 <CheckCheck className="h-3.5 w-3.5" />
                 {t("markAllAsRead")}
               </button>
             )}
           </div>
 
-          <div className="max-h-96 overflow-y-auto scrollbar-thin">
+          <div className="max-h-96 overflow-y-auto overflow-x-hidden">
             {loading ? (
               <div className="flex items-center justify-center py-12">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-neutral-200 border-t-primary-600 dark:border-neutral-800 dark:border-t-primary-400"></div>
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-neutral-200 border-t-blue-600 dark:border-neutral-700 dark:border-t-blue-400"></div>
               </div>
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12">
@@ -171,18 +171,18 @@ export function NotificationsDropdown() {
                   <button
                     key={notification.id}
                     onClick={() => markAsRead(notification.id)}
-                    className={"w-full px-4 py-3 text-left transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-900 " + (!notification.read ? "bg-primary-50/50 dark:bg-primary-900/10" : "")}
+                    className={`w-full px-4 py-3 text-left transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800 ${!notification.read ? "bg-blue-50 dark:bg-blue-500/10" : ""}`}
                   >
                     <div className="flex gap-3">
-                      <div className={"mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full " + (!notification.read ? "bg-primary-100 dark:bg-primary-900/30" : "bg-neutral-100 dark:bg-neutral-800")}>
+                      <div className={`mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full ${!notification.read ? "bg-blue-100 dark:bg-blue-500/20" : "bg-neutral-100 dark:bg-neutral-700"}`}>
                         {getNotificationIcon(notification.type)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{notification.title}</p>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400">{notification.message || getNotificationMessage(notification.type)}</p>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-white">{notification.title}</p>
+                        <p className="text-xs text-neutral-600 dark:text-neutral-400">{notification.message || getNotificationMessage(notification.type)}</p>
                         <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">{getTimeAgo(notification.time)}</p>
                       </div>
-                      {!notification.read && <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-primary-600 dark:bg-primary-400" />}
+                      {!notification.read && <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />}
                     </div>
                   </button>
                 ))}
