@@ -121,8 +121,11 @@ export function DashboardClient({
         {/* Stats Cards */}
         <div className="grid grid-cols-2 gap-3 lg:gap-4 lg:grid-cols-4">
           {/* Documents */}
-          <div className="group relative overflow-hidden rounded-2xl lg:rounded-3xl bg-gradient-to-br from-blue-500 to-blue-600 p-4 lg:p-6 text-white shadow-lg shadow-blue-500/20">
-            <div className="absolute -right-4 -top-4 h-16 lg:h-24 w-16 lg:w-24 rounded-full bg-white/10" />
+          <Link
+            href="/dashboard/documents"
+            className="group relative overflow-hidden rounded-2xl lg:rounded-3xl bg-gradient-to-br from-blue-500 to-blue-600 p-4 lg:p-6 text-white shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02] hover:shadow-xl active:scale-[0.98]"
+          >
+            <div className="absolute -right-4 -top-4 h-16 lg:h-24 w-16 lg:w-24 rounded-full bg-white/10 transition-transform group-hover:scale-110" />
             <div className="relative">
               <div className="mb-2 lg:mb-4 inline-flex rounded-xl lg:rounded-2xl bg-white/20 p-2 lg:p-3">
                 <FileText className="h-4 w-4 lg:h-6 lg:w-6" />
@@ -130,11 +133,14 @@ export function DashboardClient({
               <p className="text-2xl lg:text-3xl font-bold">{stats.documentsCount || 0}</p>
               <p className="mt-0.5 lg:mt-1 text-xs lg:text-sm text-blue-100">{t("documents")}</p>
             </div>
-          </div>
+          </Link>
 
           {/* Folders */}
-          <div className="group relative overflow-hidden rounded-2xl lg:rounded-3xl bg-gradient-to-br from-violet-500 to-purple-600 p-4 lg:p-6 text-white shadow-lg shadow-violet-500/20">
-            <div className="absolute -right-4 -top-4 h-16 lg:h-24 w-16 lg:w-24 rounded-full bg-white/10" />
+          <Link
+            href="/dashboard/my-files"
+            className="group relative overflow-hidden rounded-2xl lg:rounded-3xl bg-gradient-to-br from-violet-500 to-purple-600 p-4 lg:p-6 text-white shadow-lg shadow-violet-500/20 transition-all hover:scale-[1.02] hover:shadow-xl active:scale-[0.98]"
+          >
+            <div className="absolute -right-4 -top-4 h-16 lg:h-24 w-16 lg:w-24 rounded-full bg-white/10 transition-transform group-hover:scale-110" />
             <div className="relative">
               <div className="mb-2 lg:mb-4 inline-flex rounded-xl lg:rounded-2xl bg-white/20 p-2 lg:p-3">
                 <Folder className="h-4 w-4 lg:h-6 lg:w-6" />
@@ -142,11 +148,14 @@ export function DashboardClient({
               <p className="text-2xl lg:text-3xl font-bold">{stats.foldersCount || 0}</p>
               <p className="mt-0.5 lg:mt-1 text-xs lg:text-sm text-violet-100">{t("folders")}</p>
             </div>
-          </div>
+          </Link>
 
           {/* Storage */}
-          <div className="group relative overflow-hidden rounded-2xl lg:rounded-3xl bg-gradient-to-br from-emerald-500 to-teal-600 p-4 lg:p-6 text-white shadow-lg shadow-emerald-500/20">
-            <div className="absolute -right-4 -top-4 h-16 lg:h-24 w-16 lg:w-24 rounded-full bg-white/10" />
+          <Link
+            href="/dashboard/profile"
+            className="group relative overflow-hidden rounded-2xl lg:rounded-3xl bg-gradient-to-br from-emerald-500 to-teal-600 p-4 lg:p-6 text-white shadow-lg shadow-emerald-500/20 transition-all hover:scale-[1.02] hover:shadow-xl active:scale-[0.98]"
+          >
+            <div className="absolute -right-4 -top-4 h-16 lg:h-24 w-16 lg:w-24 rounded-full bg-white/10 transition-transform group-hover:scale-110" />
             <div className="relative">
               <div className="mb-2 lg:mb-4 inline-flex rounded-xl lg:rounded-2xl bg-white/20 p-2 lg:p-3">
                 <HardDrive className="h-4 w-4 lg:h-6 lg:w-6" />
@@ -154,11 +163,14 @@ export function DashboardClient({
               <p className="text-xl lg:text-3xl font-bold">{formatStorageSize(stats.storageUsedBytes || 0)}</p>
               <p className="mt-0.5 lg:mt-1 text-xs lg:text-sm text-emerald-100">{t("storage")}</p>
             </div>
-          </div>
+          </Link>
 
           {/* Plan */}
-          <div className="group relative overflow-hidden rounded-2xl lg:rounded-3xl bg-gradient-to-br from-amber-500 to-orange-600 p-4 lg:p-6 text-white shadow-lg shadow-amber-500/20">
-            <div className="absolute -right-4 -top-4 h-16 lg:h-24 w-16 lg:w-24 rounded-full bg-white/10" />
+          <Link
+            href="/dashboard/profile"
+            className="group relative overflow-hidden rounded-2xl lg:rounded-3xl bg-gradient-to-br from-amber-500 to-orange-600 p-4 lg:p-6 text-white shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02] hover:shadow-xl active:scale-[0.98]"
+          >
+            <div className="absolute -right-4 -top-4 h-16 lg:h-24 w-16 lg:w-24 rounded-full bg-white/10 transition-transform group-hover:scale-110" />
             <div className="relative">
               <div className="mb-2 lg:mb-4 inline-flex rounded-xl lg:rounded-2xl bg-white/20 p-2 lg:p-3">
                 <Crown className="h-4 w-4 lg:h-6 lg:w-6" />
@@ -166,7 +178,7 @@ export function DashboardClient({
               <p className="text-2xl lg:text-3xl font-bold">{stats.planType || "FREE"}</p>
               <p className="mt-0.5 lg:mt-1 text-xs lg:text-sm text-amber-100">{t("currentPlan")}</p>
             </div>
-          </div>
+          </Link>
         </div>
 
         {/* Quick Actions - Hidden on mobile since we have bottom nav */}
