@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getFromR2 } from "@/lib/storage";
-import { decryptDocument, decryptUserKey } from "@/lib/encryption";
+import { decryptDocument, decryptUserKey, removeEncryptionMarker } from "@/lib/encryption";
 import { analyzeDocumentWithAI, getOrCreateCategoryFolder } from "@/lib/ai-analysis";
 
 // Helper to get user encryption key
@@ -239,7 +239,8 @@ async function getDocumentContent(userId: string, documentId: string) {
       if (!userKey) {
         return { success: false, error: "Clé de chiffrement non trouvée" };
       }
-      fileBuffer = decryptDocument(encryptedData, userKey);
+      const decryptableData = removeEncryptionMarker(encryptedData);
+      fileBuffer = decryptDocument(decryptableData, userKey);
     } else {
       fileBuffer = encryptedData;
     }
@@ -298,8 +299,9 @@ async function summarizeDocument(userId: string, documentId: string) {
         console.error("[DocuBot] No encryption key found");
         return { success: false, error: "Clé de chiffrement non trouvée" };
       }
-      console.log("[DocuBot] Decrypting document...");
-      fileBuffer = decryptDocument(fileData, userKey);
+      console.log("[DocuBot] Removing encryption marker and decrypting...");
+      const decryptableData = removeEncryptionMarker(fileData);
+      fileBuffer = decryptDocument(decryptableData, userKey);
       console.log("[DocuBot] Decrypted, size:", fileBuffer.length, "bytes");
     } else {
       console.log("[DocuBot] Document is not encrypted");
@@ -433,7 +435,8 @@ async function reclassifyDocument(userId: string, documentId: string) {
       if (!userKey) {
         return { success: false, error: "Clé de chiffrement non trouvée" };
       }
-      fileBuffer = decryptDocument(encryptedData, userKey);
+      const decryptableData = removeEncryptionMarker(encryptedData);
+      fileBuffer = decryptDocument(decryptableData, userKey);
     } else {
       fileBuffer = encryptedData;
     }
