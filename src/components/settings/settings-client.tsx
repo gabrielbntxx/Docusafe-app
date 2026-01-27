@@ -345,15 +345,15 @@ export function SettingsClient({ user }: { user: UserSettings }) {
       )}
 
       {/* Settings Grid - Compact on desktop */}
-      <div className="grid gap-4 lg:grid-cols-2 lg:gap-3">
+      <div className="grid gap-4 lg:grid-cols-2 lg:gap-4">
         {/* Language Settings */}
-        <div className="rounded-3xl bg-white p-6 shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none lg:rounded-2xl lg:p-4">
+        <div className="rounded-3xl bg-white p-6 shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none lg:rounded-2xl lg:p-5">
           <div className="mb-4 flex items-center gap-3 lg:mb-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 shadow-lg shadow-blue-500/25 lg:h-10 lg:w-10 lg:rounded-lg lg:shadow-md">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 shadow-lg shadow-blue-500/25 lg:h-11 lg:w-11 lg:rounded-xl lg:shadow-md">
               <Globe className="h-6 w-6 text-white lg:h-5 lg:w-5" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-neutral-900 dark:text-white lg:text-sm">
+              <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
                 {t("language")}
               </h2>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
@@ -362,24 +362,24 @@ export function SettingsClient({ user }: { user: UserSettings }) {
             </div>
           </div>
 
-          <div className="space-y-2 lg:space-y-1.5">
+          <div className="space-y-2">
             {LANGUAGES.map((lang) => (
               <button
                 key={lang.code}
                 onClick={() => setLanguage(lang.code)}
-                className={`flex w-full items-center gap-3 rounded-xl p-3 transition-all lg:rounded-lg lg:p-2 ${
+                className={`flex w-full items-center gap-3 rounded-xl p-3 transition-all lg:rounded-xl lg:p-2.5 ${
                   language === lang.code
                     ? "bg-blue-50 ring-2 ring-blue-500 dark:bg-blue-500/10"
                     : "bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-700/30 dark:hover:bg-neutral-700/50"
                 }`}
               >
                 <span className="text-xl lg:text-lg">{lang.flag}</span>
-                <span className="flex-1 text-left text-sm font-medium text-neutral-900 dark:text-white lg:text-xs">
+                <span className="flex-1 text-left text-sm font-medium text-neutral-900 dark:text-white">
                   {lang.name}
                 </span>
                 {language === lang.code && (
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 shadow-md lg:h-5 lg:w-5">
-                    <Check className="h-3.5 w-3.5 text-white lg:h-3 lg:w-3" />
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 shadow-md">
+                    <Check className="h-3.5 w-3.5 text-white" />
                   </div>
                 )}
               </button>
@@ -388,9 +388,9 @@ export function SettingsClient({ user }: { user: UserSettings }) {
         </div>
 
         {/* Theme Settings */}
-        <div className="rounded-3xl bg-white p-6 shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none lg:rounded-2xl lg:p-4">
+        <div className="rounded-3xl bg-white p-6 shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none lg:rounded-2xl lg:p-5">
           <div className="mb-4 flex items-center gap-3 lg:mb-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg shadow-amber-500/25 lg:h-10 lg:w-10 lg:rounded-lg lg:shadow-md">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg shadow-amber-500/25 lg:h-11 lg:w-11 lg:rounded-xl lg:shadow-md">
               {theme === "dark" ? (
                 <Moon className="h-6 w-6 text-white lg:h-5 lg:w-5" />
               ) : (
@@ -398,7 +398,7 @@ export function SettingsClient({ user }: { user: UserSettings }) {
               )}
             </div>
             <div>
-              <h2 className="text-base font-semibold text-neutral-900 dark:text-white lg:text-sm">
+              <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
                 {t("appearance")}
               </h2>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
@@ -407,45 +407,45 @@ export function SettingsClient({ user }: { user: UserSettings }) {
             </div>
           </div>
 
-          <div className="space-y-2 lg:space-y-1.5">
+          <div className="space-y-2">
             <button
               onClick={() => setTheme("light")}
-              className={`flex w-full items-center gap-3 rounded-xl p-3 transition-all lg:rounded-lg lg:p-2 ${
+              className={`flex w-full items-center gap-3 rounded-xl p-3 transition-all lg:rounded-xl lg:p-2.5 ${
                 theme === "light"
                   ? "bg-amber-50 ring-2 ring-amber-500 dark:bg-amber-500/10"
                   : "bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-700/30 dark:hover:bg-neutral-700/50"
               }`}
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-500/20 lg:h-7 lg:w-7">
-                <Sun className="h-4 w-4 text-amber-600 dark:text-amber-400 lg:h-3.5 lg:w-3.5" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-500/20">
+                <Sun className="h-4 w-4 text-amber-600 dark:text-amber-400" />
               </div>
-              <span className="flex-1 text-left text-sm font-medium text-neutral-900 dark:text-white lg:text-xs">
+              <span className="flex-1 text-left text-sm font-medium text-neutral-900 dark:text-white">
                 {t("lightMode")}
               </span>
               {theme === "light" && (
-                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 shadow-md lg:h-5 lg:w-5">
-                  <Check className="h-3.5 w-3.5 text-white lg:h-3 lg:w-3" />
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 shadow-md">
+                  <Check className="h-3.5 w-3.5 text-white" />
                 </div>
               )}
             </button>
 
             <button
               onClick={() => setTheme("dark")}
-              className={`flex w-full items-center gap-3 rounded-xl p-3 transition-all lg:rounded-lg lg:p-2 ${
+              className={`flex w-full items-center gap-3 rounded-xl p-3 transition-all lg:rounded-xl lg:p-2.5 ${
                 theme === "dark"
                   ? "bg-amber-50 ring-2 ring-amber-500 dark:bg-amber-500/10"
                   : "bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-700/30 dark:hover:bg-neutral-700/50"
               }`}
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100 dark:bg-violet-500/20 lg:h-7 lg:w-7">
-                <Moon className="h-4 w-4 text-violet-600 dark:text-violet-400 lg:h-3.5 lg:w-3.5" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100 dark:bg-violet-500/20">
+                <Moon className="h-4 w-4 text-violet-600 dark:text-violet-400" />
               </div>
-              <span className="flex-1 text-left text-sm font-medium text-neutral-900 dark:text-white lg:text-xs">
+              <span className="flex-1 text-left text-sm font-medium text-neutral-900 dark:text-white">
                 {t("darkMode")}
               </span>
               {theme === "dark" && (
-                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 shadow-md lg:h-5 lg:w-5">
-                  <Check className="h-3.5 w-3.5 text-white lg:h-3 lg:w-3" />
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 shadow-md">
+                  <Check className="h-3.5 w-3.5 text-white" />
                 </div>
               )}
             </button>
@@ -453,13 +453,13 @@ export function SettingsClient({ user }: { user: UserSettings }) {
         </div>
 
         {/* Notifications Settings */}
-        <div className="rounded-3xl bg-white p-6 shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none lg:rounded-2xl lg:p-4">
+        <div className="rounded-3xl bg-white p-6 shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none lg:rounded-2xl lg:p-5">
           <div className="mb-4 flex items-center gap-3 lg:mb-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 shadow-lg shadow-violet-500/25 lg:h-10 lg:w-10 lg:rounded-lg lg:shadow-md">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 shadow-lg shadow-violet-500/25 lg:h-11 lg:w-11 lg:rounded-xl lg:shadow-md">
               <Bell className="h-6 w-6 text-white lg:h-5 lg:w-5" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-neutral-900 dark:text-white lg:text-sm">
+              <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
                 {t("notifications")}
               </h2>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
@@ -470,18 +470,18 @@ export function SettingsClient({ user }: { user: UserSettings }) {
 
           <button
             onClick={() => setNotifications(!notifications)}
-            className="flex w-full items-center justify-between rounded-xl bg-neutral-50 p-4 transition-all hover:bg-neutral-100 dark:bg-neutral-700/30 dark:hover:bg-neutral-700/50 lg:rounded-lg lg:p-3"
+            className="flex w-full items-center justify-between rounded-xl bg-neutral-50 p-4 transition-all hover:bg-neutral-100 dark:bg-neutral-700/30 dark:hover:bg-neutral-700/50 lg:rounded-xl lg:p-3.5"
           >
             <div className="flex items-center gap-3">
               <div
-                className={`flex h-8 w-8 items-center justify-center rounded-lg lg:h-7 lg:w-7 ${
+                className={`flex h-8 w-8 items-center justify-center rounded-lg ${
                   notifications
                     ? "bg-violet-100 dark:bg-violet-500/20"
                     : "bg-neutral-200 dark:bg-neutral-600"
                 }`}
               >
                 <Bell
-                  className={`h-4 w-4 lg:h-3.5 lg:w-3.5 ${
+                  className={`h-4 w-4 ${
                     notifications
                       ? "text-violet-600 dark:text-violet-400"
                       : "text-neutral-500 dark:text-neutral-400"
@@ -489,24 +489,24 @@ export function SettingsClient({ user }: { user: UserSettings }) {
                 />
               </div>
               <div className="text-left">
-                <p className="text-sm font-medium text-neutral-900 dark:text-white lg:text-xs">
+                <p className="text-sm font-medium text-neutral-900 dark:text-white">
                   {t("pushNotifications")}
                 </p>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 lg:text-[10px]">
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">
                   {notifications ? t("enabled") : t("disabled")}
                 </p>
               </div>
             </div>
             <div
-              className={`relative h-7 w-12 rounded-full transition-colors lg:h-6 lg:w-10 ${
+              className={`relative h-7 w-12 rounded-full transition-colors ${
                 notifications
                   ? "bg-violet-500"
                   : "bg-neutral-300 dark:bg-neutral-600"
               }`}
             >
               <div
-                className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow-md transition-transform lg:h-4 lg:w-4 ${
-                  notifications ? "translate-x-6 lg:translate-x-5" : "translate-x-1"
+                className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow-md transition-transform ${
+                  notifications ? "translate-x-6" : "translate-x-1"
                 }`}
               />
             </div>
@@ -514,13 +514,13 @@ export function SettingsClient({ user }: { user: UserSettings }) {
         </div>
 
         {/* Security Settings */}
-        <div className="rounded-3xl bg-white p-6 shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none lg:rounded-2xl lg:p-4">
+        <div className="rounded-3xl bg-white p-6 shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none lg:rounded-2xl lg:p-5">
           <div className="mb-4 flex items-center gap-3 lg:mb-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-green-500 shadow-lg shadow-emerald-500/25 lg:h-10 lg:w-10 lg:rounded-lg lg:shadow-md">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-green-500 shadow-lg shadow-emerald-500/25 lg:h-11 lg:w-11 lg:rounded-xl lg:shadow-md">
               <Lock className="h-6 w-6 text-white lg:h-5 lg:w-5" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-neutral-900 dark:text-white lg:text-sm">
+              <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
                 {t("security")}
               </h2>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
@@ -529,18 +529,18 @@ export function SettingsClient({ user }: { user: UserSettings }) {
             </div>
           </div>
 
-          <div className="rounded-xl bg-neutral-50 p-4 dark:bg-neutral-700/30 lg:rounded-lg lg:p-3">
+          <div className="rounded-xl bg-neutral-50 p-4 dark:bg-neutral-700/30 lg:rounded-xl lg:p-3.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div
-                  className={`flex h-10 w-10 items-center justify-center rounded-lg lg:h-8 lg:w-8 ${
+                  className={`flex h-10 w-10 items-center justify-center rounded-lg lg:h-9 lg:w-9 ${
                     user.hasFolderPin
                       ? "bg-emerald-100 dark:bg-emerald-500/20"
                       : "bg-neutral-200 dark:bg-neutral-600"
                   }`}
                 >
                   <Shield
-                    className={`h-5 w-5 lg:h-4 lg:w-4 ${
+                    className={`h-5 w-5 ${
                       user.hasFolderPin
                         ? "text-emerald-600 dark:text-emerald-400"
                         : "text-neutral-500 dark:text-neutral-400"
@@ -548,34 +548,34 @@ export function SettingsClient({ user }: { user: UserSettings }) {
                   />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-neutral-900 dark:text-white lg:text-xs">
+                  <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
                     {t("folderPin")}
                   </h3>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 lg:text-[10px]">
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
                     {user.hasFolderPin ? t("pinEnabled") : t("pinDisabled")}
                   </p>
                 </div>
               </div>
               {user.hasFolderPin && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">
-                  <Sparkles className="h-2.5 w-2.5" />
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">
+                  <Sparkles className="h-3 w-3" />
                   Active
                 </span>
               )}
             </div>
 
-            <div className="mt-3 flex gap-2 lg:mt-2">
+            <div className="mt-3 flex gap-2">
               {user.hasFolderPin ? (
                 <>
                   <button
                     onClick={() => setShowPinModal(true)}
-                    className="flex-1 rounded-lg border border-neutral-200 bg-white py-2 text-xs font-semibold text-neutral-700 transition-all hover:bg-neutral-50 active:scale-[0.98] dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-600"
+                    className="flex-1 rounded-lg border border-neutral-200 bg-white py-2.5 text-sm font-semibold text-neutral-700 transition-all hover:bg-neutral-50 active:scale-[0.98] dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-600"
                   >
                     {t("changePin")}
                   </button>
                   <button
                     onClick={() => setIsRemovingPin(true)}
-                    className="flex-1 rounded-lg bg-red-50 py-2 text-xs font-semibold text-red-600 transition-all hover:bg-red-100 active:scale-[0.98] dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20"
+                    className="flex-1 rounded-lg bg-red-50 py-2.5 text-sm font-semibold text-red-600 transition-all hover:bg-red-100 active:scale-[0.98] dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20"
                   >
                     {t("removePin")}
                   </button>
@@ -583,7 +583,7 @@ export function SettingsClient({ user }: { user: UserSettings }) {
               ) : (
                 <button
                   onClick={() => setShowPinModal(true)}
-                  className="w-full rounded-lg bg-gradient-to-r from-emerald-500 to-green-500 py-2 text-xs font-semibold text-white shadow-md shadow-emerald-500/25 transition-all hover:shadow-lg active:scale-[0.98]"
+                  className="w-full rounded-lg bg-gradient-to-r from-emerald-500 to-green-500 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-500/25 transition-all hover:shadow-lg active:scale-[0.98]"
                 >
                   {t("setPin")}
                 </button>
