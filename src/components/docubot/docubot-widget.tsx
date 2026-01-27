@@ -30,8 +30,8 @@ const WELCOME_MESSAGE: Message = {
 };
 
 const QUICK_ACTIONS = [
-  { label: "Mes documents r\u00e9cents", icon: FileSearch, query: "Montre-moi mes documents r\u00e9cents" },
-  { label: "Chercher un document", icon: FolderOpen, query: "Aide-moi \u00e0 trouver un document" },
+  { label: "Documents récents", icon: FileSearch, query: "Montre-moi mes documents récents" },
+  { label: "Mes dossiers", icon: FolderOpen, query: "Liste mes dossiers" },
 ];
 
 export function DocuBotWidget() {
