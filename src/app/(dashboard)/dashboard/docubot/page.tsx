@@ -12,9 +12,7 @@ import {
   FileText,
   Receipt,
   Trash2,
-  ArrowLeft,
 } from "lucide-react";
-import Link from "next/link";
 import { useTranslation } from "@/hooks/useTranslation";
 
 type Message = {
@@ -143,16 +141,10 @@ export default function DocuBotPage() {
   };
 
   return (
-    <div className="fixed inset-0 top-14 bottom-16 lg:top-0 lg:bottom-0 lg:left-72 flex flex-col bg-white dark:bg-neutral-900">
-      {/* Header */}
-      <div className="flex shrink-0 items-center justify-between border-b border-neutral-200 bg-white px-4 py-3 dark:border-neutral-800 dark:bg-neutral-900 lg:px-6 lg:py-4">
+    <div className="flex h-[calc(100vh-7.5rem)] lg:h-screen flex-col bg-white dark:bg-neutral-900">
+      {/* Header - Desktop only, mobile uses app header */}
+      <div className="hidden lg:flex shrink-0 items-center justify-between border-b border-neutral-200 bg-white px-6 py-4 dark:border-neutral-800 dark:bg-neutral-900">
         <div className="flex items-center gap-3">
-          <Link
-            href="/dashboard"
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-neutral-100 text-neutral-600 transition-colors hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700 lg:hidden"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md shadow-blue-500/20">
             <Bot className="h-5 w-5" />
           </div>
@@ -166,7 +158,22 @@ export default function DocuBotPage() {
           className="flex items-center gap-2 rounded-xl bg-neutral-100 px-3 py-2 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700"
         >
           <Trash2 className="h-4 w-4" />
-          <span className="hidden sm:inline">Effacer</span>
+          Effacer
+        </button>
+      </div>
+
+      {/* Mobile Header */}
+      <div className="flex lg:hidden shrink-0 items-center justify-between bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3 text-white">
+        <div className="flex items-center gap-3">
+          <Bot className="h-5 w-5" />
+          <span className="font-semibold">DocuBot</span>
+        </div>
+        <button
+          onClick={clearConversation}
+          className="flex items-center gap-1.5 rounded-lg bg-white/20 px-2.5 py-1.5 text-xs font-medium"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          Effacer
         </button>
       </div>
 
