@@ -13,9 +13,8 @@ import {
   FolderOpen,
   Minimize2,
   FileText,
-  RefreshCw,
-  Search,
   Receipt,
+  ChevronDown,
 } from "lucide-react";
 
 type Message = {
@@ -34,10 +33,10 @@ const WELCOME_MESSAGE: Message = {
 };
 
 const QUICK_ACTIONS = [
-  { label: "Documents récents", icon: FileSearch, query: "Montre-moi mes documents récents" },
+  { label: "Documents r\u00e9cents", icon: FileSearch, query: "Montre-moi mes documents r\u00e9cents" },
   { label: "Mes dossiers", icon: FolderOpen, query: "Liste mes dossiers" },
   { label: "Chercher facture", icon: Receipt, query: "Cherche mes factures" },
-  { label: "Résumer un doc", icon: FileText, query: "Résume mon dernier document" },
+  { label: "R\u00e9sumer un doc", icon: FileText, query: "R\u00e9sume mon dernier document" },
 ];
 
 export function DocuBotWidget() {
@@ -46,6 +45,7 @@ export function DocuBotWidget() {
   const [messages, setMessages] = useState<Message[]>([WELCOME_MESSAGE]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -54,12 +54,29 @@ export function DocuBotWidget() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Focus input when chat opens
+  // Focus input when chat opens (with delay for animation)
   useEffect(() => {
     if (isOpen && !isMinimized) {
-      inputRef.current?.focus();
+      setTimeout(() => inputRef.current?.focus(), 300);
     }
   }, [isOpen, isMinimized]);
+
+  // Handle open animation
+  const handleOpen = () => {
+    setIsAnimating(true);
+    setIsOpen(true);
+    setTimeout(() => setIsAnimating(false), 300);
+  };
+
+  // Handle close
+  const handleClose = () => {
+    setIsAnimating(true);
+    setTimeout(() => {
+      setIsOpen(false);
+      setIsMinimized(false);
+      setIsAnimating(false);
+    }, 200);
+  };
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -146,8 +163,8 @@ export function DocuBotWidget() {
   if (!isOpen) {
     return (
       <button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-24 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/30 transition-all hover:scale-110 hover:shadow-xl hover:shadow-violet-500/40 active:scale-95 lg:bottom-6 lg:right-6 lg:h-16 lg:w-16"
+        onClick={handleOpen}
+        className="fixed bottom-24 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/30 transition-all duration-300 hover:scale-110 hover:shadow-xl hover:shadow-violet-500/40 active:scale-95 lg:bottom-6 lg:right-6 lg:h-16 lg:w-16"
       >
         <MessageCircle className="h-6 w-6 lg:h-7 lg:w-7" />
         <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold shadow-md">
@@ -165,16 +182,13 @@ export function DocuBotWidget() {
         <span className="text-sm font-medium">DocuBot</span>
         <button
           onClick={() => setIsMinimized(false)}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 transition-colors hover:bg-white/30"
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 transition-colors hover:bg-white/30 active:scale-95"
         >
           <MessageCircle className="h-4 w-4" />
         </button>
         <button
-          onClick={() => {
-            setIsOpen(false);
-            setIsMinimized(false);
-          }}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 transition-colors hover:bg-white/30"
+          onClick={handleClose}
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 transition-colors hover:bg-white/30 active:scale-95"
         >
           <X className="h-4 w-4" />
         </button>
@@ -184,11 +198,15 @@ export function DocuBotWidget() {
 
   // Full chat window
   return (
-    <div className="fixed bottom-0 right-0 z-50 flex h-[100dvh] w-full flex-col bg-white dark:bg-neutral-900 lg:bottom-6 lg:right-6 lg:h-[600px] lg:w-[380px] lg:rounded-2xl lg:shadow-2xl lg:shadow-black/20">
+    <div
+      className={`fixed inset-0 z-50 flex flex-col bg-white dark:bg-neutral-900 lg:inset-auto lg:bottom-6 lg:right-6 lg:h-[600px] lg:w-[380px] lg:rounded-2xl lg:shadow-2xl lg:shadow-black/20 transition-all duration-300 ${
+        isAnimating ? "opacity-0 scale-95 lg:translate-y-4" : "opacity-100 scale-100 lg:translate-y-0"
+      }`}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between bg-gradient-to-r from-violet-500 to-purple-600 px-4 py-3 text-white lg:rounded-t-2xl">
+      <div className="flex items-center justify-between bg-gradient-to-r from-violet-500 to-purple-600 px-4 py-3 text-white safe-area-top lg:rounded-t-2xl">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
             <Bot className="h-5 w-5" />
           </div>
           <div>
@@ -197,23 +215,26 @@ export function DocuBotWidget() {
           </div>
         </div>
         <div className="flex items-center gap-1">
+          {/* Minimize - desktop only */}
           <button
             onClick={() => setIsMinimized(true)}
-            className="hidden lg:flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-white/20"
+            className="hidden lg:flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-white/20"
           >
             <Minimize2 className="h-4 w-4" />
           </button>
+          {/* Close button */}
           <button
-            onClick={() => setIsOpen(false)}
-            className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-white/20"
+            onClick={handleClose}
+            className="flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-white/20 active:scale-95"
           >
-            <X className="h-5 w-5" />
+            <ChevronDown className="h-5 w-5 lg:hidden" />
+            <X className="h-5 w-5 hidden lg:block" />
           </button>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto overscroll-contain p-4 space-y-4">
         {messages.map((message) => (
           <div
             key={message.id}
@@ -236,7 +257,7 @@ export function DocuBotWidget() {
 
             {/* Message bubble */}
             <div
-              className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
+              className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
                 message.role === "user"
                   ? "bg-blue-500 text-white"
                   : "bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-100"
@@ -248,7 +269,7 @@ export function DocuBotWidget() {
                   <span className="text-sm">R\u00e9flexion en cours...</span>
                 </div>
               ) : (
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
               )}
             </div>
           </div>
@@ -257,16 +278,17 @@ export function DocuBotWidget() {
 
         {/* Quick actions (only if few messages) */}
         {messages.length <= 2 && (
-          <div className="mt-4 space-y-2">
+          <div className="mt-4 space-y-3">
             <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
               Actions rapides
             </p>
-            <div className="flex flex-wrap gap-2">
+            {/* Horizontal scroll on mobile, wrap on desktop */}
+            <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 lg:flex-wrap lg:overflow-visible scrollbar-hide">
               {QUICK_ACTIONS.map((action) => (
                 <button
                   key={action.label}
                   onClick={() => handleQuickAction(action.query)}
-                  className="flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 transition-all hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-violet-600 dark:hover:bg-violet-900/30 dark:hover:text-violet-300"
+                  className="flex shrink-0 items-center gap-2 rounded-full border border-neutral-200 bg-white px-3.5 py-2 text-xs font-medium text-neutral-700 transition-all hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700 active:scale-95 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-violet-600 dark:hover:bg-violet-900/30 dark:hover:text-violet-300"
                 >
                   <action.icon className="h-3.5 w-3.5" />
                   {action.label}
@@ -277,9 +299,9 @@ export function DocuBotWidget() {
         )}
       </div>
 
-      {/* Input */}
-      <div className="border-t border-neutral-200 p-4 dark:border-neutral-700">
-        <div className="flex items-center gap-2">
+      {/* Input - with safe area for mobile */}
+      <div className="border-t border-neutral-200 p-4 pb-6 dark:border-neutral-700 safe-area-bottom bg-white dark:bg-neutral-900">
+        <div className="flex items-center gap-3">
           <input
             ref={inputRef}
             type="text"
@@ -288,21 +310,21 @@ export function DocuBotWidget() {
             onKeyDown={handleKeyDown}
             placeholder="Pose-moi une question..."
             disabled={isLoading}
-            className="flex-1 rounded-full border border-neutral-200 bg-neutral-50 px-4 py-2.5 text-sm text-neutral-900 placeholder-neutral-500 outline-none transition-all focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white dark:placeholder-neutral-400 dark:focus:border-violet-500"
+            className="flex-1 rounded-full border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 placeholder-neutral-500 outline-none transition-all focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white dark:placeholder-neutral-400 dark:focus:border-violet-500"
           />
           <button
             onClick={handleSend}
             disabled={!input.trim() || isLoading}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-md transition-all hover:shadow-lg disabled:opacity-50 disabled:shadow-none"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-md transition-all hover:shadow-lg active:scale-95 disabled:opacity-50 disabled:shadow-none"
           >
             {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
-              <Send className="h-4 w-4" />
+              <Send className="h-5 w-5" />
             )}
           </button>
         </div>
-        <p className="mt-2 text-center text-[10px] text-neutral-400 dark:text-neutral-500">
+        <p className="mt-3 text-center text-[10px] text-neutral-400 dark:text-neutral-500">
           DocuBot peut faire des erreurs. V\u00e9rifie les informations importantes.
         </p>
       </div>
