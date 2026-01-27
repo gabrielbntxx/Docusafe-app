@@ -12,6 +12,10 @@ import {
   FileSearch,
   FolderOpen,
   Minimize2,
+  FileText,
+  RefreshCw,
+  Search,
+  Receipt,
 } from "lucide-react";
 
 type Message = {
@@ -32,6 +36,8 @@ const WELCOME_MESSAGE: Message = {
 const QUICK_ACTIONS = [
   { label: "Documents récents", icon: FileSearch, query: "Montre-moi mes documents récents" },
   { label: "Mes dossiers", icon: FolderOpen, query: "Liste mes dossiers" },
+  { label: "Chercher facture", icon: Receipt, query: "Cherche mes factures" },
+  { label: "Résumer un doc", icon: FileText, query: "Résume mon dernier document" },
 ];
 
 export function DocuBotWidget() {

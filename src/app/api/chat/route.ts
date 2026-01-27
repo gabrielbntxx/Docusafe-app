@@ -234,7 +234,7 @@ async function getDocumentContent(userId: string, documentId: string) {
     }
 
     let fileBuffer: Buffer;
-    if (document.isEncrypted) {
+    if (document.isEncrypted === 1) {
       const userKey = await getUserEncryptionKey(userId);
       if (!userKey) {
         return { success: false, error: "Clé de chiffrement non trouvée" };
@@ -286,7 +286,7 @@ async function summarizeDocument(userId: string, documentId: string) {
     }
 
     let fileBuffer: Buffer;
-    if (document.isEncrypted) {
+    if (document.isEncrypted === 1) {
       const userKey = await getUserEncryptionKey(userId);
       if (!userKey) {
         return { success: false, error: "Clé de chiffrement non trouvée" };
@@ -330,11 +330,24 @@ async function summarizeDocument(userId: string, documentId: string) {
     );
 
     if (!response.ok) {
-      return { success: false, error: "Erreur lors du résumé" };
+      const errorText = await response.text();
+      console.error("[DocuBot] Summarize API error:", response.status, errorText);
+      return { success: false, error: `Erreur API: ${response.status}` };
     }
 
     const data = await response.json();
-    const summary = data.candidates?.[0]?.content?.parts?.[0]?.text || "Impossible de résumer ce document.";
+    console.log("[DocuBot] Summarize response:", JSON.stringify(data, null, 2));
+
+    if (data.candidates?.[0]?.finishReason === "SAFETY") {
+      return { success: false, error: "Document bloqué par les filtres de sécurité" };
+    }
+
+    const summary = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!summary) {
+      console.error("[DocuBot] No summary in response:", data);
+      return { success: false, error: "Pas de résumé généré" };
+    }
 
     return {
       success: true,
@@ -399,7 +412,7 @@ async function reclassifyDocument(userId: string, documentId: string) {
     }
 
     let fileBuffer: Buffer;
-    if (document.isEncrypted) {
+    if (document.isEncrypted === 1) {
       const userKey = await getUserEncryptionKey(userId);
       if (!userKey) {
         return { success: false, error: "Clé de chiffrement non trouvée" };
