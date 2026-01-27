@@ -293,7 +293,7 @@ export function MyFilesClient({
   const isMobileDocumentsView = showDocuments;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-4 lg:space-y-6 overflow-hidden">
+    <div className="mx-auto max-w-6xl space-y-4 lg:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
@@ -310,7 +310,7 @@ export function MyFilesClient({
             {isMobileDocumentsView ? (
               <span className="lg:hidden">{currentFolderName}</span>
             ) : null}
-            <span className={isMobileDocumentsView ? "hidden lg:inline" : ""}>Dossiers</span>
+            <span className={isMobileDocumentsView ? "hidden lg:inline" : ""}>{t("myFolders")}</span>
           </h1>
         </div>
         <button
@@ -596,30 +596,37 @@ export function MyFilesClient({
                         </button>
 
                         {movingDocumentId === doc.id && (
-                          <div className="absolute right-0 top-full z-10 mt-2 w-48 rounded-xl border border-neutral-200 bg-white p-2 shadow-xl dark:border-neutral-700 dark:bg-neutral-800">
-                            <div className="mb-2 px-3 py-1.5 text-xs font-medium uppercase tracking-wide text-neutral-400">
-                              {t("moveTo")}
-                            </div>
-                            <button
-                              onClick={() => handleMoveDocumentWithPinCheck(doc.id, null)}
-                              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
-                            >
-                              <FolderOpen className="h-4 w-4 text-neutral-400 flex-shrink-0" />
-                              <span className="truncate">{t("uncategorized")}</span>
-                            </button>
-                            {folders.map((folder) => (
+                          <>
+                            {/* Backdrop to close menu */}
+                            <div
+                              className="fixed inset-0 z-40"
+                              onClick={() => setMovingDocumentId(null)}
+                            />
+                            <div className="absolute right-0 bottom-full z-50 mb-2 w-52 max-h-64 overflow-y-auto rounded-xl border border-neutral-200 bg-white p-2 shadow-2xl dark:border-neutral-700 dark:bg-neutral-800">
+                              <div className="mb-2 px-3 py-1.5 text-xs font-medium uppercase tracking-wide text-neutral-400">
+                                {t("moveTo")}
+                              </div>
                               <button
-                                key={folder.id}
-                                onClick={() => handleMoveDocumentWithPinCheck(doc.id, folder.id)}
-                                disabled={doc.folderId === folder.id}
-                                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                                onClick={() => handleMoveDocumentWithPinCheck(doc.id, null)}
+                                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
                               >
-                                <Folder className="h-4 w-4 flex-shrink-0" style={{ color: folder.color }} />
-                                <span className="flex-1 text-left truncate">{folder.name}</span>
-                                {folder.hasPin && <Lock className="h-3 w-3 text-neutral-400 flex-shrink-0" />}
+                                <FolderOpen className="h-4 w-4 text-neutral-400 flex-shrink-0" />
+                                <span className="truncate">{t("uncategorized")}</span>
                               </button>
-                            ))}
-                          </div>
+                              {folders.map((folder) => (
+                                <button
+                                  key={folder.id}
+                                  onClick={() => handleMoveDocumentWithPinCheck(doc.id, folder.id)}
+                                  disabled={doc.folderId === folder.id}
+                                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                                >
+                                  <Folder className="h-4 w-4 flex-shrink-0" style={{ color: folder.color }} />
+                                  <span className="flex-1 text-left truncate">{folder.name}</span>
+                                  {folder.hasPin && <Lock className="h-3 w-3 text-neutral-400 flex-shrink-0" />}
+                                </button>
+                              ))}
+                            </div>
+                          </>
                         )}
                       </div>
                     </div>
