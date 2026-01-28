@@ -16,6 +16,9 @@ import {
   X,
   Settings,
   Sparkles,
+  Mail,
+  Copy,
+  HelpCircle,
 } from "lucide-react";
 
 type UserSettings = {
@@ -48,6 +51,29 @@ export function SettingsClient({ user }: { user: UserSettings }) {
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">(
     "idle"
   );
+  const [showEmailGuide, setShowEmailGuide] = useState(false);
+  const [emailCopied, setEmailCopied] = useState(false);
+
+  // Generate a unique import email based on user email
+  const importEmail = `${user.email.split("@")[0]}-${user.id.slice(0, 6)}@import.docusafe.app`;
+
+  const handleCopyEmail = async () => {
+    try {
+      await navigator.clipboard.writeText(importEmail);
+      setEmailCopied(true);
+      setTimeout(() => setEmailCopied(false), 2000);
+    } catch {
+      // Fallback for older browsers
+      const textArea = document.createElement("textarea");
+      textArea.value = importEmail;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      setEmailCopied(true);
+      setTimeout(() => setEmailCopied(false), 2000);
+    }
+  };
 
   const handleSaveSettings = async () => {
     setSaveStatus("saving");
@@ -344,6 +370,72 @@ export function SettingsClient({ user }: { user: UserSettings }) {
         </div>
       )}
 
+      {/* Email Guide Modal */}
+      {showEmailGuide && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm p-0 sm:items-center sm:p-4">
+          <div className="w-full rounded-t-3xl bg-white p-6 shadow-2xl dark:bg-neutral-900 sm:max-w-md sm:rounded-3xl">
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-500">
+                  <Mail className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
+                    {t("emailGuideTitle")}
+                  </h3>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowEmailGuide(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 transition-all hover:bg-neutral-200 active:scale-95 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-600 dark:bg-blue-500/20 dark:text-blue-400">
+                  1
+                </div>
+                <p className="text-sm text-neutral-700 dark:text-neutral-300 pt-0.5">
+                  {t("emailGuideStep1")}
+                </p>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-600 dark:bg-blue-500/20 dark:text-blue-400">
+                  2
+                </div>
+                <p className="text-sm text-neutral-700 dark:text-neutral-300 pt-0.5">
+                  {t("emailGuideStep2")}
+                </p>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-600 dark:bg-blue-500/20 dark:text-blue-400">
+                  3
+                </div>
+                <p className="text-sm text-neutral-700 dark:text-neutral-300 pt-0.5">
+                  {t("emailGuideStep3")}
+                </p>
+              </div>
+
+              <div className="mt-4 rounded-xl bg-amber-50 p-3 dark:bg-amber-500/10">
+                <p className="text-xs text-amber-700 dark:text-amber-400">
+                  {t("emailGuideNote")}
+                </p>
+              </div>
+
+              <button
+                onClick={() => setShowEmailGuide(false)}
+                className="mt-4 w-full rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-500 py-4 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl active:scale-[0.98]"
+              >
+                {t("gotIt")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Settings Grid - Compact on desktop */}
       <div className="grid gap-4 lg:grid-cols-2 lg:gap-4">
         {/* Language Settings */}
@@ -588,6 +680,63 @@ export function SettingsClient({ user }: { user: UserSettings }) {
                   {t("setPin")}
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+
+        {/* Email Import Settings */}
+        <div className="rounded-3xl bg-white p-6 shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none lg:rounded-2xl lg:p-5 lg:col-span-2">
+          <div className="mb-4 flex items-center gap-3 lg:mb-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 shadow-lg shadow-cyan-500/25 lg:h-11 lg:w-11 lg:rounded-xl lg:shadow-md">
+              <Mail className="h-6 w-6 text-white lg:h-5 lg:w-5" />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
+                {t("emailImport")}
+              </h2>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                {t("emailImportDescription")}
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-xl bg-neutral-50 p-4 dark:bg-neutral-700/30 lg:rounded-xl lg:p-3.5">
+            <p className="mb-2 text-xs font-medium text-neutral-500 dark:text-neutral-400">
+              {t("yourImportEmail")}
+            </p>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 overflow-hidden rounded-lg bg-white px-3 py-2.5 dark:bg-neutral-800">
+                <p className="truncate text-sm font-mono text-neutral-900 dark:text-white">
+                  {importEmail}
+                </p>
+              </div>
+              <button
+                onClick={handleCopyEmail}
+                className={`flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-semibold transition-all active:scale-[0.98] ${
+                  emailCopied
+                    ? "bg-emerald-500 text-white"
+                    : "bg-blue-500 text-white hover:bg-blue-600"
+                }`}
+              >
+                {emailCopied ? (
+                  <>
+                    <Check className="h-4 w-4" />
+                    {t("copied")}
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4" />
+                    {t("copyEmail")}
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => setShowEmailGuide(true)}
+                className="flex h-10 items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 text-sm font-semibold text-neutral-700 transition-all hover:bg-neutral-50 active:scale-[0.98] dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-600"
+              >
+                <HelpCircle className="h-4 w-4" />
+                {t("emailGuide")}
+              </button>
             </div>
           </div>
         </div>

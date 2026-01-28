@@ -204,6 +204,20 @@ export const translations = {
     // DocuBot
     docubot: "DocuBot",
     docubotDescription: "Your AI assistant",
+
+    // Email Import
+    emailImport: "Email Import",
+    emailImportDescription: "Import documents by email",
+    yourImportEmail: "Your import address",
+    copyEmail: "Copy",
+    copied: "Copied!",
+    emailGuide: "Guide",
+    emailGuideTitle: "How to import by email?",
+    emailGuideStep1: "Copy your unique import address above",
+    emailGuideStep2: "Forward your email with PDF attachment to this address",
+    emailGuideStep3: "Your document will be automatically added to DocuSafe",
+    emailGuideNote: "Supported formats: PDF, images (JPG, PNG). Max size: 10 MB",
+    gotIt: "Got it!",
   },
 
   fr: {
@@ -411,6 +425,20 @@ export const translations = {
     // DocuBot
     docubot: "DocuBot",
     docubotDescription: "Ton assistant IA",
+
+    // Email Import
+    emailImport: "Import par email",
+    emailImportDescription: "Importez vos documents par email",
+    yourImportEmail: "Votre adresse d'import",
+    copyEmail: "Copier",
+    copied: "Copié !",
+    emailGuide: "Guide",
+    emailGuideTitle: "Comment importer par email ?",
+    emailGuideStep1: "Copiez votre adresse d'import unique ci-dessus",
+    emailGuideStep2: "Transférez votre email avec la pièce jointe PDF à cette adresse",
+    emailGuideStep3: "Votre document sera automatiquement ajouté à DocuSafe",
+    emailGuideNote: "Formats supportés : PDF, images (JPG, PNG). Taille max : 10 Mo",
+    gotIt: "Compris !",
   },
 } as const;
 
