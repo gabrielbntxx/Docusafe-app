@@ -19,57 +19,47 @@ async function getUserEncryptionKey(userId: string): Promise<string | null> {
 // ============================================================================
 // DOCUBOT SYSTEM PROMPT
 // ============================================================================
-const DOCUBOT_SYSTEM_PROMPT = `Tu es DocuBot, l'assistant de DocuSafe. Tu aides les utilisateurs à gérer leurs documents.
+const DOCUBOT_SYSTEM_PROMPT = `Tu es DocuBot, l'assistant IA de DocuSafe. Tu peux TOUT faire avec les documents et dossiers.
 
-## RÈGLES DE COMMUNICATION
-- Parle simplement, comme à un ami
-- Tutoie l'utilisateur
+## TES CAPACITÉS
+Tu peux :
+- 📄 Chercher, lister, résumer, analyser des documents
+- 📁 Créer, renommer, supprimer des dossiers
+- 🔄 Déplacer, renommer, supprimer des documents (un ou plusieurs à la fois)
+- 🔍 Analyser en profondeur le contenu des documents
+
+## RÈGLES
+- Tutoie l'utilisateur, sois amical
+- JAMAIS d'ID technique, de jargon
+- Exécute les actions IMMÉDIATEMENT sans demander confirmation
 - 1-2 emojis max par message
-- Phrases courtes en français
-- JAMAIS d'ID, de termes techniques ou de jargon
 
-## INTELLIGENCE - COMPRENDRE LES DEMANDES
-Tu dois être INTELLIGENT et comprendre ce que l'utilisateur veut même s'il ne donne pas tous les détails :
+## COMPRENDRE LES DEMANDES
+- "mon dernier document" = document en position 1 (le plus récent)
+- "ma facture" / "mes factures" = rechercher "facture"
+- "déplace tout dans X" = moveMultipleDocuments avec tous les IDs vers le dossier X
+- "supprime mes 3 derniers documents" = deleteMultipleDocuments avec les 3 premiers IDs
+- "crée un dossier Vacances" = createFolder("Vacances")
+- "renomme le dossier X en Y" = renameFolder avec l'ID du dossier X et newName Y
+- "analyse ce document" = analyzeDocument pour extraction détaillée
 
-### Expressions courantes et leur signification :
-- "mon dernier document" / "le dernier" → Le document le plus récent (position 1 dans la liste)
-- "ma facture" / "une facture" → Chercher dans les documents de type facture
-- "mon CV" / "le CV" → Chercher un document contenant "CV" dans le nom
-- "mes impôts" / "déclaration" → Documents liés aux impôts
-- "quittance" / "loyer" → Documents de loyer
-- "carte d'identité" / "pièce d'identité" → Documents d'identité
-- "le document dont on parlait" → Utiliser le contexte de la conversation
-
-### Comment trouver le bon document :
-1. Si l'utilisateur dit "mon dernier" → Prends le PREMIER document de la liste (le plus récent)
-2. Si l'utilisateur mentionne un type (facture, CV, etc.) → Cherche par ce mot-clé
-3. Si l'utilisateur donne un nom partiel → Cherche le document qui contient ce mot
-4. En cas de doute → Propose les 2-3 documents les plus probables
-
-## CONTEXTE UTILISATEUR
+## CONTEXTE
 {context}
 
-## RÈGLE CRITIQUE - EXÉCUTION IMMÉDIATE
-⚠️ TRÈS IMPORTANT : Quand l'utilisateur demande une action, tu dois APPELER LA FONCTION IMMÉDIATEMENT.
+## RÈGLE CRITIQUE
+⚠️ APPELLE TOUJOURS LA FONCTION, NE RÉPONDS JAMAIS SANS ACTION.
+❌ NE DIS PAS "Je vais..." ou "Voici..." AVANT d'avoir le résultat
+✅ Appelle la fonction PUIS présente le résultat
 
-❌ NE JAMAIS DIRE : "Je vais résumer...", "Voici le résumé...", "Le résumé est prêt..."
-❌ NE JAMAIS ANNONCER ce que tu vas faire
-❌ NE JAMAIS répondre sans avoir appelé la fonction
+## ACTIONS MULTIPLES
+Pour déplacer/supprimer plusieurs documents, utilise les fonctions "Multiple" :
+- moveMultipleDocuments(documentIds: [...], folderId)
+- deleteMultipleDocuments(documentIds: [...])
 
-✅ TOUJOURS : Appeler la fonction PUIS donner le résultat
-
-### Exemples :
-- "Résume mon dernier document" → APPELLE summarizeDocument() avec l'ID du document en position 1
-- "Cherche mes factures" → APPELLE searchDocuments("facture")
-- "Montre mes documents" → APPELLE getRecentDocuments()
-
-Si tu réponds SANS appeler de fonction quand une action est demandée, c'est une ERREUR.
-
-## RÉPONSES
-Après avoir appelé une fonction, présente le résultat simplement :
-✅ "Voici le résumé : [contenu du résumé]"
-✅ "J'ai trouvé 3 factures : [liste]"
-❌ Ne jamais montrer d'ID ou termes techniques`;
+Si l'utilisateur dit "déplace mes 5 derniers documents vers Factures", tu dois :
+1. Prendre les 5 premiers IDs de la liste des documents
+2. Trouver l'ID du dossier "Factures"
+3. Appeler moveMultipleDocuments`;
 
 // ============================================================================
 // FUNCTION DEFINITIONS FOR GEMINI
@@ -77,27 +67,21 @@ Après avoir appelé une fonction, présente le résultat simplement :
 const FUNCTION_DECLARATIONS = [
   {
     name: "getRecentDocuments",
-    description: "Obtient les documents les plus récents. Utilise cette fonction quand l'utilisateur dit 'mes documents récents', 'mon dernier document', 'mes derniers fichiers', etc.",
+    description: "Obtient les documents les plus récents",
     parameters: {
       type: "object",
       properties: {
-        count: {
-          type: "number",
-          description: "Nombre de documents à récupérer (1 pour le dernier, 5 pour les 5 derniers, etc.). Par défaut: 5",
-        },
+        count: { type: "number", description: "Nombre de documents (défaut: 5)" },
       },
     },
   },
   {
     name: "searchDocuments",
-    description: "Recherche des documents par nom, type ou catégorie. Utilise cette fonction quand l'utilisateur cherche un document spécifique par mot-clé (facture, CV, impôts, etc.)",
+    description: "Recherche des documents par nom, type ou catégorie",
     parameters: {
       type: "object",
       properties: {
-        query: {
-          type: "string",
-          description: "Terme de recherche (nom partiel, type comme 'facture', 'CV', 'impôts', etc.)",
-        },
+        query: { type: "string", description: "Terme de recherche" },
       },
       required: ["query"],
     },
@@ -108,44 +92,121 @@ const FUNCTION_DECLARATIONS = [
     parameters: {
       type: "object",
       properties: {
-        documentId: {
-          type: "string",
-          description: "L'ID du document",
-        },
+        documentId: { type: "string", description: "ID du document" },
       },
       required: ["documentId"],
     },
   },
   {
     name: "summarizeDocument",
-    description: "Génère un résumé d'un document. Pour 'résume mon dernier document', utilise d'abord getRecentDocuments(1) pour avoir l'ID",
+    description: "Génère un résumé d'un document",
     parameters: {
       type: "object",
       properties: {
-        documentId: {
-          type: "string",
-          description: "L'ID du document à résumer",
-        },
+        documentId: { type: "string", description: "ID du document" },
       },
       required: ["documentId"],
     },
   },
   {
     name: "moveDocument",
-    description: "Déplace un document vers un dossier",
+    description: "Déplace UN document vers un dossier",
     parameters: {
       type: "object",
       properties: {
-        documentId: {
-          type: "string",
-          description: "L'ID du document à déplacer",
-        },
-        folderId: {
-          type: "string",
-          description: "L'ID du dossier de destination",
-        },
+        documentId: { type: "string", description: "ID du document" },
+        folderId: { type: "string", description: "ID du dossier destination" },
       },
       required: ["documentId", "folderId"],
+    },
+  },
+  {
+    name: "moveMultipleDocuments",
+    description: "Déplace PLUSIEURS documents vers un dossier. Utilise cette fonction quand l'utilisateur veut déplacer plusieurs fichiers à la fois.",
+    parameters: {
+      type: "object",
+      properties: {
+        documentIds: {
+          type: "array",
+          items: { type: "string" },
+          description: "Liste des IDs de documents à déplacer"
+        },
+        folderId: { type: "string", description: "ID du dossier destination" },
+      },
+      required: ["documentIds", "folderId"],
+    },
+  },
+  {
+    name: "deleteDocument",
+    description: "Supprime un document définitivement",
+    parameters: {
+      type: "object",
+      properties: {
+        documentId: { type: "string", description: "ID du document à supprimer" },
+      },
+      required: ["documentId"],
+    },
+  },
+  {
+    name: "deleteMultipleDocuments",
+    description: "Supprime plusieurs documents définitivement",
+    parameters: {
+      type: "object",
+      properties: {
+        documentIds: {
+          type: "array",
+          items: { type: "string" },
+          description: "Liste des IDs de documents à supprimer"
+        },
+      },
+      required: ["documentIds"],
+    },
+  },
+  {
+    name: "renameDocument",
+    description: "Renomme un document",
+    parameters: {
+      type: "object",
+      properties: {
+        documentId: { type: "string", description: "ID du document" },
+        newName: { type: "string", description: "Nouveau nom du document" },
+      },
+      required: ["documentId", "newName"],
+    },
+  },
+  {
+    name: "createFolder",
+    description: "Crée un nouveau dossier",
+    parameters: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Nom du dossier" },
+        color: { type: "string", description: "Couleur du dossier (blue, red, green, yellow, purple, orange). Par défaut: blue" },
+      },
+      required: ["name"],
+    },
+  },
+  {
+    name: "deleteFolder",
+    description: "Supprime un dossier (les documents dedans seront déplacés vers 'Non classés')",
+    parameters: {
+      type: "object",
+      properties: {
+        folderId: { type: "string", description: "ID du dossier à supprimer" },
+      },
+      required: ["folderId"],
+    },
+  },
+  {
+    name: "renameFolder",
+    description: "Renomme un dossier",
+    parameters: {
+      type: "object",
+      properties: {
+        folderId: { type: "string", description: "ID du dossier" },
+        newName: { type: "string", description: "Nouveau nom du dossier" },
+      },
+      required: ["folderId", "newName"],
     },
   },
   {
@@ -154,10 +215,7 @@ const FUNCTION_DECLARATIONS = [
     parameters: {
       type: "object",
       properties: {
-        documentId: {
-          type: "string",
-          description: "L'ID du document à reclasser",
-        },
+        documentId: { type: "string", description: "ID du document" },
       },
       required: ["documentId"],
     },
@@ -165,9 +223,17 @@ const FUNCTION_DECLARATIONS = [
   {
     name: "listFolders",
     description: "Liste tous les dossiers disponibles",
+    parameters: { type: "object", properties: {} },
+  },
+  {
+    name: "analyzeDocument",
+    description: "Analyse en profondeur un document et extrait toutes les informations utiles (dates, montants, noms, etc.)",
     parameters: {
       type: "object",
-      properties: {},
+      properties: {
+        documentId: { type: "string", description: "ID du document" },
+      },
+      required: ["documentId"],
     },
   },
 ];
@@ -568,6 +634,310 @@ async function listFolders(userId: string) {
   };
 }
 
+// NEW: Move multiple documents
+async function moveMultipleDocuments(userId: string, documentIds: string[], folderId: string) {
+  const folder = await db.folder.findFirst({
+    where: { id: folderId, userId },
+  });
+
+  if (!folder) {
+    return { success: false, error: "Dossier non trouvé" };
+  }
+
+  const documents = await db.document.findMany({
+    where: { id: { in: documentIds }, userId },
+    select: { id: true, displayName: true },
+  });
+
+  if (documents.length === 0) {
+    return { success: false, error: "Aucun document trouvé" };
+  }
+
+  await db.document.updateMany({
+    where: { id: { in: documentIds }, userId },
+    data: { folderId },
+  });
+
+  return {
+    success: true,
+    message: `${documents.length} document(s) déplacé(s) vers "${folder.name}"`,
+    movedCount: documents.length,
+    folderName: folder.name,
+  };
+}
+
+// NEW: Delete document
+async function deleteDocument(userId: string, documentId: string) {
+  const document = await db.document.findFirst({
+    where: { id: documentId, userId },
+    select: { id: true, displayName: true, storageKey: true },
+  });
+
+  if (!document) {
+    return { success: false, error: "Document non trouvé" };
+  }
+
+  // Delete from database
+  await db.document.delete({ where: { id: documentId } });
+
+  return {
+    success: true,
+    message: `Document "${document.displayName}" supprimé`,
+    deletedName: document.displayName,
+  };
+}
+
+// NEW: Delete multiple documents
+async function deleteMultipleDocuments(userId: string, documentIds: string[]) {
+  const documents = await db.document.findMany({
+    where: { id: { in: documentIds }, userId },
+    select: { id: true, displayName: true },
+  });
+
+  if (documents.length === 0) {
+    return { success: false, error: "Aucun document trouvé" };
+  }
+
+  await db.document.deleteMany({
+    where: { id: { in: documentIds }, userId },
+  });
+
+  return {
+    success: true,
+    message: `${documents.length} document(s) supprimé(s)`,
+    deletedCount: documents.length,
+  };
+}
+
+// NEW: Rename document
+async function renameDocument(userId: string, documentId: string, newName: string) {
+  const document = await db.document.findFirst({
+    where: { id: documentId, userId },
+    select: { id: true, displayName: true },
+  });
+
+  if (!document) {
+    return { success: false, error: "Document non trouvé" };
+  }
+
+  const oldName = document.displayName;
+
+  await db.document.update({
+    where: { id: documentId },
+    data: { displayName: newName },
+  });
+
+  return {
+    success: true,
+    message: `Document renommé de "${oldName}" en "${newName}"`,
+    oldName,
+    newName,
+  };
+}
+
+// NEW: Create folder
+async function createFolder(userId: string, name: string, color: string = "blue") {
+  // Check if folder already exists
+  const existing = await db.folder.findFirst({
+    where: { userId, name: { equals: name, mode: "insensitive" } },
+  });
+
+  if (existing) {
+    return { success: false, error: `Un dossier "${name}" existe déjà` };
+  }
+
+  const folder = await db.folder.create({
+    data: { userId, name, color },
+  });
+
+  return {
+    success: true,
+    message: `Dossier "${name}" créé`,
+    folderId: folder.id,
+    folderName: folder.name,
+  };
+}
+
+// NEW: Delete folder
+async function deleteFolder(userId: string, folderId: string) {
+  const folder = await db.folder.findFirst({
+    where: { id: folderId, userId },
+    include: { _count: { select: { documents: true } } },
+  });
+
+  if (!folder) {
+    return { success: false, error: "Dossier non trouvé" };
+  }
+
+  // Move documents to null (uncategorized)
+  if (folder._count.documents > 0) {
+    await db.document.updateMany({
+      where: { folderId },
+      data: { folderId: null },
+    });
+  }
+
+  await db.folder.delete({ where: { id: folderId } });
+
+  return {
+    success: true,
+    message: `Dossier "${folder.name}" supprimé${folder._count.documents > 0 ? ` (${folder._count.documents} documents déplacés vers Non classés)` : ""}`,
+    folderName: folder.name,
+    documentsMovedCount: folder._count.documents,
+  };
+}
+
+// NEW: Rename folder
+async function renameFolder(userId: string, folderId: string, newName: string) {
+  const folder = await db.folder.findFirst({
+    where: { id: folderId, userId },
+  });
+
+  if (!folder) {
+    return { success: false, error: "Dossier non trouvé" };
+  }
+
+  const oldName = folder.name;
+
+  await db.folder.update({
+    where: { id: folderId },
+    data: { name: newName },
+  });
+
+  return {
+    success: true,
+    message: `Dossier renommé de "${oldName}" en "${newName}"`,
+    oldName,
+    newName,
+  };
+}
+
+// NEW: Deep analyze document
+async function analyzeDocument(userId: string, documentId: string) {
+  const document = await db.document.findFirst({
+    where: { id: documentId, userId },
+    select: {
+      id: true,
+      displayName: true,
+      storageKey: true,
+      mimeType: true,
+      isEncrypted: true,
+      aiExtractedData: true,
+      aiCategory: true,
+      aiDocumentType: true,
+    },
+  });
+
+  if (!document) {
+    return { success: false, error: "Document non trouvé" };
+  }
+
+  try {
+    const fileData = await getFromR2(document.storageKey);
+    if (!fileData) {
+      return { success: false, error: "Fichier non trouvé" };
+    }
+
+    let fileBuffer: Buffer;
+    if (document.isEncrypted === 1) {
+      const userKey = await getUserEncryptionKey(userId);
+      if (!userKey) {
+        return { success: false, error: "Clé de chiffrement non trouvée" };
+      }
+      const decryptableData = removeEncryptionMarker(fileData);
+      fileBuffer = decryptDocument(decryptableData, userKey);
+    } else {
+      fileBuffer = fileData;
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return { success: false, error: "Service IA non disponible" };
+    }
+
+    const base64Data = fileBuffer.toString("base64");
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              {
+                text: `Analyse ce document en détail et extrait TOUTES les informations importantes.
+
+Réponds en JSON avec cette structure :
+{
+  "type": "type de document (facture, contrat, pièce d'identité, etc.)",
+  "titre": "titre ou objet du document",
+  "dates": ["liste des dates importantes"],
+  "montants": ["liste des montants avec devises"],
+  "personnes": ["noms de personnes mentionnées"],
+  "organisations": ["noms d'entreprises/organisations"],
+  "references": ["numéros de référence, facture, contrat, etc."],
+  "adresses": ["adresses mentionnées"],
+  "resumé": "résumé en 2-3 phrases",
+  "pointsCles": ["3-5 points clés à retenir"]
+}
+
+Si une catégorie n'a pas d'information, mets un tableau vide [].`,
+              },
+              {
+                inline_data: {
+                  mime_type: document.mimeType,
+                  data: base64Data,
+                },
+              },
+            ],
+          }],
+          generationConfig: { temperature: 0.2, maxOutputTokens: 2000 },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      return { success: false, error: "Erreur d'analyse" };
+    }
+
+    const data = await response.json();
+    const analysisText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!analysisText) {
+      return { success: false, error: "Pas de résultat d'analyse" };
+    }
+
+    // Try to parse JSON from response
+    let analysis;
+    try {
+      const jsonMatch = analysisText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        analysis = JSON.parse(jsonMatch[0]);
+      } else {
+        analysis = { resumé: analysisText, pointsCles: [] };
+      }
+    } catch {
+      analysis = { resumé: analysisText, pointsCles: [] };
+    }
+
+    // Update document with analysis
+    await db.document.update({
+      where: { id: documentId },
+      data: { aiExtractedData: JSON.stringify(analysis) },
+    });
+
+    return {
+      success: true,
+      documentName: document.displayName,
+      analysis,
+    };
+  } catch (error) {
+    console.error("Error analyzing document:", error);
+    return { success: false, error: "Erreur lors de l'analyse" };
+  }
+}
+
 // ============================================================================
 // EXECUTE FUNCTION
 // ============================================================================
@@ -587,10 +957,26 @@ async function executeFunction(
       return summarizeDocument(userId, args.documentId);
     case "moveDocument":
       return moveDocument(userId, args.documentId, args.folderId);
+    case "moveMultipleDocuments":
+      return moveMultipleDocuments(userId, args.documentIds, args.folderId);
+    case "deleteDocument":
+      return deleteDocument(userId, args.documentId);
+    case "deleteMultipleDocuments":
+      return deleteMultipleDocuments(userId, args.documentIds);
+    case "renameDocument":
+      return renameDocument(userId, args.documentId, args.newName);
+    case "createFolder":
+      return createFolder(userId, args.name, args.color);
+    case "deleteFolder":
+      return deleteFolder(userId, args.folderId);
+    case "renameFolder":
+      return renameFolder(userId, args.folderId, args.newName);
     case "reclassifyDocument":
       return reclassifyDocument(userId, args.documentId);
     case "listFolders":
       return listFolders(userId);
+    case "analyzeDocument":
+      return analyzeDocument(userId, args.documentId);
     default:
       return { error: "Fonction non reconnue" };
   }
@@ -758,29 +1144,65 @@ export async function POST(request: NextRequest) {
         // If second call fails, format result ourselves (simple, human-friendly)
         if (functionResult.success) {
           let formattedResponse = "";
-          if (functionCall.name === "searchDocuments" && functionResult.documents) {
-            if (functionResult.documents.length === 0) {
-              formattedResponse = "Je n'ai pas trouvé de documents correspondants. Tu veux que je cherche autre chose ?";
-            } else if (functionResult.documents.length === 1) {
-              const d = functionResult.documents[0];
-              formattedResponse = `J'ai trouvé "${d.name}" dans le dossier ${d.folder || "non classé"}.`;
-            } else {
-              formattedResponse = `J'ai trouvé ${functionResult.documents.length} documents :\n\n${functionResult.documents.map((d: any) => `• ${d.name}`).join("\n")}`;
-            }
-          } else if (functionCall.name === "summarizeDocument") {
-            formattedResponse = `Voici le résumé de "${functionResult.document}" :\n\n${functionResult.summary}`;
-          } else if (functionCall.name === "moveDocument") {
-            formattedResponse = `C'est fait ! J'ai bien déplacé ton document.`;
-          } else if (functionCall.name === "reclassifyDocument") {
-            formattedResponse = `J'ai reclassé ton document. Il est maintenant dans le bon dossier !`;
-          } else if (functionCall.name === "listFolders") {
-            formattedResponse = `Tu as ${functionResult.folders.length} dossier(s) :\n\n${functionResult.folders.map((f: any) => `• ${f.name} (${f.documentCount} document${f.documentCount > 1 ? 's' : ''})`).join("\n")}`;
-          } else {
-            formattedResponse = "C'est fait !";
+          switch (functionCall.name) {
+            case "searchDocuments":
+            case "getRecentDocuments":
+              if (!functionResult.documents?.length) {
+                formattedResponse = "Je n'ai pas trouvé de documents. 🤷";
+              } else if (functionResult.documents.length === 1) {
+                formattedResponse = `J'ai trouvé "${functionResult.documents[0].name}" 📄`;
+              } else {
+                formattedResponse = `J'ai trouvé ${functionResult.documents.length} documents :\n\n${functionResult.documents.map((d: any) => `• ${d.name}`).join("\n")}`;
+              }
+              break;
+            case "summarizeDocument":
+              formattedResponse = `📝 Résumé de "${functionResult.document}" :\n\n${functionResult.summary}`;
+              break;
+            case "analyzeDocument":
+              const a = functionResult.analysis;
+              formattedResponse = `🔍 Analyse de "${functionResult.documentName}" :\n\n`;
+              if (a.type) formattedResponse += `Type : ${a.type}\n`;
+              if (a.resumé) formattedResponse += `\n${a.resumé}\n`;
+              if (a.pointsCles?.length) formattedResponse += `\nPoints clés :\n${a.pointsCles.map((p: string) => `• ${p}`).join("\n")}`;
+              if (a.montants?.length) formattedResponse += `\n\nMontants : ${a.montants.join(", ")}`;
+              if (a.dates?.length) formattedResponse += `\nDates : ${a.dates.join(", ")}`;
+              break;
+            case "moveDocument":
+              formattedResponse = `✅ ${functionResult.message}`;
+              break;
+            case "moveMultipleDocuments":
+              formattedResponse = `✅ ${functionResult.movedCount} document(s) déplacé(s) vers "${functionResult.folderName}" !`;
+              break;
+            case "deleteDocument":
+              formattedResponse = `🗑️ Document "${functionResult.deletedName}" supprimé !`;
+              break;
+            case "deleteMultipleDocuments":
+              formattedResponse = `🗑️ ${functionResult.deletedCount} document(s) supprimé(s) !`;
+              break;
+            case "renameDocument":
+              formattedResponse = `✏️ Document renommé en "${functionResult.newName}" !`;
+              break;
+            case "createFolder":
+              formattedResponse = `📁 Dossier "${functionResult.folderName}" créé !`;
+              break;
+            case "deleteFolder":
+              formattedResponse = `🗑️ Dossier "${functionResult.folderName}" supprimé !`;
+              break;
+            case "renameFolder":
+              formattedResponse = `✏️ Dossier renommé en "${functionResult.newName}" !`;
+              break;
+            case "reclassifyDocument":
+              formattedResponse = `🔄 Document reclassé dans "${functionResult.newCategory}" !`;
+              break;
+            case "listFolders":
+              formattedResponse = `📁 Tes ${functionResult.folders.length} dossier(s) :\n\n${functionResult.folders.map((f: any) => `• ${f.name} (${f.documentCount} doc${f.documentCount > 1 ? 's' : ''})`).join("\n")}`;
+              break;
+            default:
+              formattedResponse = "✅ C'est fait !";
           }
           return NextResponse.json({ response: formattedResponse });
         }
-        return NextResponse.json({ response: "Désolé, je n'ai pas réussi à faire ça. Tu peux réessayer ?" });
+        return NextResponse.json({ response: `❌ ${functionResult.error || "Désolé, je n'ai pas réussi. Réessaie ?"}` });
       }
 
       data = await response.json();
