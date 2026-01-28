@@ -6,14 +6,11 @@ import {
   Send,
   User,
   Loader2,
-  Sparkles,
   FileSearch,
   FolderOpen,
   FileText,
   Receipt,
-  Trash2,
 } from "lucide-react";
-import { useTranslation } from "@/hooks/useTranslation";
 
 type Message = {
   id: string;
@@ -26,7 +23,7 @@ type Message = {
 const WELCOME_MESSAGE: Message = {
   id: "welcome",
   role: "assistant",
-  content: "Salut ! Je suis DocuBot, ton assistant personnel. Je peux t'aider à :\n\n• Chercher des documents\n• Analyser leur contenu\n• Les déplacer dans des dossiers\n• Répondre à tes questions\n\nQue puis-je faire pour toi ?",
+  content: "Salut ! Je suis DocuBot. Comment puis-je t'aider ?",
   timestamp: new Date(),
 };
 
@@ -43,14 +40,11 @@ export default function DocuBotPage() {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { t } = useTranslation();
 
-  // Auto-scroll to bottom when new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Focus input on mount
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
@@ -69,17 +63,10 @@ export default function DocuBotPage() {
     setInput("");
     setIsLoading(true);
 
-    // Add loading message
     const loadingId = (Date.now() + 1).toString();
     setMessages((prev) => [
       ...prev,
-      {
-        id: loadingId,
-        role: "assistant",
-        content: "",
-        timestamp: new Date(),
-        isLoading: true,
-      },
+      { id: loadingId, role: "assistant", content: "", timestamp: new Date(), isLoading: true },
     ]);
 
     try {
@@ -94,28 +81,18 @@ export default function DocuBotPage() {
 
       const data = await response.json();
 
-      // Replace loading message with actual response
       setMessages((prev) =>
         prev.map((m) =>
           m.id === loadingId
-            ? {
-                ...m,
-                content: data.response || "Désolé, je n'ai pas pu traiter ta demande.",
-                isLoading: false,
-              }
+            ? { ...m, content: data.response || "Désolé, une erreur s'est produite.", isLoading: false }
             : m
         )
       );
-    } catch (error) {
-      console.error("DocuBot error:", error);
+    } catch {
       setMessages((prev) =>
         prev.map((m) =>
           m.id === loadingId
-            ? {
-                ...m,
-                content: "Oups, une erreur s'est produite. Réessaie !",
-                isLoading: false,
-              }
+            ? { ...m, content: "Oups, une erreur s'est produite.", isLoading: false }
             : m
         )
       );
@@ -129,147 +106,85 @@ export default function DocuBotPage() {
     setTimeout(() => handleSend(), 100);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
-  const clearConversation = () => {
-    setMessages([WELCOME_MESSAGE]);
-  };
-
   return (
-    <div className="flex h-[calc(100vh-7.5rem)] lg:h-screen flex-col bg-white dark:bg-neutral-900">
-      {/* Header - Desktop only, mobile uses app header */}
-      <div className="hidden lg:flex shrink-0 items-center justify-between border-b border-neutral-200 bg-white px-6 py-4 dark:border-neutral-800 dark:bg-neutral-900">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md shadow-blue-500/20">
-            <Bot className="h-5 w-5" />
-          </div>
-          <div>
-            <h1 className="text-base font-semibold text-neutral-900 dark:text-white">DocuBot</h1>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">Ton assistant intelligent</p>
-          </div>
-        </div>
-        <button
-          onClick={clearConversation}
-          className="flex items-center gap-2 rounded-xl bg-neutral-100 px-3 py-2 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700"
-        >
-          <Trash2 className="h-4 w-4" />
-          Effacer
-        </button>
-      </div>
-
-      {/* Mobile Header */}
-      <div className="flex lg:hidden shrink-0 items-center justify-between bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3 text-white">
-        <div className="flex items-center gap-3">
-          <Bot className="h-5 w-5" />
-          <span className="font-semibold">DocuBot</span>
-        </div>
-        <button
-          onClick={clearConversation}
-          className="flex items-center gap-1.5 rounded-lg bg-white/20 px-2.5 py-1.5 text-xs font-medium"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-          Effacer
-        </button>
-      </div>
-
+    <div className="pb-20 lg:pb-0">
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto overscroll-contain bg-neutral-50 p-4 dark:bg-neutral-950 lg:p-6">
-        <div className="mx-auto max-w-3xl space-y-4">
-          {messages.map((message) => (
+      <div className="space-y-4 p-4">
+        {messages.map((message) => (
+          <div
+            key={message.id}
+            className={`flex gap-3 ${message.role === "user" ? "flex-row-reverse" : ""}`}
+          >
             <div
-              key={message.id}
-              className={`flex gap-3 ${message.role === "user" ? "flex-row-reverse" : ""}`}
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                message.role === "user"
+                  ? "bg-blue-500 text-white"
+                  : "bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300"
+              }`}
             >
-              {/* Avatar */}
-              <div
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                  message.role === "user"
-                    ? "bg-blue-500 text-white"
-                    : "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md shadow-blue-500/20"
-                }`}
-              >
-                {message.role === "user" ? (
-                  <User className="h-5 w-5" />
-                ) : (
-                  <Bot className="h-5 w-5" />
-                )}
-              </div>
-
-              {/* Message bubble */}
-              <div
-                className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-                  message.role === "user"
-                    ? "bg-blue-500 text-white"
-                    : "bg-white text-neutral-800 shadow-sm dark:bg-neutral-800 dark:text-neutral-100"
-                }`}
-              >
-                {message.isLoading ? (
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="text-sm">Réflexion en cours...</span>
-                  </div>
-                ) : (
-                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
-                )}
-              </div>
+              {message.role === "user" ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
             </div>
-          ))}
-          <div ref={messagesEndRef} />
 
-          {/* Quick actions (only if few messages) */}
-          {messages.length <= 2 && (
-            <div className="mt-6 space-y-3">
-              <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-                Actions rapides
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {QUICK_ACTIONS.map((action) => (
-                  <button
-                    key={action.label}
-                    onClick={() => handleQuickAction(action.query)}
-                    className="flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-medium text-neutral-700 transition-all hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 active:scale-95 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-blue-500 dark:hover:bg-blue-900/30 dark:hover:text-blue-300"
-                  >
-                    <action.icon className="h-4 w-4" />
-                    {action.label}
-                  </button>
-                ))}
-              </div>
+            <div
+              className={`max-w-[80%] rounded-2xl px-4 py-2 ${
+                message.role === "user"
+                  ? "bg-blue-500 text-white"
+                  : "bg-white text-neutral-800 shadow-sm dark:bg-neutral-800 dark:text-white"
+              }`}
+            >
+              {message.isLoading ? (
+                <div className="flex items-center gap-2 py-1">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-sm">...</span>
+                </div>
+              ) : (
+                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        ))}
+        <div ref={messagesEndRef} />
+
+        {/* Quick actions */}
+        {messages.length <= 2 && (
+          <div className="pt-4">
+            <p className="text-xs text-neutral-500 mb-2">Actions rapides</p>
+            <div className="flex flex-wrap gap-2">
+              {QUICK_ACTIONS.map((action) => (
+                <button
+                  key={action.label}
+                  onClick={() => handleQuickAction(action.query)}
+                  className="flex items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-xs text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
+                >
+                  <action.icon className="h-3 w-3" />
+                  {action.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Input */}
-      <div className="shrink-0 border-t border-neutral-200 bg-white px-4 py-3 dark:border-neutral-800 dark:bg-neutral-900">
-        <div className="mx-auto max-w-3xl">
-          <div className="flex items-center gap-3">
-            <input
-              ref={inputRef}
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Pose-moi une question..."
-              disabled={isLoading}
-              className="flex-1 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 placeholder-neutral-500 outline-none transition-all focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white dark:placeholder-neutral-400 dark:focus:border-blue-500"
-            />
-            <button
-              onClick={handleSend}
-              disabled={!input.trim() || isLoading}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md transition-all hover:shadow-lg active:scale-95 disabled:opacity-50 disabled:shadow-none"
-            >
-              {isLoading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <Send className="h-5 w-5" />
-              )}
-            </button>
-          </div>
+      {/* Input fixé en bas */}
+      <div className="fixed bottom-16 left-0 right-0 border-t border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-900 lg:bottom-0 lg:left-72">
+        <div className="flex items-center gap-2 max-w-3xl mx-auto">
+          <input
+            ref={inputRef}
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), handleSend())}
+            placeholder="Pose-moi une question..."
+            disabled={isLoading}
+            className="flex-1 rounded-full border border-neutral-200 bg-neutral-50 px-4 py-2.5 text-sm outline-none focus:border-blue-400 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+          />
+          <button
+            onClick={handleSend}
+            disabled={!input.trim() || isLoading}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 text-white disabled:opacity-50"
+          >
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          </button>
         </div>
       </div>
     </div>
