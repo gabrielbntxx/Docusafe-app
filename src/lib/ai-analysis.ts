@@ -859,22 +859,57 @@ export async function analyzeDocument(
 
 /**
  * Get or create folder for category
+ * Searches intelligently for existing folders that match the category
  */
 export async function getOrCreateCategoryFolder(
   userId: string,
   category: string
 ): Promise<string> {
-  const existingFolder = await db.folder.findFirst({
-    where: {
-      userId,
-      name: category,
-      parentId: null,
-    },
+  // Get all user folders
+  const allFolders = await db.folder.findMany({
+    where: { userId },
+    select: { id: true, name: true },
   });
 
-  if (existingFolder) {
-    return existingFolder.id;
+  // Normalize for comparison (lowercase, no accents)
+  const normalize = (str: string) =>
+    str.toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim();
+
+  const normalizedCategory = normalize(category);
+
+  // 1. Check exact match (case insensitive)
+  let matchingFolder = allFolders.find(
+    (f) => normalize(f.name) === normalizedCategory
+  );
+
+  // 2. Check if any folder name contains the category or vice versa
+  if (!matchingFolder) {
+    matchingFolder = allFolders.find(
+      (f) => normalize(f.name).includes(normalizedCategory) ||
+             normalizedCategory.includes(normalize(f.name))
+    );
   }
+
+  // 3. Check for common variations (e.g., "Factures" matches "Facture", "Photos" matches "Photo")
+  if (!matchingFolder) {
+    const categoryBase = normalizedCategory.replace(/s$/, ""); // Remove trailing 's'
+    matchingFolder = allFolders.find((f) => {
+      const folderBase = normalize(f.name).replace(/s$/, "");
+      return folderBase === categoryBase;
+    });
+  }
+
+  // If found, return existing folder
+  if (matchingFolder) {
+    console.log(`[AI Analysis] Found existing folder "${matchingFolder.name}" for category "${category}"`);
+    return matchingFolder.id;
+  }
+
+  // No existing folder found, create a new one
+  console.log(`[AI Analysis] Creating new folder for category "${category}"`);
 
   const categoryKey = Object.keys(DOCUMENT_CATEGORIES).find(
     (key) => DOCUMENT_CATEGORIES[key as keyof typeof DOCUMENT_CATEGORIES].name === category
