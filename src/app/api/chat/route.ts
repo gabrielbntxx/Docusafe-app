@@ -19,47 +19,44 @@ async function getUserEncryptionKey(userId: string): Promise<string | null> {
 // ============================================================================
 // DOCUBOT SYSTEM PROMPT
 // ============================================================================
-const DOCUBOT_SYSTEM_PROMPT = `Tu es DocuBot, l'assistant IA de DocuSafe. Tu peux TOUT faire avec les documents et dossiers.
+const DOCUBOT_SYSTEM_PROMPT = `Tu es DocuBot, l'assistant IA de DocuSafe.
 
-## TES CAPACITÉS
-Tu peux :
-- 📄 Chercher, lister, résumer, analyser des documents
-- 📁 Créer, renommer, supprimer des dossiers
-- 🔄 Déplacer, renommer, supprimer des documents (un ou plusieurs à la fois)
-- 🔍 Analyser en profondeur le contenu des documents
+## RÈGLE ABSOLUE - JAMAIS D'ID
+❌ NE JAMAIS demander un ID à l'utilisateur
+❌ NE JAMAIS afficher un ID dans tes réponses
+❌ NE JAMAIS dire "donne-moi l'ID" ou "quel est l'ID"
+✅ Utilise le CONTEXTE ci-dessous pour trouver les IDs toi-même
+✅ Quand l'utilisateur dit un nom de document, trouve l'ID correspondant dans la liste
 
-## RÈGLES
-- Tutoie l'utilisateur, sois amical
-- JAMAIS d'ID technique, de jargon
-- Exécute les actions IMMÉDIATEMENT sans demander confirmation
-- 1-2 emojis max par message
+## RÈGLE CRITIQUE - EXÉCUTION
+⚠️ APPELLE LA FONCTION IMMÉDIATEMENT, sans demander confirmation.
+❌ NE DIS PAS "Je vais..." AVANT d'avoir appelé la fonction
+❌ NE DEMANDE PAS "tu veux que je..." - FAIS-LE directement
+✅ L'utilisateur dit "oui" ou "fait le" = EXÉCUTE IMMÉDIATEMENT
 
 ## COMPRENDRE LES DEMANDES
-- "mon dernier document" = document en position 1 (le plus récent)
-- "ma facture" / "mes factures" = rechercher "facture"
-- "déplace tout dans X" = moveMultipleDocuments avec tous les IDs vers le dossier X
-- "supprime mes 3 derniers documents" = deleteMultipleDocuments avec les 3 premiers IDs
-- "crée un dossier Vacances" = createFolder("Vacances")
-- "renomme le dossier X en Y" = renameFolder avec l'ID du dossier X et newName Y
-- "analyse ce document" = analyzeDocument pour extraction détaillée
+- "tous" / "tout" / "les deux" = traite TOUS les documents mentionnés
+- "mon dernier document" = position 1 dans la liste
+- "IMG" ou "quittance" = cherche le document avec ce mot dans le nom
+- "classe les" / "reclasse" = appelle reclassifyDocument pour CHAQUE document
 
-## CONTEXTE
+## CONTEXTE (avec les IDs que TU dois utiliser)
 {context}
 
-## RÈGLE CRITIQUE
-⚠️ APPELLE TOUJOURS LA FONCTION, NE RÉPONDS JAMAIS SANS ACTION.
-❌ NE DIS PAS "Je vais..." ou "Voici..." AVANT d'avoir le résultat
-✅ Appelle la fonction PUIS présente le résultat
+## COMMENT TROUVER UN DOCUMENT
+1. L'utilisateur dit "IMG" → Tu cherches un document avec "IMG" dans le nom
+2. Tu trouves "IMG_8777.jpg" avec [ID:xxx] dans le contexte
+3. Tu utilises cet ID pour appeler la fonction
+4. Tu ne montres JAMAIS l'ID à l'utilisateur
 
 ## ACTIONS MULTIPLES
-Pour déplacer/supprimer plusieurs documents, utilise les fonctions "Multiple" :
-- moveMultipleDocuments(documentIds: [...], folderId)
-- deleteMultipleDocuments(documentIds: [...])
+Quand l'utilisateur veut traiter plusieurs documents :
+- Appelle la fonction pour CHAQUE document
+- OU utilise les fonctions "Multiple" (moveMultipleDocuments, deleteMultipleDocuments)
 
-Si l'utilisateur dit "déplace mes 5 derniers documents vers Factures", tu dois :
-1. Prendre les 5 premiers IDs de la liste des documents
-2. Trouver l'ID du dossier "Factures"
-3. Appeler moveMultipleDocuments`;
+## STYLE
+- Tutoie, sois amical, 1-2 emojis max
+- Réponds simplement après l'action`;
 
 // ============================================================================
 // FUNCTION DEFINITIONS FOR GEMINI
@@ -211,13 +208,28 @@ const FUNCTION_DECLARATIONS = [
   },
   {
     name: "reclassifyDocument",
-    description: "Réanalyse et reclasse un document avec l'IA",
+    description: "Réanalyse et reclasse UN document avec l'IA",
     parameters: {
       type: "object",
       properties: {
         documentId: { type: "string", description: "ID du document" },
       },
       required: ["documentId"],
+    },
+  },
+  {
+    name: "reclassifyMultipleDocuments",
+    description: "Réanalyse et reclasse PLUSIEURS documents avec l'IA. Utilise cette fonction quand l'utilisateur dit 'classe tous', 'reclasse les', etc.",
+    parameters: {
+      type: "object",
+      properties: {
+        documentIds: {
+          type: "array",
+          items: { type: "string" },
+          description: "Liste des IDs de documents à reclasser"
+        },
+      },
+      required: ["documentIds"],
     },
   },
   {
@@ -812,6 +824,37 @@ async function renameFolder(userId: string, folderId: string, newName: string) {
   };
 }
 
+// NEW: Reclassify multiple documents
+async function reclassifyMultipleDocuments(userId: string, documentIds: string[]) {
+  const results: { name: string; newCategory: string; success: boolean }[] = [];
+
+  for (const documentId of documentIds) {
+    try {
+      const result = await reclassifyDocument(userId, documentId);
+      if (result.success && result.newCategory) {
+        results.push({
+          name: "Document",
+          newCategory: result.newCategory,
+          success: true,
+        });
+      } else {
+        results.push({ name: "Document", newCategory: "", success: false });
+      }
+    } catch {
+      results.push({ name: "Document", newCategory: "", success: false });
+    }
+  }
+
+  const successCount = results.filter(r => r.success).length;
+
+  return {
+    success: successCount > 0,
+    message: `${successCount}/${documentIds.length} document(s) reclassé(s)`,
+    reclassifiedCount: successCount,
+    results,
+  };
+}
+
 // NEW: Deep analyze document
 async function analyzeDocument(userId: string, documentId: string) {
   const document = await db.document.findFirst({
@@ -973,6 +1016,8 @@ async function executeFunction(
       return renameFolder(userId, args.folderId, args.newName);
     case "reclassifyDocument":
       return reclassifyDocument(userId, args.documentId);
+    case "reclassifyMultipleDocuments":
+      return reclassifyMultipleDocuments(userId, args.documentIds);
     case "listFolders":
       return listFolders(userId);
     case "analyzeDocument":
@@ -1193,6 +1238,9 @@ export async function POST(request: NextRequest) {
               break;
             case "reclassifyDocument":
               formattedResponse = `🔄 Document reclassé dans "${functionResult.newCategory}" !`;
+              break;
+            case "reclassifyMultipleDocuments":
+              formattedResponse = `🔄 ${functionResult.reclassifiedCount} document(s) reclassé(s) !`;
               break;
             case "listFolders":
               formattedResponse = `📁 Tes ${functionResult.folders.length} dossier(s) :\n\n${functionResult.folders.map((f: any) => `• ${f.name} (${f.documentCount} doc${f.documentCount > 1 ? 's' : ''})`).join("\n")}`;
