@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, X, FileText, File, Image as ImageIcon, FileCheck, Cloud, Sparkles, Wand2, FolderOpen, Loader2 } from "lucide-react";
+import { Upload, X, FileText, File, Image as ImageIcon, FileCheck, Cloud, Sparkles, Wand2, FolderOpen, Loader2, Music, Video } from "lucide-react";
 
 type AIStatus = {
   allowed: boolean;
@@ -53,7 +53,12 @@ export default function UploadPage() {
 
     const droppedFiles = Array.from(e.dataTransfer.files);
     const validFiles = droppedFiles.filter(file => {
-      const validTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+      const validTypes = [
+        'application/pdf',
+        'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+        'audio/mpeg', 'audio/wav', 'audio/x-wav',
+        'video/mp4', 'video/quicktime', 'video/webm'
+      ];
       return validTypes.includes(file.type);
     });
 
@@ -152,6 +157,8 @@ export default function UploadPage() {
   const getFileIcon = (file: File) => {
     if (file.type.startsWith("image/")) return ImageIcon;
     if (file.type === "application/pdf") return FileText;
+    if (file.type.startsWith("audio/")) return Music;
+    if (file.type.startsWith("video/")) return Video;
     return File;
   };
 
@@ -210,7 +217,7 @@ export default function UploadPage() {
         <input
           type="file"
           multiple
-          accept=".pdf,.jpg,.jpeg,.png,.gif"
+          accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.mp3,.wav,.wave,.mp4,.m4v,.mov,.webm"
           onChange={handleFileSelect}
           className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
         />
@@ -234,6 +241,9 @@ export default function UploadPage() {
             <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">JPG</span>
             <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">PNG</span>
             <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">GIF</span>
+            <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">MP3</span>
+            <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">MP4</span>
+            <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">WAV</span>
           </div>
         </div>
       </div>
@@ -423,7 +433,7 @@ export default function UploadPage() {
             <div>
               <h3 className="font-semibold">Limites du plan FREE</h3>
               <ul className="mt-3 space-y-1.5 text-sm text-violet-100">
-                <li>Formats: PDF, JPG, PNG, GIF</li>
+                <li>Formats: PDF, Images, MP3, MP4, WAV</li>
                 <li>Taille max: 100 MB par fichier</li>
                 <li>Maximum 15 fichiers</li>
                 <li>Stockage total: 1 GB</li>

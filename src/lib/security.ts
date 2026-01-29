@@ -9,27 +9,62 @@ export const ALLOWED_FILE_TYPES = {
   "application/pdf": {
     extensions: [".pdf"],
     magicBytes: [0x25, 0x50, 0x44, 0x46], // %PDF
-    maxSize: 50 * 1024 * 1024, // 50MB
+    maxSize: 100 * 1024 * 1024, // 100MB
   },
   "image/jpeg": {
     extensions: [".jpg", ".jpeg"],
     magicBytes: [0xff, 0xd8, 0xff],
-    maxSize: 10 * 1024 * 1024, // 10MB
+    maxSize: 100 * 1024 * 1024, // 100MB
   },
   "image/png": {
     extensions: [".png"],
     magicBytes: [0x89, 0x50, 0x4e, 0x47],
-    maxSize: 10 * 1024 * 1024, // 10MB
+    maxSize: 100 * 1024 * 1024, // 100MB
   },
   "image/gif": {
     extensions: [".gif"],
     magicBytes: [0x47, 0x49, 0x46, 0x38], // GIF8
-    maxSize: 5 * 1024 * 1024, // 5MB
+    maxSize: 100 * 1024 * 1024, // 100MB
   },
   "image/webp": {
     extensions: [".webp"],
     magicBytes: [0x52, 0x49, 0x46, 0x46], // RIFF (WebP starts with RIFF)
-    maxSize: 10 * 1024 * 1024, // 10MB
+    maxSize: 100 * 1024 * 1024, // 100MB
+  },
+  // Audio formats
+  "audio/mpeg": {
+    extensions: [".mp3"],
+    magicBytes: [0xff, 0xfb], // MP3 frame sync (or 0x49, 0x44, 0x33 for ID3)
+    maxSize: 100 * 1024 * 1024, // 100MB
+    alternateMagicBytes: [0x49, 0x44, 0x33], // ID3 tag
+  },
+  "audio/wav": {
+    extensions: [".wav", ".wave"],
+    magicBytes: [0x52, 0x49, 0x46, 0x46], // RIFF
+    maxSize: 100 * 1024 * 1024, // 100MB
+  },
+  "audio/x-wav": {
+    extensions: [".wav", ".wave"],
+    magicBytes: [0x52, 0x49, 0x46, 0x46], // RIFF
+    maxSize: 100 * 1024 * 1024, // 100MB
+  },
+  // Video formats
+  "video/mp4": {
+    extensions: [".mp4", ".m4v"],
+    magicBytes: [0x00, 0x00, 0x00], // MP4 starts with size bytes, then ftyp
+    maxSize: 100 * 1024 * 1024, // 100MB
+    skipMagicValidation: true, // MP4 has variable header, skip magic byte check
+  },
+  "video/quicktime": {
+    extensions: [".mov"],
+    magicBytes: [0x00, 0x00, 0x00],
+    maxSize: 100 * 1024 * 1024, // 100MB
+    skipMagicValidation: true,
+  },
+  "video/webm": {
+    extensions: [".webm"],
+    magicBytes: [0x1a, 0x45, 0xdf, 0xa3], // EBML header
+    maxSize: 100 * 1024 * 1024, // 100MB
   },
 } as const;
 
@@ -89,13 +124,27 @@ export function validateFileMagicBytes(
     };
   }
 
+  // Skip magic byte validation for certain formats (like MP4 with variable headers)
+  if ("skipMagicValidation" in fileConfig && fileConfig.skipMagicValidation) {
+    return { valid: true };
+  }
+
   // Vérifier les magic bytes
   const magicBytes = fileConfig.magicBytes;
   const fileHeader = buffer.slice(0, magicBytes.length);
 
-  const matches = magicBytes.every(
+  let matches = magicBytes.every(
     (byte, index) => fileHeader[index] === byte
   );
+
+  // Check alternate magic bytes if primary doesn't match (e.g., MP3 with ID3 tag)
+  if (!matches && "alternateMagicBytes" in fileConfig && fileConfig.alternateMagicBytes) {
+    const altMagicBytes = fileConfig.alternateMagicBytes as readonly number[];
+    const altFileHeader = buffer.slice(0, altMagicBytes.length);
+    matches = altMagicBytes.every(
+      (byte, index) => altFileHeader[index] === byte
+    );
+  }
 
   if (!matches) {
     // Essayer de détecter le vrai type
