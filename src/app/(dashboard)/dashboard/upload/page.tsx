@@ -424,9 +424,9 @@ export default function UploadPage() {
               <h3 className="font-semibold">Limites du plan FREE</h3>
               <ul className="mt-3 space-y-1.5 text-sm text-violet-100">
                 <li>Formats: PDF, JPG, PNG, GIF</li>
-                <li>Taille max: 2 MB par fichier</li>
-                <li>Maximum 5 fichiers</li>
-                <li>Stockage total: 2 MB</li>
+                <li>Taille max: 100 MB par fichier</li>
+                <li>Maximum 15 fichiers</li>
+                <li>Stockage total: 1 GB</li>
               </ul>
               <a href="/dashboard/subscription" className="mt-4 inline-block rounded-xl bg-white/20 px-4 py-2 text-sm font-medium backdrop-blur-sm transition-colors hover:bg-white/30">
                 Passer à Pro

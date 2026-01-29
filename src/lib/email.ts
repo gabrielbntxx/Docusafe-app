@@ -352,7 +352,7 @@ function getCancellationEmailHtml(name: string): string {
               </p>
 
               <p style="margin: 0 0 20px; color: #52525b; font-size: 16px; line-height: 1.6;">
-                Vous pourrez toujours accéder à vos documents avec le plan gratuit (5 documents, 2 MB de stockage).
+                Vous pourrez toujours accéder à vos documents avec le plan gratuit (15 documents, 1 GB de stockage).
               </p>
 
               <!-- Info box -->

@@ -289,7 +289,7 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
                 {formatBytes(user.storageUsedBytes)}
                 <span className="text-lg font-normal text-neutral-400">
                   {" "}
-                  / {user.planType === "PRO" ? "100 GB" : "2 MB"}
+                  / {user.planType === "PRO" ? "100 GB" : "1 GB"}
                 </span>
               </p>
             </div>

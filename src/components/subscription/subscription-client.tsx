@@ -35,8 +35,8 @@ export function SubscriptionClient({
   };
 
   const freePlanFeatures = [
-    { icon: FileText, text: `5 ${t("filesLimit")}`, included: true },
-    { icon: HardDrive, text: `2 MB ${t("storageLimit")}`, included: true },
+    { icon: FileText, text: `15 ${t("filesLimit")}`, included: true },
+    { icon: HardDrive, text: `1 GB ${t("storageLimit")}`, included: true },
     { icon: Tag, text: t("smartTags"), included: true },
     { icon: Search, text: t("advancedSearch"), included: false },
     { icon: Zap, text: t("aiOcr"), included: false },
@@ -111,7 +111,7 @@ export function SubscriptionClient({
                 {formatStorage(storageUsedBytes)} MB
                 <span className="text-lg font-normal text-neutral-400">
                   {" "}
-                  / {currentPlan === "FREE" ? "2 MB" : "100 GB"}
+                  / {currentPlan === "FREE" ? "1 GB" : "100 GB"}
                 </span>
               </p>
             </div>
