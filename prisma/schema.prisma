@@ -226,3 +226,47 @@ model PasswordResetToken {
   @@index([email])
   @@index([token])
 }
+
+// ============================================
+// SHARING
+// ============================================
+
+// Share link for sharing folders/documents
+model SharedLink {
+  id            String   @id @default(cuid())
+  userId        String   // Owner of the share
+  token         String   @unique // Unique share token for URL
+  name          String?  // Optional name for the share
+
+  // Security
+  password      String?  // Optional password (hashed)
+  expiresAt     DateTime // Expiration date
+
+  // Stats
+  viewCount     Int      @default(0)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  items         SharedItem[]
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+}
+
+// Items included in a share (folders or documents)
+model SharedItem {
+  id            String   @id @default(cuid())
+  sharedLinkId  String
+  folderId      String?  // If sharing a folder
+  documentId    String?  // If sharing a document
+
+  createdAt     DateTime @default(now())
+
+  sharedLink    SharedLink @relation(fields: [sharedLinkId], references: [id], onDelete: Cascade)
+
+  @@index([sharedLinkId])
+  @@index([folderId])
+  @@index([documentId])
+}

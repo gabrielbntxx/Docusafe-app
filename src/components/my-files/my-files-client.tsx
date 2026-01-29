@@ -17,11 +17,13 @@ import {
   ChevronLeft,
   Music,
   Video,
+  Share2,
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { PinModal } from "@/components/folders/pin-modal";
 import { DocuBotWidget } from "@/components/docubot/docubot-widget";
 import { DocumentPreviewModal } from "@/components/documents/document-preview-modal";
+import { ShareModal } from "@/components/share/share-modal";
 
 type FolderType = {
   id: string;
@@ -82,6 +84,7 @@ export function MyFilesClient({
   const [pendingFolder, setPendingFolder] = useState<FolderType | null>(null);
   const [showDocuments, setShowDocuments] = useState(false);
   const [previewDocument, setPreviewDocument] = useState<DocumentType | null>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   useEffect(() => {
     if (searchParams.get("create") === "true") {
@@ -321,13 +324,22 @@ export function MyFilesClient({
             <span className={isMobileDocumentsView ? "hidden lg:inline" : ""}>{t("myFolders")}</span>
           </h1>
         </div>
-        <button
-          onClick={() => setIsCreatingFolder(true)}
-          className="flex-shrink-0 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 px-3 lg:px-5 py-2 lg:py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition-all hover:shadow-xl active:scale-[0.98]"
-        >
-          <FolderPlus className="h-4 w-4" />
-          <span className="hidden sm:inline">{t("newFolder")}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowShareModal(true)}
+            className="flex-shrink-0 inline-flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 lg:px-4 py-2 lg:py-2.5 text-sm font-medium text-blue-600 transition-all hover:bg-blue-100 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20"
+          >
+            <Share2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Partager</span>
+          </button>
+          <button
+            onClick={() => setIsCreatingFolder(true)}
+            className="flex-shrink-0 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 px-3 lg:px-5 py-2 lg:py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition-all hover:shadow-xl active:scale-[0.98]"
+          >
+            <FolderPlus className="h-4 w-4" />
+            <span className="hidden sm:inline">{t("newFolder")}</span>
+          </button>
+        </div>
       </div>
 
       {/* Create/Edit Folder Modal */}
@@ -675,6 +687,25 @@ export function MyFilesClient({
         document={previewDocument}
         isOpen={!!previewDocument}
         onClose={() => setPreviewDocument(null)}
+      />
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        folders={folders.map((f) => ({
+          id: f.id,
+          name: f.name,
+          color: f.color,
+          documentCount: f.documentCount,
+        }))}
+        documents={documents.map((d) => ({
+          id: d.id,
+          displayName: d.displayName,
+          fileType: d.fileType,
+          folderId: d.folderId,
+        }))}
+        onShareCreated={() => router.refresh()}
       />
     </div>
   );
