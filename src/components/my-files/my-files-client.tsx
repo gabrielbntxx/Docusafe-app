@@ -18,6 +18,11 @@ import {
   Music,
   Video,
   Share2,
+  CheckSquare,
+  Square,
+  Download,
+  Loader2,
+  CheckCheck,
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { PinModal } from "@/components/folders/pin-modal";
@@ -85,6 +90,10 @@ export function MyFilesClient({
   const [showDocuments, setShowDocuments] = useState(false);
   const [previewDocument, setPreviewDocument] = useState<DocumentType | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(new Set());
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [isBulkDownloading, setIsBulkDownloading] = useState(false);
 
   useEffect(() => {
     if (searchParams.get("create") === "true") {
@@ -299,6 +308,89 @@ export function MyFilesClient({
   const currentFolderName = selectedFolder
     ? folders.find(f => f.id === selectedFolder)?.name
     : t("uncategorized");
+
+  // Selection functions
+  const toggleDocumentSelection = (docId: string) => {
+    const newSet = new Set(selectedDocuments);
+    if (newSet.has(docId)) {
+      newSet.delete(docId);
+    } else {
+      newSet.add(docId);
+    }
+    setSelectedDocuments(newSet);
+    if (newSet.size === 0) {
+      setIsSelectionMode(false);
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedDocuments.size === filteredDocuments.length) {
+      setSelectedDocuments(new Set());
+      setIsSelectionMode(false);
+    } else {
+      setSelectedDocuments(new Set(filteredDocuments.map(d => d.id)));
+    }
+  };
+
+  const cancelSelection = () => {
+    setSelectedDocuments(new Set());
+    setIsSelectionMode(false);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedDocuments.size === 0) return;
+
+    const count = selectedDocuments.size;
+    if (!confirm(`Supprimer ${count} document${count > 1 ? 's' : ''} ?`)) {
+      return;
+    }
+
+    setIsBulkDeleting(true);
+    try {
+      const deletePromises = Array.from(selectedDocuments).map(docId =>
+        fetch(`/api/documents/${docId}`, { method: "DELETE" })
+      );
+      await Promise.all(deletePromises);
+      setSelectedDocuments(new Set());
+      setIsSelectionMode(false);
+      router.refresh();
+    } catch (error) {
+      console.error("Bulk delete error:", error);
+      alert("Erreur lors de la suppression");
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
+  const handleBulkDownload = async () => {
+    if (selectedDocuments.size === 0) return;
+
+    setIsBulkDownloading(true);
+    try {
+      const response = await fetch("/api/documents/download-multiple", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ documentIds: Array.from(selectedDocuments) }),
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "documents.zip";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error("Bulk download error:", error);
+      alert("Erreur lors du téléchargement");
+    } finally {
+      setIsBulkDownloading(false);
+    }
+  };
 
   // Mobile: show documents view
   const isMobileDocumentsView = showDocuments;
@@ -560,14 +652,79 @@ export function MyFilesClient({
         {/* Documents Grid */}
         <div className={`lg:col-span-8 ${!isMobileDocumentsView ? 'hidden lg:block' : ''} mt-4 lg:mt-0`}>
           <div className="rounded-2xl lg:rounded-3xl bg-white p-4 lg:p-6 shadow-lg shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mb-4 flex items-center justify-between gap-2">
               <h2 className="text-base lg:text-lg font-semibold text-neutral-900 dark:text-white truncate">
                 {currentFolderName}
               </h2>
-              <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs lg:text-sm text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400 flex-shrink-0">
-                {filteredDocuments.length} doc{filteredDocuments.length !== 1 ? "s" : ""}
-              </span>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {filteredDocuments.length > 0 && (
+                  <button
+                    onClick={() => {
+                      if (isSelectionMode) {
+                        cancelSelection();
+                      } else {
+                        setIsSelectionMode(true);
+                      }
+                    }}
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+                      isSelectionMode
+                        ? "bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400"
+                        : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600"
+                    }`}
+                  >
+                    <CheckSquare className="h-3.5 w-3.5" />
+                    {isSelectionMode ? "Annuler" : "Sélectionner"}
+                  </button>
+                )}
+                <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs lg:text-sm text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">
+                  {filteredDocuments.length} doc{filteredDocuments.length !== 1 ? "s" : ""}
+                </span>
+              </div>
             </div>
+
+            {/* Selection toolbar */}
+            {isSelectionMode && selectedDocuments.size > 0 && (
+              <div className="mb-4 flex items-center justify-between rounded-xl bg-blue-50 dark:bg-blue-500/10 p-3">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={toggleSelectAll}
+                    className="flex items-center gap-2 text-sm font-medium text-blue-600 dark:text-blue-400"
+                  >
+                    <CheckCheck className="h-4 w-4" />
+                    {selectedDocuments.size === filteredDocuments.length ? "Tout désélectionner" : "Tout sélectionner"}
+                  </button>
+                  <span className="text-sm text-blue-600 dark:text-blue-400">
+                    {selectedDocuments.size} sélectionné{selectedDocuments.size > 1 ? "s" : ""}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleBulkDownload}
+                    disabled={isBulkDownloading}
+                    className="flex items-center gap-1.5 rounded-lg bg-blue-500 px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-blue-600 disabled:opacity-50"
+                  >
+                    {isBulkDownloading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Download className="h-3.5 w-3.5" />
+                    )}
+                    ZIP
+                  </button>
+                  <button
+                    onClick={handleBulkDelete}
+                    disabled={isBulkDeleting}
+                    className="flex items-center gap-1.5 rounded-lg bg-red-500 px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-red-600 disabled:opacity-50"
+                  >
+                    {isBulkDeleting ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-3.5 w-3.5" />
+                    )}
+                    Supprimer
+                  </button>
+                </div>
+              </div>
+            )}
 
             {filteredDocuments.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -585,18 +742,48 @@ export function MyFilesClient({
               <div className="space-y-2">
                 {filteredDocuments.map((doc) => {
                   const Icon = getFileIcon(doc.fileType);
+                  const isSelected = selectedDocuments.has(doc.id);
                   return (
                     <div
                       key={doc.id}
-                      className="group flex items-center gap-3 rounded-xl bg-neutral-50 p-3 transition-all hover:bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700/50"
+                      onClick={() => isSelectionMode && toggleDocumentSelection(doc.id)}
+                      className={`group flex items-center gap-3 rounded-xl p-3 transition-all ${
+                        isSelected
+                          ? "bg-blue-50 ring-2 ring-blue-500 dark:bg-blue-500/10"
+                          : "bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700/50"
+                      } ${isSelectionMode ? "cursor-pointer" : ""}`}
                     >
+                      {/* Checkbox */}
+                      {isSelectionMode && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleDocumentSelection(doc.id);
+                          }}
+                          className="flex-shrink-0"
+                        >
+                          {isSelected ? (
+                            <CheckSquare className="h-5 w-5 text-blue-500" />
+                          ) : (
+                            <Square className="h-5 w-5 text-neutral-400" />
+                          )}
+                        </button>
+                      )}
+
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-100 to-violet-100 dark:from-blue-500/20 dark:to-violet-500/20 flex-shrink-0">
                         <Icon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                       </div>
 
                       <div className="flex-1 min-w-0">
                         <button
-                          onClick={() => setPreviewDocument(doc)}
+                          onClick={(e) => {
+                            if (isSelectionMode) {
+                              e.stopPropagation();
+                              toggleDocumentSelection(doc.id);
+                            } else {
+                              setPreviewDocument(doc);
+                            }
+                          }}
                           className="truncate text-sm font-medium text-neutral-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left w-full"
                         >
                           {doc.displayName}
@@ -606,52 +793,54 @@ export function MyFilesClient({
                         </p>
                       </div>
 
-                      <div className="relative flex-shrink-0">
-                        <button
-                          onClick={() =>
-                            setMovingDocumentId(
-                              movingDocumentId === doc.id ? null : doc.id
-                            )
-                          }
-                          className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-200 text-neutral-500 hover:bg-neutral-300 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600"
-                        >
-                          <MoreVertical className="h-4 w-4" />
-                        </button>
+                      {!isSelectionMode && (
+                        <div className="relative flex-shrink-0">
+                          <button
+                            onClick={() =>
+                              setMovingDocumentId(
+                                movingDocumentId === doc.id ? null : doc.id
+                              )
+                            }
+                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-200 text-neutral-500 hover:bg-neutral-300 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600"
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </button>
 
-                        {movingDocumentId === doc.id && (
-                          <>
-                            {/* Backdrop to close menu */}
-                            <div
-                              className="fixed inset-0 z-40"
-                              onClick={() => setMovingDocumentId(null)}
-                            />
-                            <div className="absolute right-0 bottom-full z-50 mb-2 w-52 max-h-64 overflow-y-auto rounded-xl border border-neutral-200 bg-white p-2 shadow-2xl dark:border-neutral-700 dark:bg-neutral-800">
-                              <div className="mb-2 px-3 py-1.5 text-xs font-medium uppercase tracking-wide text-neutral-400">
-                                {t("moveTo")}
-                              </div>
-                              <button
-                                onClick={() => handleMoveDocumentWithPinCheck(doc.id, null)}
-                                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
-                              >
-                                <FolderOpen className="h-4 w-4 text-neutral-400 flex-shrink-0" />
-                                <span className="truncate">{t("uncategorized")}</span>
-                              </button>
-                              {folders.map((folder) => (
+                          {movingDocumentId === doc.id && (
+                            <>
+                              {/* Backdrop to close menu */}
+                              <div
+                                className="fixed inset-0 z-40"
+                                onClick={() => setMovingDocumentId(null)}
+                              />
+                              <div className="absolute right-0 bottom-full z-50 mb-2 w-52 max-h-64 overflow-y-auto rounded-xl border border-neutral-200 bg-white p-2 shadow-2xl dark:border-neutral-700 dark:bg-neutral-800">
+                                <div className="mb-2 px-3 py-1.5 text-xs font-medium uppercase tracking-wide text-neutral-400">
+                                  {t("moveTo")}
+                                </div>
                                 <button
-                                  key={folder.id}
-                                  onClick={() => handleMoveDocumentWithPinCheck(doc.id, folder.id)}
-                                  disabled={doc.folderId === folder.id}
-                                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                                  onClick={() => handleMoveDocumentWithPinCheck(doc.id, null)}
+                                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
                                 >
-                                  <Folder className="h-4 w-4 flex-shrink-0" style={{ color: folder.color }} />
-                                  <span className="flex-1 text-left truncate">{folder.name}</span>
-                                  {folder.hasPin && <Lock className="h-3 w-3 text-neutral-400 flex-shrink-0" />}
+                                  <FolderOpen className="h-4 w-4 text-neutral-400 flex-shrink-0" />
+                                  <span className="truncate">{t("uncategorized")}</span>
                                 </button>
-                              ))}
-                            </div>
-                          </>
-                        )}
-                      </div>
+                                {folders.map((folder) => (
+                                  <button
+                                    key={folder.id}
+                                    onClick={() => handleMoveDocumentWithPinCheck(doc.id, folder.id)}
+                                    disabled={doc.folderId === folder.id}
+                                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                                  >
+                                    <Folder className="h-4 w-4 flex-shrink-0" style={{ color: folder.color }} />
+                                    <span className="flex-1 text-left truncate">{folder.name}</span>
+                                    {folder.hasPin && <Lock className="h-3 w-3 text-neutral-400 flex-shrink-0" />}
+                                  </button>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
