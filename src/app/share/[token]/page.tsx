@@ -17,6 +17,7 @@ import {
   Shield,
   Clock,
   X,
+  Archive,
 } from "lucide-react";
 
 type DocumentType = {
@@ -54,6 +55,7 @@ export default function SharePage() {
   const [previewDoc, setPreviewDoc] = useState<DocumentType | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const [isDownloadingAll, setIsDownloadingAll] = useState(false);
 
   // Check share info on mount
   useEffect(() => {
@@ -175,6 +177,34 @@ export default function SharePage() {
     setPreviewUrl(null);
   };
 
+  const handleDownloadAll = async () => {
+    setIsDownloadingAll(true);
+    try {
+      const response = await fetch(`/api/shared/${token}/download-all`);
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = shareData?.name
+          ? `${shareData.name.replace(/[^a-zA-Z0-9-_]/g, "_")}.zip`
+          : "documents.zip";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      console.error("Download all error:", err);
+    } finally {
+      setIsDownloadingAll(false);
+    }
+  };
+
+  // Calculate total document count
+  const totalDocuments = (shareData?.folders?.reduce((sum, f) => sum + f.documents.length, 0) || 0)
+    + (shareData?.documents?.length || 0);
+
   // Loading state
   if (isLoading) {
     return (
@@ -275,6 +305,26 @@ export default function SharePage() {
               )}
             </div>
           </div>
+          {totalDocuments > 1 && (
+            <button
+              onClick={handleDownloadAll}
+              disabled={isDownloadingAll}
+              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-violet-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl disabled:opacity-50"
+            >
+              {isDownloadingAll ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="hidden sm:inline">Téléchargement...</span>
+                </>
+              ) : (
+                <>
+                  <Archive className="h-4 w-4" />
+                  <span className="hidden sm:inline">Tout télécharger</span>
+                  <span className="sm:hidden">ZIP</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       </header>
 
