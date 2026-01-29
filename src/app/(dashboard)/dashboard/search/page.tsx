@@ -33,7 +33,7 @@ export default async function SearchPage() {
   // Les 5 derniers documents uploadés
   const recentDocuments = documents.slice(0, 5);
 
-  // Sérialiser pour JSON
+  // Sérialiser pour JSON (incluant les données IA pour une recherche intelligente)
   const serializedDocuments = documents.map((doc) => ({
     id: doc.id,
     displayName: doc.displayName,
@@ -46,6 +46,10 @@ export default async function SearchPage() {
     folder: doc.folder,
     tags: doc.tags,
     description: doc.description,
+    // AI analysis data for smart search
+    aiDocumentType: doc.aiDocumentType,
+    aiCategory: doc.aiCategory,
+    aiExtractedData: doc.aiExtractedData,
   }));
 
   const serializedRecentDocuments = recentDocuments.map((doc) => ({
