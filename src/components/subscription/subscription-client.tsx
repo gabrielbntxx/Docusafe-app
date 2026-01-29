@@ -85,7 +85,7 @@ export function SubscriptionClient({
                 {documentsCount}
                 <span className="text-lg font-normal text-neutral-400">
                   {" "}
-                  / {currentPlan === "FREE" ? "5" : "∞"}
+                  / {currentPlan === "FREE" ? "15" : "∞"}
                 </span>
               </p>
             </div>

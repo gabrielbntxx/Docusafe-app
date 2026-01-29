@@ -262,7 +262,7 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
                 {user.documentsCount}
                 <span className="text-lg font-normal text-neutral-400">
                   {" "}
-                  / {user.planType === "PRO" ? "∞" : "5"}
+                  / {user.planType === "PRO" ? "∞" : "15"}
                 </span>
               </p>
             </div>
