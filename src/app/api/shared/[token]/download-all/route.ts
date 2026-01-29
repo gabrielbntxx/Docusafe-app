@@ -157,7 +157,7 @@ export async function GET(
       ? `${share.name.replace(/[^a-zA-Z0-9-_]/g, "_")}.zip`
       : "documents.zip";
 
-    return new NextResponse(zipBuffer, {
+    return new NextResponse(new Uint8Array(zipBuffer), {
       headers: {
         "Content-Type": "application/zip",
         "Content-Disposition": `attachment; filename="${encodeURIComponent(zipName)}"`,
