@@ -15,6 +15,8 @@ import {
   X,
   Lock,
   ChevronLeft,
+  Music,
+  Video,
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { PinModal } from "@/components/folders/pin-modal";
@@ -214,6 +216,8 @@ export function MyFilesClient({
   const getFileIcon = (fileType: string) => {
     if (fileType === "pdf") return FileText;
     if (fileType === "image") return ImageIcon;
+    if (fileType === "audio") return Music;
+    if (fileType === "video") return Video;
     return File;
   };
 

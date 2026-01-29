@@ -18,6 +18,8 @@ import {
   Clock,
   Bot,
   Sparkles,
+  Music,
+  Video,
 } from "lucide-react";
 import { DocumentPreviewModal } from "@/components/documents/document-preview-modal";
 
@@ -62,6 +64,8 @@ export function DashboardClient({
   const getFileIcon = (fileType: string) => {
     if (fileType === "pdf") return FileText;
     if (fileType === "image") return ImageIcon;
+    if (fileType === "audio") return Music;
+    if (fileType === "video") return Video;
     return File;
   };
 

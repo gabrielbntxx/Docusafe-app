@@ -154,6 +154,8 @@ export async function POST(req: Request) {
     let fileType = "other";
     if (file.type === "application/pdf") fileType = "pdf";
     else if (file.type.startsWith("image/")) fileType = "image";
+    else if (file.type.startsWith("audio/")) fileType = "audio";
+    else if (file.type.startsWith("video/")) fileType = "video";
 
     // Créer l'entrée dans la DB avec le nom sanitisé
     const document = await db.document.create({

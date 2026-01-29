@@ -258,13 +258,20 @@ export async function processEmailAttachment(
   // 8. Create document in database
   const displayName = aiData.suggestedName || filename;
 
+  // Determine file type category (same logic as upload route)
+  let fileType = "other";
+  if (contentType === "application/pdf") fileType = "pdf";
+  else if (contentType.startsWith("image/")) fileType = "image";
+  else if (contentType.startsWith("audio/")) fileType = "audio";
+  else if (contentType.startsWith("video/")) fileType = "video";
+
   const document = await db.document.create({
     data: {
       userId,
       folderId,
       originalName: filename,
       displayName,
-      fileType: fileExtension,
+      fileType,
       mimeType: contentType,
       sizeBytes: BigInt(content.length),
       storageKey,

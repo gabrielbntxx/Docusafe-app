@@ -17,6 +17,8 @@ import {
   Filter,
   Plus,
   MoreHorizontal,
+  Music,
+  Video,
 } from "lucide-react";
 import { DocumentPreviewModal } from "./document-preview-modal";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -118,6 +120,8 @@ export function DocumentsClient({
   const getFileIcon = (fileType: string) => {
     if (fileType === "pdf") return FileText;
     if (fileType === "image") return ImageIcon;
+    if (fileType === "audio") return Music;
+    if (fileType === "video") return Video;
     return File;
   };
 

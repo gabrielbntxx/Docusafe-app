@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Download, FileText, Image as ImageIcon, File, AlertCircle, Loader2 } from "lucide-react";
+import { X, Download, FileText, Image as ImageIcon, File, AlertCircle, Loader2, Music, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/useTranslation";
 
@@ -67,6 +67,8 @@ export function DocumentPreviewModal({
   const getFileIcon = () => {
     if (document.fileType === "pdf") return FileText;
     if (document.fileType === "image") return ImageIcon;
+    if (document.fileType === "audio") return Music;
+    if (document.fileType === "video") return Video;
     return File;
   };
 
@@ -154,7 +156,7 @@ export function DocumentPreviewModal({
         {/* Content */}
         <div className="relative flex-1 overflow-auto bg-neutral-100 dark:bg-neutral-950">
           {/* Loading indicator */}
-          {isLoading && (document.fileType === "pdf" || document.fileType === "image") && (
+          {isLoading && (document.fileType === "pdf" || document.fileType === "image" || document.fileType === "audio" || document.fileType === "video") && (
             <div className="absolute inset-0 flex items-center justify-center bg-neutral-100 dark:bg-neutral-950 z-10">
               <div className="flex flex-col items-center gap-3">
                 <Loader2 className="h-8 w-8 text-primary-600 dark:text-primary-400 animate-spin" />
@@ -196,6 +198,36 @@ export function DocumentPreviewModal({
                 alt={document.displayName}
                 className="max-h-full max-w-full rounded-xl object-contain shadow-2xl"
               />
+            </div>
+          ) : document.fileType === "audio" && blobUrl ? (
+            <div className="flex flex-col items-center justify-center h-full min-h-[60vh] p-4 sm:p-8">
+              <div className="mb-8 flex h-32 w-32 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 to-purple-600 shadow-2xl">
+                <Music className="h-16 w-16 text-white" />
+              </div>
+              <p className="mb-6 text-lg font-medium text-neutral-900 dark:text-white text-center">
+                {document.displayName}
+              </p>
+              <audio
+                src={blobUrl}
+                controls
+                autoPlay={false}
+                className="w-full max-w-md rounded-xl shadow-lg"
+                style={{ outline: 'none' }}
+              >
+                Votre navigateur ne supporte pas la lecture audio.
+              </audio>
+            </div>
+          ) : document.fileType === "video" && blobUrl ? (
+            <div className="flex items-center justify-center h-full min-h-[60vh] p-4 sm:p-8">
+              <video
+                src={blobUrl}
+                controls
+                autoPlay={false}
+                className="max-h-full max-w-full rounded-xl shadow-2xl"
+                style={{ outline: 'none' }}
+              >
+                Votre navigateur ne supporte pas la lecture vidéo.
+              </video>
             </div>
           ) : !isLoading && !hasError ? (
             <div className="flex flex-col items-center justify-center h-full min-h-[60vh] text-center p-8">

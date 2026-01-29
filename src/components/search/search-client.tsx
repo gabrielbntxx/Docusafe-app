@@ -13,6 +13,8 @@ import {
   Trash2,
   X,
   Sparkles,
+  Music,
+  Video,
 } from "lucide-react";
 import { DocumentPreviewModal } from "@/components/documents/document-preview-modal";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -104,6 +106,8 @@ export function SearchClient({
   const getFileIcon = (fileType: string) => {
     if (fileType === "pdf") return FileText;
     if (fileType === "image") return ImageIcon;
+    if (fileType === "audio") return Music;
+    if (fileType === "video") return Video;
     return File;
   };
 
