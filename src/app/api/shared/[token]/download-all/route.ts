@@ -7,8 +7,7 @@ import {
   isEncrypted,
   removeEncryptionMarker,
 } from "@/lib/encryption";
-import archiver from "archiver";
-import { Readable } from "stream";
+import JSZip from "jszip";
 
 // GET - Download all shared documents as ZIP
 export async function GET(
@@ -116,19 +115,10 @@ export async function GET(
     });
     const userKeyMap = new Map(users.map((u) => [u.id, u.encryptionKey]));
 
-    // Create ZIP archive
-    const archive = archiver("zip", {
-      zlib: { level: 5 }, // Compression level
-    });
+    // Create ZIP using JSZip
+    const zip = new JSZip();
 
-    // Collect chunks for the response
-    const chunks: Uint8Array[] = [];
-
-    archive.on("data", (chunk) => {
-      chunks.push(chunk);
-    });
-
-    // Add files to the archive
+    // Add all files to the ZIP
     for (const doc of allDocuments) {
       try {
         let fileBuffer = await getFromR2(doc.storageKey);
@@ -143,45 +133,35 @@ export async function GET(
           }
         }
 
-        // Add to archive with folder structure if applicable
+        // Add to ZIP with folder structure if applicable
         const filePath = doc.folderName
           ? `${doc.folderName}/${doc.displayName}`
           : doc.displayName;
 
-        archive.append(Buffer.from(fileBuffer), { name: filePath });
+        zip.file(filePath, fileBuffer);
       } catch (err) {
         console.error(`Error adding file ${doc.displayName}:`, err);
         // Continue with other files
       }
     }
 
-    // Finalize the archive
-    await archive.finalize();
-
-    // Wait for all data to be collected
-    await new Promise<void>((resolve) => {
-      archive.on("end", resolve);
+    // Generate the ZIP buffer
+    const zipBuffer = await zip.generateAsync({
+      type: "nodebuffer",
+      compression: "DEFLATE",
+      compressionOptions: { level: 5 },
     });
-
-    // Combine all chunks
-    const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
-    const result = new Uint8Array(totalLength);
-    let offset = 0;
-    for (const chunk of chunks) {
-      result.set(chunk, offset);
-      offset += chunk.length;
-    }
 
     // Generate filename
     const zipName = share.name
       ? `${share.name.replace(/[^a-zA-Z0-9-_]/g, "_")}.zip`
       : "documents.zip";
 
-    return new NextResponse(result, {
+    return new NextResponse(zipBuffer, {
       headers: {
         "Content-Type": "application/zip",
-        "Content-Disposition": `attachment; filename="${zipName}"`,
-        "Content-Length": String(result.length),
+        "Content-Disposition": `attachment; filename="${encodeURIComponent(zipName)}"`,
+        "Content-Length": String(zipBuffer.length),
       },
     });
   } catch (error) {
