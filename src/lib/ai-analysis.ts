@@ -133,6 +133,15 @@ export const DOCUMENT_TYPES = {
   RESERVATION_HOTEL: "reservation_hotel",
   VISA: "visa",
 
+  // --- AUDIO ---
+  AUDIO_MUSIQUE: "audio_musique",
+  AUDIO_PODCAST: "audio_podcast",
+  AUDIO_MEMO_VOCAL: "audio_memo_vocal",
+  AUDIO_INTERVIEW: "audio_interview",
+  AUDIO_COURS: "audio_cours",
+  AUDIO_REUNION: "audio_reunion",
+  AUDIO_AUTRE: "audio_autre",
+
   // --- AUTRE ---
   RECETTE_CUISINE: "recette_cuisine",
   LISTE: "liste",
@@ -228,6 +237,12 @@ export const DOCUMENT_CATEGORIES = {
     icon: "folder-open",
     color: "#F59E0B",
     description: "Courriers officiels, attestations"
+  },
+  AUDIO: {
+    name: "Audio",
+    icon: "music",
+    color: "#F472B6",
+    description: "Fichiers audio, musique, podcasts, mémos vocaux"
   },
   AUTRE: {
     name: "Autres",
@@ -368,6 +383,15 @@ export const TYPE_TO_CATEGORY: Record<string, keyof typeof DOCUMENT_CATEGORIES> 
   email_important: "ADMINISTRATIF",
   convocation: "ADMINISTRATIF",
   notification: "ADMINISTRATIF",
+
+  // Audio
+  audio_musique: "AUDIO",
+  audio_podcast: "AUDIO",
+  audio_memo_vocal: "AUDIO",
+  audio_interview: "AUDIO",
+  audio_cours: "AUDIO",
+  audio_reunion: "AUDIO",
+  audio_autre: "AUDIO",
 
   // Autre
   recette_cuisine: "AUTRE",
@@ -530,14 +554,15 @@ export async function cacheAnalysis(
 const AI_CLASSIFICATION_PROMPT = `Tu es DocuSafe AI, un système expert ultra-précis de classification de documents. Tu dois analyser ce fichier en PROFONDEUR.
 
 ## TA MISSION
-Analyse le contenu visuel ET textuel de ce document pour déterminer EXACTEMENT ce qu'il est.
+Analyse le contenu visuel, textuel OU AUDIO de ce fichier pour déterminer EXACTEMENT ce qu'il est.
 
 ## RÈGLES CRITIQUES
 1. PHOTOS: Si c'est une photo de personnes, paysages, événements, selfies, vacances → C'est une PHOTO, pas un document!
 2. ASSURANCE ≠ FINANCE: Les documents d'assurance vont dans "assurance", PAS dans "finance"
 3. IMPÔTS ≠ FINANCE: Les avis d'imposition vont dans "impots", PAS dans "finance"
 4. COURS/ÉTUDES: PDF de cours, notes, exercices, examens → catégorie "études"
-5. Sois PRÉCIS: "cours de droit" → cours, "photo à la plage" → photo_voyage
+5. AUDIO: Pour les fichiers audio, écoute attentivement le contenu pour classifier (musique, podcast, mémo vocal, cours audio, etc.)
+6. Sois PRÉCIS: "cours de droit" → cours, "photo à la plage" → photo_voyage, "musique pop" → audio_musique
 
 ## TYPES DE DOCUMENTS DISPONIBLES
 
@@ -653,6 +678,15 @@ Analyse le contenu visuel ET textuel de ce document pour déterminer EXACTEMENT 
 - courrier_officiel: Courrier CAF, CPAM, mairie
 - convocation: Convocation
 
+### AUDIO (fichiers audio MP3, WAV, etc.)
+- audio_musique: Musique, chanson, morceau musical
+- audio_podcast: Épisode de podcast, émission audio
+- audio_memo_vocal: Mémo vocal, note vocale, enregistrement personnel
+- audio_interview: Interview, entretien enregistré
+- audio_cours: Cours audio, conférence enregistrée, audiobook éducatif
+- audio_reunion: Enregistrement de réunion, meeting
+- audio_autre: Autre fichier audio non classifié
+
 ### AUTRE
 - recette_cuisine: Recette de cuisine
 - note_personnelle: Note, mémo personnel
@@ -671,13 +705,17 @@ Analyse le contenu visuel ET textuel de ce document pour déterminer EXACTEMENT 
 | "CV - Jean Dupont" | cv | Emploi |
 | Facture Amazon | facture | Factures |
 | Bulletin de notes université | releve_notes | Études |
+| MP3 avec musique/chanson | audio_musique | Audio |
+| Enregistrement vocal personnel | audio_memo_vocal | Audio |
+| Épisode podcast/discussion | audio_podcast | Audio |
+| Cours enregistré/conférence | audio_cours | Audio |
 
 ## FORMAT DE RÉPONSE
 Réponds UNIQUEMENT avec ce JSON (sans \`\`\`, sans markdown):
 
 {"documentType":"type_exact","confidence":0.95,"suggestedName":"Nom descriptif en français","extractedData":{"date":"2024-01-15","amount":"150.00€","issuer":"Émetteur","recipient":"Destinataire","reference":"REF123","subject":"Sujet principal","location":"Lieu si visible","people":"Personnes identifiées","description":"Description courte du contenu"}}
 
-IMPORTANT: Remplis tous les champs extractedData pertinents. Pour les photos, décris ce que tu vois (lieu, personnes, contexte).`;
+IMPORTANT: Remplis tous les champs extractedData pertinents. Pour les photos, décris ce que tu vois (lieu, personnes, contexte). Pour les audios, décris ce que tu entends (type de contenu, sujet, langue, ambiance).`;
 
 /**
  * Analyze document with Gemini AI - VERSION ULTRA
@@ -704,6 +742,16 @@ export async function analyzeDocumentWithAI(
     geminiMimeType = "application/pdf";
   } else if (mimeType.startsWith("image/")) {
     geminiMimeType = mimeType;
+  } else if (mimeType.startsWith("audio/")) {
+    // Gemini supports audio analysis
+    // Map common audio types to Gemini-supported formats
+    if (mimeType === "audio/mpeg" || mimeType === "audio/mp3") {
+      geminiMimeType = "audio/mpeg";
+    } else if (mimeType === "audio/wav" || mimeType === "audio/x-wav" || mimeType === "audio/wave") {
+      geminiMimeType = "audio/wav";
+    } else {
+      geminiMimeType = "audio/mpeg"; // Default fallback for audio
+    }
   } else {
     geminiMimeType = "application/pdf";
   }
