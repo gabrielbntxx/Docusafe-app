@@ -129,6 +129,7 @@ export function middleware(request: NextRequest) {
         "connect-src 'self' https:",
         "frame-src 'self' blob:", // Permettre les iframes avec blob URLs pour la visualisation des documents
         "object-src 'self' blob:", // Permettre les objets PDF avec blob URLs
+        "media-src 'self' blob:", // Permettre les médias audio/vidéo avec blob URLs
         "frame-ancestors 'self'", // Permettre les iframes depuis le même domaine
       ].join("; ")
     );
