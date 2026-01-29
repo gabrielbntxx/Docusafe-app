@@ -225,7 +225,7 @@ export function ShareModal({
               {enablePassword && (
                 <div className="rounded-xl bg-amber-50 dark:bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-400">
                   <Lock className="inline h-4 w-4 mr-2" />
-                  N'oubliez pas de communiquer le mot de passe séparément
+                  {"N'oubliez pas de communiquer le mot de passe séparément"}
                 </div>
               )}
 
