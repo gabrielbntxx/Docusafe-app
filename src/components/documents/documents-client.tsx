@@ -19,6 +19,10 @@ import {
   MoreHorizontal,
   Music,
   Video,
+  CheckSquare,
+  Square,
+  Loader2,
+  CheckCheck,
 } from "lucide-react";
 import { DocumentPreviewModal } from "./document-preview-modal";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -65,6 +69,10 @@ export function DocumentsClient({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
+  const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(new Set());
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [isBulkDownloading, setIsBulkDownloading] = useState(false);
 
   const handleView = (doc: Document) => {
     setPreviewDocument(doc);
@@ -142,6 +150,89 @@ export function DocumentsClient({
     }).format(date);
   };
 
+  // Selection functions
+  const toggleDocumentSelection = (docId: string) => {
+    const newSet = new Set(selectedDocuments);
+    if (newSet.has(docId)) {
+      newSet.delete(docId);
+    } else {
+      newSet.add(docId);
+    }
+    setSelectedDocuments(newSet);
+    if (newSet.size === 0) {
+      setIsSelectionMode(false);
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedDocuments.size === filteredDocuments.length) {
+      setSelectedDocuments(new Set());
+      setIsSelectionMode(false);
+    } else {
+      setSelectedDocuments(new Set(filteredDocuments.map(d => d.id)));
+    }
+  };
+
+  const cancelSelection = () => {
+    setSelectedDocuments(new Set());
+    setIsSelectionMode(false);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedDocuments.size === 0) return;
+
+    const count = selectedDocuments.size;
+    if (!confirm(`Supprimer ${count} document${count > 1 ? 's' : ''} ?`)) {
+      return;
+    }
+
+    setIsBulkDeleting(true);
+    try {
+      const deletePromises = Array.from(selectedDocuments).map(docId =>
+        fetch(`/api/documents/${docId}/delete`, { method: "DELETE" })
+      );
+      await Promise.all(deletePromises);
+      setSelectedDocuments(new Set());
+      setIsSelectionMode(false);
+      router.refresh();
+    } catch (error) {
+      console.error("Bulk delete error:", error);
+      alert("Erreur lors de la suppression");
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
+  const handleBulkDownload = async () => {
+    if (selectedDocuments.size === 0) return;
+
+    setIsBulkDownloading(true);
+    try {
+      const response = await fetch("/api/documents/download-multiple", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ documentIds: Array.from(selectedDocuments) }),
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "documents.zip";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error("Bulk download error:", error);
+      alert("Erreur lors du téléchargement");
+    } finally {
+      setIsBulkDownloading(false);
+    }
+  };
+
   return (
     <>
       <DocumentPreviewModal
@@ -162,14 +253,79 @@ export function DocumentsClient({
             </p>
           </div>
 
-          <Link
-            href="/dashboard/upload"
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl hover:shadow-blue-500/30 active:scale-[0.98]"
-          >
-            <Plus className="h-4 w-4" />
-            {t("addDocument")}
-          </Link>
+          <div className="flex items-center gap-2">
+            {documents.length > 0 && (
+              <button
+                onClick={() => {
+                  if (isSelectionMode) {
+                    cancelSelection();
+                  } else {
+                    setIsSelectionMode(true);
+                  }
+                }}
+                className={`flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-medium transition-all ${
+                  isSelectionMode
+                    ? "bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400"
+                    : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600"
+                }`}
+              >
+                <CheckSquare className="h-4 w-4" />
+                {isSelectionMode ? "Annuler" : "Sélectionner"}
+              </button>
+            )}
+            <Link
+              href="/dashboard/upload"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl hover:shadow-blue-500/30 active:scale-[0.98]"
+            >
+              <Plus className="h-4 w-4" />
+              {t("addDocument")}
+            </Link>
+          </div>
         </div>
+
+        {/* Selection toolbar */}
+        {isSelectionMode && selectedDocuments.size > 0 && (
+          <div className="flex items-center justify-between rounded-2xl bg-blue-50 dark:bg-blue-500/10 p-4">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={toggleSelectAll}
+                className="flex items-center gap-2 text-sm font-medium text-blue-600 dark:text-blue-400"
+              >
+                <CheckCheck className="h-4 w-4" />
+                {selectedDocuments.size === filteredDocuments.length ? "Tout désélectionner" : "Tout sélectionner"}
+              </button>
+              <span className="text-sm text-blue-600 dark:text-blue-400">
+                {selectedDocuments.size} sélectionné{selectedDocuments.size > 1 ? "s" : ""}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleBulkDownload}
+                disabled={isBulkDownloading}
+                className="flex items-center gap-2 rounded-xl bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-blue-600 disabled:opacity-50"
+              >
+                {isBulkDownloading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                Télécharger ZIP
+              </button>
+              <button
+                onClick={handleBulkDelete}
+                disabled={isBulkDeleting}
+                className="flex items-center gap-2 rounded-xl bg-red-500 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-red-600 disabled:opacity-50"
+              >
+                {isBulkDeleting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+                Supprimer
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Search & Filters */}
         <div className="flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none sm:flex-row sm:items-center">
@@ -252,14 +408,42 @@ export function DocumentsClient({
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredDocuments.map((doc) => {
               const Icon = getFileIcon(doc.fileType);
+              const isSelected = selectedDocuments.has(doc.id);
               return (
                 <div
                   key={doc.id}
-                  className="group relative overflow-hidden rounded-2xl bg-white p-4 shadow-xl shadow-black/5 transition-all hover:shadow-2xl dark:bg-neutral-800/50 dark:shadow-none"
+                  onClick={() => isSelectionMode && toggleDocumentSelection(doc.id)}
+                  className={`group relative overflow-hidden rounded-2xl bg-white p-4 shadow-xl shadow-black/5 transition-all hover:shadow-2xl dark:bg-neutral-800/50 dark:shadow-none ${
+                    isSelected ? "ring-2 ring-blue-500" : ""
+                  } ${isSelectionMode ? "cursor-pointer" : ""}`}
                 >
+                  {/* Checkbox */}
+                  {isSelectionMode && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleDocumentSelection(doc.id);
+                      }}
+                      className="absolute top-3 left-3 z-10"
+                    >
+                      {isSelected ? (
+                        <CheckSquare className="h-5 w-5 text-blue-500" />
+                      ) : (
+                        <Square className="h-5 w-5 text-neutral-400" />
+                      )}
+                    </button>
+                  )}
+
                   {/* Preview Area */}
                   <div
-                    onClick={() => handleView(doc)}
+                    onClick={(e) => {
+                      if (isSelectionMode) {
+                        e.stopPropagation();
+                        toggleDocumentSelection(doc.id);
+                      } else {
+                        handleView(doc);
+                      }
+                    }}
                     className="mb-4 flex h-36 cursor-pointer items-center justify-center rounded-xl bg-gradient-to-br from-blue-50 to-violet-50 transition-transform group-hover:scale-[1.02] dark:from-blue-500/10 dark:to-violet-500/10"
                   >
                     <Icon className="h-14 w-14 text-blue-500 dark:text-blue-400" />
@@ -288,27 +472,29 @@ export function DocumentsClient({
                   )}
 
                   {/* Actions */}
-                  <div className="mt-4 flex gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700/50">
-                    <button
-                      onClick={() => handleView(doc)}
-                      className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-blue-50 py-2 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20"
-                    >
-                      <Eye className="h-3.5 w-3.5" />
-                      {t("view")}
-                    </button>
-                    <button
-                      onClick={() => handleDownload(doc.id)}
-                      className="flex h-8 w-8 items-center justify-center rounded-xl bg-neutral-100 text-neutral-600 transition-colors hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600"
-                    >
-                      <Download className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(doc.id, doc.displayName)}
-                      className="flex h-8 w-8 items-center justify-center rounded-xl bg-neutral-100 text-neutral-600 transition-colors hover:bg-red-100 hover:text-red-600 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-red-500/20 dark:hover:text-red-400"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
+                  {!isSelectionMode && (
+                    <div className="mt-4 flex gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700/50">
+                      <button
+                        onClick={() => handleView(doc)}
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-blue-50 py-2 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                        {t("view")}
+                      </button>
+                      <button
+                        onClick={() => handleDownload(doc.id)}
+                        className="flex h-8 w-8 items-center justify-center rounded-xl bg-neutral-100 text-neutral-600 transition-colors hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(doc.id, doc.displayName)}
+                        className="flex h-8 w-8 items-center justify-center rounded-xl bg-neutral-100 text-neutral-600 transition-colors hover:bg-red-100 hover:text-red-600 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-red-500/20 dark:hover:text-red-400"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -318,13 +504,43 @@ export function DocumentsClient({
             <div className="divide-y divide-neutral-100 dark:divide-neutral-700/50">
               {filteredDocuments.map((doc) => {
                 const Icon = getFileIcon(doc.fileType);
+                const isSelected = selectedDocuments.has(doc.id);
                 return (
                   <div
                     key={doc.id}
-                    className="group flex items-center gap-4 p-4 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-700/30"
+                    onClick={() => isSelectionMode && toggleDocumentSelection(doc.id)}
+                    className={`group flex items-center gap-4 p-4 transition-colors ${
+                      isSelected
+                        ? "bg-blue-50 dark:bg-blue-500/10"
+                        : "hover:bg-neutral-50 dark:hover:bg-neutral-700/30"
+                    } ${isSelectionMode ? "cursor-pointer" : ""}`}
                   >
+                    {/* Checkbox */}
+                    {isSelectionMode && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleDocumentSelection(doc.id);
+                        }}
+                        className="flex-shrink-0"
+                      >
+                        {isSelected ? (
+                          <CheckSquare className="h-5 w-5 text-blue-500" />
+                        ) : (
+                          <Square className="h-5 w-5 text-neutral-400" />
+                        )}
+                      </button>
+                    )}
+
                     <div
-                      onClick={() => handleView(doc)}
+                      onClick={(e) => {
+                        if (isSelectionMode) {
+                          e.stopPropagation();
+                          toggleDocumentSelection(doc.id);
+                        } else {
+                          handleView(doc);
+                        }
+                      }}
                       className="flex h-12 w-12 flex-shrink-0 cursor-pointer items-center justify-center rounded-xl bg-gradient-to-br from-blue-50 to-violet-50 transition-transform hover:scale-105 dark:from-blue-500/10 dark:to-violet-500/10"
                     >
                       <Icon className="h-6 w-6 text-blue-500 dark:text-blue-400" />
@@ -353,27 +569,29 @@ export function DocumentsClient({
                       </div>
                     </div>
 
-                    <div className="flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-                      <button
-                        onClick={() => handleView(doc)}
-                        className="flex h-9 items-center gap-1.5 rounded-xl bg-blue-50 px-3 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20"
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                        {t("view")}
-                      </button>
-                      <button
-                        onClick={() => handleDownload(doc.id)}
-                        className="flex h-9 w-9 items-center justify-center rounded-xl bg-neutral-100 text-neutral-600 transition-colors hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600"
-                      >
-                        <Download className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(doc.id, doc.displayName)}
-                        className="flex h-9 w-9 items-center justify-center rounded-xl bg-neutral-100 text-neutral-600 transition-colors hover:bg-red-100 hover:text-red-600 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-red-500/20 dark:hover:text-red-400"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
+                    {!isSelectionMode && (
+                      <div className="flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                        <button
+                          onClick={() => handleView(doc)}
+                          className="flex h-9 items-center gap-1.5 rounded-xl bg-blue-50 px-3 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          {t("view")}
+                        </button>
+                        <button
+                          onClick={() => handleDownload(doc.id)}
+                          className="flex h-9 w-9 items-center justify-center rounded-xl bg-neutral-100 text-neutral-600 transition-colors hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600"
+                        >
+                          <Download className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(doc.id, doc.displayName)}
+                          className="flex h-9 w-9 items-center justify-center rounded-xl bg-neutral-100 text-neutral-600 transition-colors hover:bg-red-100 hover:text-red-600 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-red-500/20 dark:hover:text-red-400"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 );
               })}
