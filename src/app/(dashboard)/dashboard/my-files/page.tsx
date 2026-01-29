@@ -65,6 +65,7 @@ export default async function MyFilesPage() {
     id: doc.id,
     displayName: doc.displayName,
     fileType: doc.fileType,
+    mimeType: doc.mimeType,
     sizeBytes: Number(doc.sizeBytes),
     uploadedAt: doc.uploadedAt.toISOString(),
     folderId: doc.folderId,

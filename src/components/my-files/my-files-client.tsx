@@ -21,6 +21,7 @@ import {
 import { useTranslation } from "@/hooks/useTranslation";
 import { PinModal } from "@/components/folders/pin-modal";
 import { DocuBotWidget } from "@/components/docubot/docubot-widget";
+import { DocumentPreviewModal } from "@/components/documents/document-preview-modal";
 
 type FolderType = {
   id: string;
@@ -37,6 +38,7 @@ type DocumentType = {
   id: string;
   displayName: string;
   fileType: string;
+  mimeType: string;
   sizeBytes: number;
   uploadedAt: string;
   folderId: string | null;
@@ -79,6 +81,7 @@ export function MyFilesClient({
   const [unlockedFolders, setUnlockedFolders] = useState<Set<string>>(new Set());
   const [pendingFolder, setPendingFolder] = useState<FolderType | null>(null);
   const [showDocuments, setShowDocuments] = useState(false);
+  const [previewDocument, setPreviewDocument] = useState<DocumentType | null>(null);
 
   useEffect(() => {
     if (searchParams.get("create") === "true") {
@@ -580,9 +583,12 @@ export function MyFilesClient({
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <h3 className="truncate text-sm font-medium text-neutral-900 dark:text-white">
+                        <button
+                          onClick={() => setPreviewDocument(doc)}
+                          className="truncate text-sm font-medium text-neutral-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left w-full"
+                        >
                           {doc.displayName}
-                        </h3>
+                        </button>
                         <p className="text-xs text-neutral-500 dark:text-neutral-400">
                           {formatFileSize(doc.sizeBytes)}
                         </p>
@@ -663,6 +669,13 @@ export function MyFilesClient({
 
       {/* DocuBot Assistant */}
       <DocuBotWidget />
+
+      {/* Document Preview Modal */}
+      <DocumentPreviewModal
+        document={previewDocument}
+        isOpen={!!previewDocument}
+        onClose={() => setPreviewDocument(null)}
+      />
     </div>
   );
 }
