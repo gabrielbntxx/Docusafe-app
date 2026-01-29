@@ -112,14 +112,31 @@ export async function POST(
       .filter((item) => item.documentId)
       .map((item) => item.documentId as string);
 
-    // Get folders with their documents
-    const folders = await db.folder.findMany({
-      where: { id: { in: folderIds } },
-      select: {
-        id: true,
-        name: true,
-        color: true,
-        documents: {
+    // Get folders with their documents (only if there are folder IDs)
+    const folders = folderIds.length > 0
+      ? await db.folder.findMany({
+          where: { id: { in: folderIds } },
+          select: {
+            id: true,
+            name: true,
+            color: true,
+            documents: {
+              select: {
+                id: true,
+                displayName: true,
+                fileType: true,
+                mimeType: true,
+                sizeBytes: true,
+              },
+            },
+          },
+        })
+      : [];
+
+    // Get individual shared documents (only if there are document IDs)
+    const documents = documentIds.length > 0
+      ? await db.document.findMany({
+          where: { id: { in: documentIds } },
           select: {
             id: true,
             displayName: true,
@@ -127,21 +144,8 @@ export async function POST(
             mimeType: true,
             sizeBytes: true,
           },
-        },
-      },
-    });
-
-    // Get individual shared documents
-    const documents = await db.document.findMany({
-      where: { id: { in: documentIds } },
-      select: {
-        id: true,
-        displayName: true,
-        fileType: true,
-        mimeType: true,
-        sizeBytes: true,
-      },
-    });
+        })
+      : [];
 
     // Serialize BigInt
     const serializedFolders = folders.map((folder) => ({

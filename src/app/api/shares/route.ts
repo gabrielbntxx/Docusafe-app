@@ -122,8 +122,10 @@ export async function POST(req: Request) {
       },
     });
 
-    // Generate the share URL
-    const shareUrl = `${process.env.NEXT_PUBLIC_APP_URL || ""}/share/${token}`;
+    // Generate the share URL - use request URL as fallback
+    const requestUrl = new URL(req.url);
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `${requestUrl.protocol}//${requestUrl.host}`;
+    const shareUrl = `${baseUrl}/share/${token}`;
 
     return NextResponse.json({
       success: true,
@@ -147,7 +149,7 @@ export async function POST(req: Request) {
 }
 
 // GET - List user's share links
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -157,6 +159,10 @@ export async function GET() {
         { status: 401 }
       );
     }
+
+    // Get base URL for share links
+    const requestUrl = new URL(req.url);
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `${requestUrl.protocol}//${requestUrl.host}`;
 
     const shares = await db.sharedLink.findMany({
       where: {
@@ -206,7 +212,7 @@ export async function GET() {
           id: share.id,
           token: share.token,
           name: share.name,
-          url: `${process.env.NEXT_PUBLIC_APP_URL || ""}/share/${share.token}`,
+          url: `${baseUrl}/share/${share.token}`,
           expiresAt: share.expiresAt.toISOString(),
           isExpired,
           hasPassword: !!share.password,
