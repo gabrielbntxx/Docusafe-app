@@ -122,9 +122,12 @@ export async function POST(req: Request) {
       },
     });
 
-    // Generate the share URL - use request URL as fallback
-    const requestUrl = new URL(req.url);
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `${requestUrl.protocol}//${requestUrl.host}`;
+    // Generate the share URL
+    const headers = new Headers(req.headers);
+    const forwardedHost = headers.get("x-forwarded-host");
+    const forwardedProto = headers.get("x-forwarded-proto") || "https";
+    const host = forwardedHost || headers.get("host");
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `${forwardedProto}://${host}`;
     const shareUrl = `${baseUrl}/share/${token}`;
 
     return NextResponse.json({
@@ -161,8 +164,11 @@ export async function GET(req: Request) {
     }
 
     // Get base URL for share links
-    const requestUrl = new URL(req.url);
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `${requestUrl.protocol}//${requestUrl.host}`;
+    const headers = new Headers(req.headers);
+    const forwardedHost = headers.get("x-forwarded-host");
+    const forwardedProto = headers.get("x-forwarded-proto") || "https";
+    const host = forwardedHost || headers.get("host");
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `${forwardedProto}://${host}`;
 
     const shares = await db.sharedLink.findMany({
       where: {
