@@ -218,6 +218,7 @@ export const translations = {
     emailGuideStep3: "Your document will be automatically added to DocuSafe",
     emailGuideNote: "Supported formats: PDF, images (JPG, PNG). Max size: 10 MB",
     gotIt: "Got it!",
+    emailImportNotConfigured: "Email import not configured",
   },
 
   fr: {
@@ -439,6 +440,7 @@ export const translations = {
     emailGuideStep3: "Votre document sera automatiquement ajouté à DocuSafe",
     emailGuideNote: "Formats supportés : PDF, images (JPG, PNG). Taille max : 10 Mo",
     gotIt: "Compris !",
+    emailImportNotConfigured: "Import par email non configuré",
   },
 } as const;
 

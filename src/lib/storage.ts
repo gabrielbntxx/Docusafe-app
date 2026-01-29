@@ -8,19 +8,19 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 // Storage limits by plan (in bytes)
 export const STORAGE_LIMITS = {
-  FREE: 2 * 1024 * 1024, // 2 MB
+  FREE: 1 * 1024 * 1024 * 1024, // 1 GB
   PRO: 100 * 1024 * 1024 * 1024, // 100 GB
 } as const;
 
 // File size limits per upload (in bytes)
 export const FILE_SIZE_LIMITS = {
-  FREE: 2 * 1024 * 1024, // 2 MB per file
+  FREE: 100 * 1024 * 1024, // 100 MB per file
   PRO: 100 * 1024 * 1024, // 100 MB per file
 } as const;
 
 // Document count limits
 export const DOCUMENT_LIMITS = {
-  FREE: 5,
+  FREE: 15,
   PRO: Infinity,
 } as const;
 

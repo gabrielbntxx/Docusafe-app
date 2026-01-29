@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useTheme } from "@/components/providers/theme-provider";
@@ -53,11 +53,31 @@ export function SettingsClient({ user }: { user: UserSettings }) {
   );
   const [showEmailGuide, setShowEmailGuide] = useState(false);
   const [emailCopied, setEmailCopied] = useState(false);
+  const [importEmail, setImportEmail] = useState<string | null>(null);
+  const [isLoadingEmail, setIsLoadingEmail] = useState(true);
 
-  // Generate a unique import email based on user email
-  const importEmail = `${user.email.split("@")[0]}-${user.id.slice(0, 6)}@import.docusafe.app`;
+  // Fetch import email from API on mount
+  useEffect(() => {
+    const fetchImportEmail = async () => {
+      try {
+        const response = await fetch("/api/settings/import-email");
+        if (response.ok) {
+          const data = await response.json();
+          setImportEmail(data.importEmail);
+        }
+      } catch (error) {
+        console.error("Error fetching import email:", error);
+      } finally {
+        setIsLoadingEmail(false);
+      }
+    };
+
+    fetchImportEmail();
+  }, []);
 
   const handleCopyEmail = async () => {
+    if (!importEmail) return;
+
     try {
       await navigator.clipboard.writeText(importEmail);
       setEmailCopied(true);
@@ -706,13 +726,27 @@ export function SettingsClient({ user }: { user: UserSettings }) {
             </p>
             <div className="flex items-center gap-2">
               <div className="flex-1 overflow-hidden rounded-lg bg-white px-3 py-2.5 dark:bg-neutral-800">
-                <p className="truncate text-sm font-mono text-neutral-900 dark:text-white">
-                  {importEmail}
-                </p>
+                {isLoadingEmail ? (
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+                    <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                      {t("loading")}...
+                    </span>
+                  </div>
+                ) : importEmail ? (
+                  <p className="truncate text-sm font-mono text-neutral-900 dark:text-white">
+                    {importEmail}
+                  </p>
+                ) : (
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                    {t("emailImportNotConfigured")}
+                  </p>
+                )}
               </div>
               <button
                 onClick={handleCopyEmail}
-                className={`flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-semibold transition-all active:scale-[0.98] ${
+                disabled={isLoadingEmail || !importEmail}
+                className={`flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-semibold transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${
                   emailCopied
                     ? "bg-emerald-500 text-white"
                     : "bg-blue-500 text-white hover:bg-blue-600"
