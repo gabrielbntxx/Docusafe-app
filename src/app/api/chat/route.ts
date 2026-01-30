@@ -1280,7 +1280,7 @@ export async function POST(request: NextRequest) {
       .replace(/\[ID:[^\]]+\]/g, "") // Remove [ID:xxx]
       .replace(/\(ID:[^)]+\)/g, "") // Remove (ID:xxx)
       .replace(/ID:\s*[a-z0-9]{20,}/gi, "") // Remove ID: followed by long alphanumeric
-      .replace(/\s{2,}/g, " ") // Clean up extra spaces
+      .replace(/[ \t]{2,}/g, " ") // Clean up extra spaces (but keep newlines!)
       .trim();
 
     return NextResponse.json({ response: aiResponse });
