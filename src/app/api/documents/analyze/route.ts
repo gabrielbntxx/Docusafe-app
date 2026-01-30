@@ -205,10 +205,11 @@ export async function PUT(req: Request) {
       );
     }
 
-    // Get or create folder for this category
+    // Get or create folder with PRECISE naming from AI
     const folderId = await getOrCreateCategoryFolder(
       session.user.id,
-      analysis.result.category
+      analysis.result.category,
+      analysis.result.suggestedFolder // Pass the precise folder name from AI
     );
 
     // Update document with analysis results and move to folder
@@ -234,7 +235,7 @@ export async function PUT(req: Request) {
       fromCache: analysis.fromCache,
       result: analysis.result,
       folderId,
-      folderName: analysis.result.category,
+      folderName: analysis.result.suggestedFolder || analysis.result.category, // Precise folder name
     });
   } catch (error) {
     console.error("Document auto-sort error:", error);

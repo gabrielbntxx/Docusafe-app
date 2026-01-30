@@ -140,7 +140,21 @@ export const DOCUMENT_TYPES = {
   AUDIO_INTERVIEW: "audio_interview",
   AUDIO_COURS: "audio_cours",
   AUDIO_REUNION: "audio_reunion",
+  AUDIO_LIVRE: "audio_livre",
   AUDIO_AUTRE: "audio_autre",
+
+  // --- VIDÉO ---
+  VIDEO_COURS: "video_cours",
+  VIDEO_TUTORIAL: "video_tutorial",
+  VIDEO_CONFERENCE: "video_conference",
+  VIDEO_PERSONNELLE: "video_personnelle",
+  VIDEO_VOYAGE: "video_voyage",
+  VIDEO_EVENEMENT: "video_evenement",
+  VIDEO_MUSIQUE: "video_musique",
+  VIDEO_GAMING: "video_gaming",
+  VIDEO_PRESENTATION: "video_presentation",
+  VIDEO_REUNION: "video_reunion",
+  VIDEO_AUTRE: "video_autre",
 
   // --- AUTRE ---
   RECETTE_CUISINE: "recette_cuisine",
@@ -243,6 +257,12 @@ export const DOCUMENT_CATEGORIES = {
     icon: "music",
     color: "#F472B6",
     description: "Fichiers audio, musique, podcasts, mémos vocaux"
+  },
+  VIDEO: {
+    name: "Vidéo",
+    icon: "video",
+    color: "#EF4444",
+    description: "Fichiers vidéo, tutoriels, cours, clips"
   },
   AUTRE: {
     name: "Autres",
@@ -391,7 +411,21 @@ export const TYPE_TO_CATEGORY: Record<string, keyof typeof DOCUMENT_CATEGORIES> 
   audio_interview: "AUDIO",
   audio_cours: "AUDIO",
   audio_reunion: "AUDIO",
+  audio_livre: "AUDIO",
   audio_autre: "AUDIO",
+
+  // Vidéo
+  video_cours: "VIDEO",
+  video_tutorial: "VIDEO",
+  video_conference: "VIDEO",
+  video_personnelle: "VIDEO",
+  video_voyage: "VIDEO",
+  video_evenement: "VIDEO",
+  video_musique: "VIDEO",
+  video_gaming: "VIDEO",
+  video_presentation: "VIDEO",
+  video_reunion: "VIDEO",
+  video_autre: "VIDEO",
 
   // Autre
   recette_cuisine: "AUTRE",
@@ -409,7 +443,7 @@ export type AIAnalysisResult = {
   category: string;
   confidence: number;
   suggestedName?: string;
-  suggestedFolder?: string;
+  suggestedFolder?: string; // Nom de dossier PRÉCIS suggéré par l'IA (ex: "Cours Informatique")
   extractedData: {
     date?: string;
     amount?: string;
@@ -417,15 +451,19 @@ export type AIAnalysisResult = {
     recipient?: string;
     reference?: string;
     subject?: string;
+    topic?: string; // Matière/thème précis (ex: "Informatique", "Droit")
     location?: string;
     people?: string;
+    language?: string;
+    duration?: string;
+    genre?: string; // Genre pour musique/vidéo
     description?: string;
   };
   rawResponse?: string;
 };
 
-// Free tier limit
-const FREE_AI_LIMIT = 10;
+// Free tier limit (currently unlimited for all users)
+const _FREE_AI_LIMIT = 10; // Reserved for future use
 
 /**
  * Calculate SHA-256 hash of file content
@@ -549,173 +587,155 @@ export async function cacheAnalysis(
 }
 
 // ============================================================================
-// LE PROMPT ULTIME - Machine de guerre pour classifier les documents
+// LE PROMPT ULTIME V2 - IA Ultra-Précise avec Dossiers Intelligents
 // ============================================================================
-const AI_CLASSIFICATION_PROMPT = `Tu es DocuSafe AI, un système expert ultra-précis de classification de documents. Tu dois analyser ce fichier en PROFONDEUR.
+const AI_CLASSIFICATION_PROMPT = `Tu es DocuSafe AI, le système de classification de documents le plus avancé au monde. Tu analyses TOUT: documents, images, photos, vidéos et fichiers audio avec une précision chirurgicale.
 
-## TA MISSION
-Analyse le contenu visuel, textuel OU AUDIO de ce fichier pour déterminer EXACTEMENT ce qu'il est.
+## 🎯 TA MISSION PRINCIPALE
+Analyse ce fichier en profondeur et génère:
+1. Le TYPE PRÉCIS du document
+2. Un NOM DE DOSSIER ULTRA-SPÉCIFIQUE (PAS générique!)
+3. Un nom de fichier descriptif
+4. Toutes les métadonnées extractibles
 
-## RÈGLES CRITIQUES
-1. PHOTOS: Si c'est une photo de personnes, paysages, événements, selfies, vacances → C'est une PHOTO, pas un document!
-2. ASSURANCE ≠ FINANCE: Les documents d'assurance vont dans "assurance", PAS dans "finance"
-3. IMPÔTS ≠ FINANCE: Les avis d'imposition vont dans "impots", PAS dans "finance"
-4. COURS/ÉTUDES: PDF de cours, notes, exercices, examens → catégorie "études"
-5. AUDIO: Pour les fichiers audio, écoute attentivement le contenu pour classifier (musique, podcast, mémo vocal, cours audio, etc.)
-6. Sois PRÉCIS: "cours de droit" → cours, "photo à la plage" → photo_voyage, "musique pop" → audio_musique
+## ⚠️ RÈGLE CRITIQUE: NOMMAGE DES DOSSIERS
+Tu dois créer des noms de dossiers PRÉCIS et CONTEXTUELS, jamais génériques!
 
-## TYPES DE DOCUMENTS DISPONIBLES
+### ❌ MAUVAIS (trop générique)
+- "Études" → TROP VAGUE
+- "Photos" → TROP VAGUE
+- "Audio" → TROP VAGUE
+- "Vidéos" → TROP VAGUE
 
-### PHOTOS & IMAGES
-- photo_personnelle: Selfie, portrait personnel
-- photo_famille: Photo de famille, réunion familiale
-- photo_voyage: Photo de vacances, plage, montagne, voyage, tourisme
-- photo_evenement: Mariage, anniversaire, fête, concert
-- photo_profil: Photo CV, LinkedIn, professionnelle
-- screenshot: Capture d'écran de téléphone/ordinateur
-- image_artistique: Art, dessin, illustration
-- meme_image: Mème internet, image humoristique
+### ✅ BON (précis et contextuel)
+- "Cours Informatique" ou "Cours Droit L2" ou "Cours Marketing"
+- "Exercices Mathématiques" ou "TD Physique" ou "TP Chimie"
+- "Photos Vacances Espagne 2024" ou "Photos Anniversaire Marie"
+- "Fiches de Paie 2024" ou "Factures Amazon"
+- "Musique Pop" ou "Podcasts Tech" ou "Mémos Vocaux"
+- "Tutoriels Python" ou "Cours Vidéo Excel"
 
-### ÉTUDES & ÉDUCATION
-- cours: Support de cours, polycopié, slides de cours
-- notes_de_cours: Notes manuscrites ou tapées de cours
-- dissertation: Dissertation, composition, essai
-- memoire_these: Mémoire, thèse, rapport de stage
-- exercices: TD, TP, exercices, corrections
-- examen: Sujet d'examen, partiel, concours
-- diplome: Diplôme officiel (bac, licence, master, etc.)
-- releve_notes: Relevé de notes, bulletin scolaire
-- certificat_formation: Certificat de formation, MOOC
-- attestation_scolarite: Attestation d'inscription, certificat scolarité
-- carte_etudiant: Carte étudiante
+## 📋 TYPES DE DOCUMENTS
 
-### EMPLOI & CARRIÈRE
-- cv: Curriculum vitae, CV, résumé professionnel
-- lettre_motivation: Lettre de motivation, candidature
-- contrat_travail: CDI, CDD, contrat de travail
-- fiche_de_paie: Bulletin de salaire, fiche de paie
-- attestation_employeur: Attestation de l'employeur
-- certificat_travail: Certificat de travail
-- solde_tout_compte: Solde de tout compte
-- attestation_pole_emploi: Attestation Pôle Emploi, ARE
+### 📸 PHOTOS & IMAGES
+- photo_personnelle, photo_famille, photo_voyage, photo_evenement
+- photo_profil, screenshot, image_artistique, meme_image
 
-### ASSURANCE (PAS FINANCE!)
-- contrat_assurance: Contrat d'assurance générique
-- attestation_assurance: Attestation d'assurance
-- carte_assurance: Carte d'assuré
-- constat_amiable: Constat accident
-- declaration_sinistre: Déclaration de sinistre
-- assurance_auto: Assurance voiture/moto
-- assurance_habitation: Assurance logement
-- assurance_vie: Assurance vie, épargne
-- mutuelle: Mutuelle santé, complémentaire
+### 📚 ÉTUDES (sois PRÉCIS sur la matière!)
+- cours, notes_de_cours, dissertation, memoire_these
+- exercices, examen, diplome, releve_notes
+- certificat_formation, attestation_scolarite, carte_etudiant
 
-### BANQUE
-- releve_bancaire: Relevé de compte
-- rib: RIB, IBAN
-- cheque: Chèque
-- pret_bancaire: Offre de prêt, crédit
-- echeancier: Échéancier de remboursement
+### 💼 EMPLOI
+- cv, lettre_motivation, contrat_travail, fiche_de_paie
+- attestation_employeur, certificat_travail, offre_emploi
 
-### IMPÔTS (PAS FINANCE!)
-- avis_imposition: Avis d'imposition sur le revenu
-- declaration_revenus: Déclaration de revenus
-- taxe_habitation: Taxe d'habitation
-- taxe_fonciere: Taxe foncière
+### 🛡️ ASSURANCE (PAS finance!)
+- contrat_assurance, attestation_assurance, mutuelle
+- assurance_auto, assurance_habitation, constat_amiable
 
-### LOGEMENT
-- bail: Contrat de location, bail
-- quittance_loyer: Quittance de loyer
-- etat_des_lieux: État des lieux entrée/sortie
-- attestation_hebergement: Attestation d'hébergement
-- facture_energie: Facture EDF, Engie, gaz, électricité
-- facture_eau: Facture d'eau
-- facture_internet: Facture internet, box, fibre
+### 🏦 BANQUE
+- releve_bancaire, rib, pret_bancaire, echeancier
 
-### VÉHICULE
-- carte_grise: Certificat d'immatriculation
-- permis_conduire: Permis de conduire
-- controle_technique: Contrôle technique
-- facture_entretien_auto: Facture garage, entretien
-- pv_amende: PV, contravention, amende
+### 📊 IMPÔTS (PAS finance!)
+- avis_imposition, declaration_revenus, taxe_habitation, taxe_fonciere
 
-### SANTÉ
-- ordonnance: Ordonnance médicale
-- compte_rendu_medical: Compte-rendu de consultation
-- analyse_medicale: Résultats d'analyses, bilan sanguin
-- radiographie: Radio, scanner, IRM
-- carte_vitale: Carte vitale, attestation droits
-- carnet_vaccination: Carnet de vaccination, pass sanitaire
-- facture_medicale: Facture médecin, hôpital
+### 🏠 LOGEMENT
+- bail, quittance_loyer, etat_des_lieux
+- facture_energie, facture_eau, facture_internet
 
-### IDENTITÉ
-- carte_identite: Carte nationale d'identité
-- passeport: Passeport
-- acte_naissance: Acte de naissance
-- livret_famille: Livret de famille
-- justificatif_domicile: Justificatif de domicile
+### 🚗 VÉHICULE
+- carte_grise, permis_conduire, controle_technique, pv_amende
 
-### FACTURES & ACHATS
-- facture: Facture d'achat générique
-- ticket_caisse: Ticket de caisse, reçu
-- devis: Devis
-- garantie: Certificat de garantie
+### 🏥 SANTÉ
+- ordonnance, compte_rendu_medical, analyse_medicale
+- carte_vitale, carnet_vaccination, facture_medicale
 
-### JURIDIQUE
-- contrat: Contrat générique (pas travail/bail)
-- acte_notarie: Acte notarié
-- jugement: Jugement, décision de justice
-- procuration: Procuration
+### 🪪 IDENTITÉ
+- carte_identite, passeport, acte_naissance, livret_famille
 
-### VOYAGE
-- billet_avion: Billet d'avion, boarding pass
-- billet_train: Billet de train SNCF
-- reservation_hotel: Réservation hôtel
-- visa: Visa
+### 🧾 FACTURES
+- facture, ticket_caisse, devis, garantie
 
-### ADMINISTRATIF
-- lettre_administrative: Lettre d'administration
-- courrier_officiel: Courrier CAF, CPAM, mairie
-- convocation: Convocation
+### ⚖️ JURIDIQUE
+- contrat, acte_notarie, jugement, procuration
 
-### AUDIO (fichiers audio MP3, WAV, etc.)
-- audio_musique: Musique, chanson, morceau musical
-- audio_podcast: Épisode de podcast, émission audio
-- audio_memo_vocal: Mémo vocal, note vocale, enregistrement personnel
-- audio_interview: Interview, entretien enregistré
-- audio_cours: Cours audio, conférence enregistrée, audiobook éducatif
-- audio_reunion: Enregistrement de réunion, meeting
-- audio_autre: Autre fichier audio non classifié
+### ✈️ VOYAGE
+- billet_avion, billet_train, reservation_hotel, visa
 
-### AUTRE
-- recette_cuisine: Recette de cuisine
-- note_personnelle: Note, mémo personnel
-- autre: Vraiment inclassable
+### 🎵 AUDIO (analyse le CONTENU audio!)
+- audio_musique: Musique, chanson → Dossier: "Musique [Genre]"
+- audio_podcast: Podcast, émission → Dossier: "Podcasts [Thème]"
+- audio_memo_vocal: Mémo personnel → Dossier: "Mémos Vocaux"
+- audio_interview: Interview → Dossier: "Interviews [Sujet]"
+- audio_cours: Cours/conférence → Dossier: "Cours Audio [Matière]"
+- audio_reunion: Réunion enregistrée → Dossier: "Réunions [Projet]"
+- audio_livre: Audiobook → Dossier: "Audiobooks [Genre]"
+- audio_autre: Autre audio → Dossier selon contenu détecté
 
-## EXEMPLES DE CLASSIFICATION CORRECTE
+### 🎬 VIDÉO (analyse le CONTENU vidéo!)
+- video_cours: Cours/tutoriel → Dossier: "Cours Vidéo [Matière]" ou "Tutoriels [Sujet]"
+- video_conference: Conférence/webinar → Dossier: "Conférences [Thème]"
+- video_personnelle: Vidéo perso → Dossier: "Vidéos Personnelles [Contexte]"
+- video_voyage: Vidéo vacances → Dossier: "Vidéos [Lieu] [Année]"
+- video_evenement: Mariage, fête → Dossier: "Vidéos [Événement]"
+- video_musique: Clip, concert → Dossier: "Clips Musicaux" ou "Concerts"
+- video_gaming: Gaming, stream → Dossier: "Gaming [Jeu]"
+- video_tutorial: How-to → Dossier: "Tutoriels [Sujet]"
+- video_presentation: PowerPoint filmé → Dossier: "Présentations [Sujet]"
+- video_reunion: Réunion Zoom/Teams → Dossier: "Réunions Vidéo"
+- video_autre: Autre vidéo → Dossier selon contenu
 
-| Ce que tu vois | Type | Catégorie |
-|----------------|------|-----------|
-| Photo de plage avec personnes | photo_voyage | Photos |
-| PDF "Droit constitutionnel L2" | cours | Études |
-| Selfie | photo_personnelle | Photos |
-| Document MAIF/MATMUT | contrat_assurance | Assurance |
-| Avis impôt 2024 | avis_imposition | Impôts |
-| Screenshot iPhone | screenshot | Photos |
-| "CV - Jean Dupont" | cv | Emploi |
-| Facture Amazon | facture | Factures |
-| Bulletin de notes université | releve_notes | Études |
-| MP3 avec musique/chanson | audio_musique | Audio |
-| Enregistrement vocal personnel | audio_memo_vocal | Audio |
-| Épisode podcast/discussion | audio_podcast | Audio |
-| Cours enregistré/conférence | audio_cours | Audio |
+### 📁 AUTRE
+- recette_cuisine, note_personnelle, document_professionnel, autre
 
-## FORMAT DE RÉPONSE
-Réponds UNIQUEMENT avec ce JSON (sans \`\`\`, sans markdown):
+## 🎓 EXEMPLES DE CLASSIFICATION PARFAITE
 
-{"documentType":"type_exact","confidence":0.95,"suggestedName":"Nom descriptif en français","extractedData":{"date":"2024-01-15","amount":"150.00€","issuer":"Émetteur","recipient":"Destinataire","reference":"REF123","subject":"Sujet principal","location":"Lieu si visible","people":"Personnes identifiées","description":"Description courte du contenu"}}
+| Contenu détecté | Type | suggestedFolder |
+|-----------------|------|-----------------|
+| PDF cours de programmation Java | cours | "Cours Informatique" |
+| PDF exercices de maths niveau L1 | exercices | "Exercices Mathématiques" |
+| Photo de plage au Portugal | photo_voyage | "Photos Vacances Portugal" |
+| Vidéo tutoriel Excel formules | video_tutorial | "Tutoriels Excel" |
+| Audio podcast tech/startup | audio_podcast | "Podcasts Tech" |
+| Cours vidéo Python débutant | video_cours | "Cours Vidéo Python" |
+| Fiche de paie janvier 2024 | fiche_de_paie | "Fiches de Paie 2024" |
+| Facture Amazon livre | facture | "Factures Amazon" |
+| Vidéo mariage de Julie | video_evenement | "Vidéos Mariage Julie" |
+| Mémo vocal idées projet | audio_memo_vocal | "Mémos Vocaux Projets" |
+| Screenshot conversation WhatsApp | screenshot | "Screenshots Conversations" |
+| Dissertation philosophie Kant | dissertation | "Dissertations Philosophie" |
+| Enregistrement cours de droit | audio_cours | "Cours Audio Droit" |
+| Clip YouTube musique rock | video_musique | "Clips Rock" |
+| Réunion Zoom projet Alpha | video_reunion | "Réunions Projet Alpha" |
 
-IMPORTANT: Remplis tous les champs extractedData pertinents. Pour les photos, décris ce que tu vois (lieu, personnes, contexte). Pour les audios, décris ce que tu entends (type de contenu, sujet, langue, ambiance).`;
+## 🔊 INSTRUCTIONS AUDIO/VIDÉO
+
+### Pour les fichiers AUDIO:
+- ÉCOUTE attentivement le contenu
+- Identifie: langue, type de contenu, sujet, ambiance
+- Si c'est de la musique: identifie le genre (pop, rock, classique, rap, etc.)
+- Si c'est parlé: identifie le sujet (cours de quoi? podcast sur quoi? interview de qui?)
+
+### Pour les fichiers VIDÉO:
+- REGARDE attentivement les images ET écoute l'audio
+- Identifie: type de contenu, sujet, personnes, lieu, contexte
+- Si c'est un tutoriel: de quel logiciel/sujet?
+- Si c'est un cours: quelle matière?
+- Si c'est personnel: quel événement/lieu?
+
+## 📤 FORMAT DE RÉPONSE
+
+Réponds UNIQUEMENT avec ce JSON (PAS de \`\`\`, PAS de markdown):
+
+{"documentType":"type_exact","confidence":0.95,"suggestedName":"Nom fichier descriptif","suggestedFolder":"Nom Dossier Ultra Précis","extractedData":{"date":"2024-01-15","amount":"150.00€","issuer":"Émetteur","recipient":"Destinataire","reference":"REF123","subject":"Sujet principal détaillé","topic":"Matière/Thème précis","location":"Lieu","people":"Personnes","language":"Langue","duration":"Durée si applicable","genre":"Genre si musique/vidéo","description":"Description détaillée du contenu"}}
+
+## 🚨 RAPPELS CRITIQUES
+1. suggestedFolder doit être PRÉCIS: "Cours Informatique" pas "Études"
+2. Pour audio/vidéo: analyse le CONTENU, pas juste le format
+3. Extrais TOUTES les infos pertinentes (date, matière, lieu, personnes...)
+4. La confidence doit refléter ta certitude réelle
+5. Si tu détectes plusieurs thèmes, choisis le principal`;
 
 /**
  * Analyze document with Gemini AI - VERSION ULTRA
@@ -738,19 +758,36 @@ export async function analyzeDocumentWithAI(
   console.log("[AI Analysis] Base64 data length:", base64Data.length);
 
   let geminiMimeType = mimeType;
+
   if (mimeType === "application/pdf") {
     geminiMimeType = "application/pdf";
   } else if (mimeType.startsWith("image/")) {
     geminiMimeType = mimeType;
   } else if (mimeType.startsWith("audio/")) {
-    // Gemini supports audio analysis
-    // Map common audio types to Gemini-supported formats
+    // Gemini supports audio analysis - map to supported formats
     if (mimeType === "audio/mpeg" || mimeType === "audio/mp3") {
       geminiMimeType = "audio/mpeg";
     } else if (mimeType === "audio/wav" || mimeType === "audio/x-wav" || mimeType === "audio/wave") {
       geminiMimeType = "audio/wav";
+    } else if (mimeType === "audio/ogg") {
+      geminiMimeType = "audio/ogg";
+    } else if (mimeType === "audio/flac") {
+      geminiMimeType = "audio/flac";
     } else {
       geminiMimeType = "audio/mpeg"; // Default fallback for audio
+    }
+  } else if (mimeType.startsWith("video/")) {
+    // Gemini 2.0 supports video analysis - map to supported formats
+    if (mimeType === "video/mp4" || mimeType === "video/mpeg") {
+      geminiMimeType = "video/mp4";
+    } else if (mimeType === "video/quicktime") {
+      geminiMimeType = "video/quicktime";
+    } else if (mimeType === "video/webm") {
+      geminiMimeType = "video/webm";
+    } else if (mimeType === "video/x-msvideo" || mimeType === "video/avi") {
+      geminiMimeType = "video/x-msvideo";
+    } else {
+      geminiMimeType = "video/mp4"; // Default fallback for video
     }
   } else {
     geminiMimeType = "application/pdf";
@@ -833,12 +870,15 @@ export async function analyzeDocumentWithAI(
 
     console.log("[AI Analysis] ULTRA classification:", documentType, "->", category, "(", categoryKey, ")");
 
+    // Use the AI's suggested folder if provided, otherwise fall back to category
+    const suggestedFolder = parsed.suggestedFolder || category;
+
     return {
       documentType,
       category,
       confidence: parsed.confidence || 0.5,
       suggestedName: parsed.suggestedName,
-      suggestedFolder: category,
+      suggestedFolder, // Nom de dossier PRÉCIS de l'IA
       extractedData: {
         date: parsed.extractedData?.date || undefined,
         amount: parsed.extractedData?.amount || undefined,
@@ -846,8 +886,12 @@ export async function analyzeDocumentWithAI(
         recipient: parsed.extractedData?.recipient || undefined,
         reference: parsed.extractedData?.reference || undefined,
         subject: parsed.extractedData?.subject || undefined,
+        topic: parsed.extractedData?.topic || undefined,
         location: parsed.extractedData?.location || undefined,
         people: parsed.extractedData?.people || undefined,
+        language: parsed.extractedData?.language || undefined,
+        duration: parsed.extractedData?.duration || undefined,
+        genre: parsed.extractedData?.genre || undefined,
         description: parsed.extractedData?.description || undefined,
       },
       rawResponse: textResponse,
@@ -906,13 +950,19 @@ export async function analyzeDocument(
 }
 
 /**
- * Get or create folder for category
- * Searches intelligently for existing folders that match the category
+ * Get or create folder with INTELLIGENT matching
+ * Uses AI's suggestedFolder for precise naming (e.g., "Cours Informatique" instead of "Études")
  */
 export async function getOrCreateCategoryFolder(
   userId: string,
-  category: string
+  category: string,
+  suggestedFolder?: string
 ): Promise<string> {
+  // Use the AI's precise folder name if available, otherwise fall back to category
+  const targetFolderName = suggestedFolder || category;
+
+  console.log(`[AI Smart Folder] Looking for folder: "${targetFolderName}" (category: ${category})`);
+
   // Get all user folders
   const allFolders = await db.folder.findMany({
     where: { userId },
@@ -926,39 +976,53 @@ export async function getOrCreateCategoryFolder(
       .replace(/[\u0300-\u036f]/g, "")
       .trim();
 
-  const normalizedCategory = normalize(category);
+  const normalizedTarget = normalize(targetFolderName);
 
-  // 1. Check exact match (case insensitive)
+  // 1. Check EXACT match first (case insensitive)
   let matchingFolder = allFolders.find(
-    (f) => normalize(f.name) === normalizedCategory
+    (f) => normalize(f.name) === normalizedTarget
   );
 
-  // 2. Check if any folder name contains the category or vice versa
+  // 2. Check if any existing folder contains the target or vice versa
+  // This helps group similar content (e.g., "Cours Informatique L1" goes into existing "Cours Informatique")
   if (!matchingFolder) {
+    matchingFolder = allFolders.find((f) => {
+      const normalizedFolderName = normalize(f.name);
+      // Check if folder contains target or target contains folder
+      return normalizedFolderName.includes(normalizedTarget) ||
+             normalizedTarget.includes(normalizedFolderName);
+    });
+  }
+
+  // 3. For generic category matches - if suggestedFolder is specific, prefer creating new
+  // But if no suggestedFolder, fall back to category matching
+  if (!matchingFolder && !suggestedFolder) {
+    const normalizedCategory = normalize(category);
     matchingFolder = allFolders.find(
-      (f) => normalize(f.name).includes(normalizedCategory) ||
-             normalizedCategory.includes(normalize(f.name))
+      (f) => normalize(f.name) === normalizedCategory ||
+             normalize(f.name).includes(normalizedCategory)
     );
   }
 
-  // 3. Check for common variations (e.g., "Factures" matches "Facture", "Photos" matches "Photo")
+  // 4. Check for common variations (singular/plural)
   if (!matchingFolder) {
-    const categoryBase = normalizedCategory.replace(/s$/, ""); // Remove trailing 's'
+    const targetBase = normalizedTarget.replace(/s$/, "");
     matchingFolder = allFolders.find((f) => {
       const folderBase = normalize(f.name).replace(/s$/, "");
-      return folderBase === categoryBase;
+      return folderBase === targetBase;
     });
   }
 
   // If found, return existing folder
   if (matchingFolder) {
-    console.log(`[AI Analysis] Found existing folder "${matchingFolder.name}" for category "${category}"`);
+    console.log(`[AI Smart Folder] ✓ Found existing folder: "${matchingFolder.name}"`);
     return matchingFolder.id;
   }
 
-  // No existing folder found, create a new one
-  console.log(`[AI Analysis] Creating new folder for category "${category}"`);
+  // No existing folder found - CREATE with the PRECISE name from AI
+  console.log(`[AI Smart Folder] ➕ Creating new folder: "${targetFolderName}"`);
 
+  // Find category info for icon and color
   const categoryKey = Object.keys(DOCUMENT_CATEGORIES).find(
     (key) => DOCUMENT_CATEGORIES[key as keyof typeof DOCUMENT_CATEGORIES].name === category
   ) as keyof typeof DOCUMENT_CATEGORIES | undefined;
@@ -970,11 +1034,12 @@ export async function getOrCreateCategoryFolder(
   const newFolder = await db.folder.create({
     data: {
       userId,
-      name: category,
+      name: targetFolderName, // Use the PRECISE name, not generic category
       icon: categoryInfo.icon,
       color: categoryInfo.color,
     },
   });
 
+  console.log(`[AI Smart Folder] ✓ Created folder: "${newFolder.name}" with icon: ${categoryInfo.icon}`);
   return newFolder.id;
 }
