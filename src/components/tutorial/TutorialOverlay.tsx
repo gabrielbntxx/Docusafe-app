@@ -65,32 +65,42 @@ export function TutorialOverlay() {
 
     // Calculate tooltip position
     const tooltipWidth = 300;
+    const tooltipHeight = 220; // Approximate height
     const gap = 12;
+    const margin = 16; // Minimum margin from screen edges
 
     let style: React.CSSProperties = { position: "fixed" };
 
     switch (currentStepData.position) {
       case "right":
-        style.top = rect.top;
         style.left = rect.right + gap;
-        // If tooltip would go off screen, position it below instead
-        if (rect.right + gap + tooltipWidth > window.innerWidth) {
+        // Check if tooltip fits on the right
+        if (rect.right + gap + tooltipWidth > window.innerWidth - margin) {
+          // Position below instead
+          style.left = Math.max(margin, Math.min(rect.left, window.innerWidth - tooltipWidth - margin));
           style.top = rect.bottom + gap;
-          style.left = Math.max(16, rect.left);
-          style.maxWidth = `calc(100vw - 32px)`;
+        } else {
+          // Position to the right, vertically centered but within bounds
+          const idealTop = rect.top + rect.height / 2 - tooltipHeight / 2;
+          style.top = Math.max(margin, Math.min(idealTop, window.innerHeight - tooltipHeight - margin));
         }
         break;
       case "left":
-        style.top = rect.top;
         style.right = window.innerWidth - rect.left + gap;
+        const idealTopLeft = rect.top + rect.height / 2 - tooltipHeight / 2;
+        style.top = Math.max(margin, Math.min(idealTopLeft, window.innerHeight - tooltipHeight - margin));
         break;
       case "bottom":
         style.top = rect.bottom + gap;
-        style.left = Math.max(16, rect.left);
+        style.left = Math.max(margin, Math.min(rect.left, window.innerWidth - tooltipWidth - margin));
+        // If would go below screen, position above instead
+        if (rect.bottom + gap + tooltipHeight > window.innerHeight - margin) {
+          style.top = Math.max(margin, rect.top - tooltipHeight - gap);
+        }
         break;
       case "top":
-        style.bottom = window.innerHeight - rect.top + gap;
-        style.left = Math.max(16, rect.left);
+        style.top = Math.max(margin, rect.top - tooltipHeight - gap);
+        style.left = Math.max(margin, Math.min(rect.left, window.innerWidth - tooltipWidth - margin));
         break;
     }
 
