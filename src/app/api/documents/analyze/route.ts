@@ -98,20 +98,26 @@ export async function POST(req: Request) {
     }
 
     // Get file from storage
+    console.log("[Analyze POST] Fetching document from R2:", document.storageKey);
     const encryptedBuffer = await getFromR2(document.storageKey);
+    console.log("[Analyze POST] Got encrypted buffer, size:", encryptedBuffer.length);
 
     // Decrypt the document before analysis
     const fileBuffer = await getDecryptedBuffer(encryptedBuffer, session.user.id);
+    console.log("[Analyze POST] Decrypted buffer, size:", fileBuffer.length);
 
     // Analyze document (now decrypted)
+    console.log("[Analyze POST] Starting AI analysis for:", document.originalName, "mimeType:", document.mimeType);
     const analysis = await analyzeDocument(
       session.user.id,
       fileBuffer,
       document.originalName,
       document.mimeType
     );
+    console.log("[Analyze POST] Analysis result:", analysis.success, "fromCache:", analysis.fromCache);
 
     if (!analysis.success) {
+      console.error("[Analyze POST] Analysis failed:", analysis.error);
       return NextResponse.json(
         { error: analysis.error || "Analyse échouée" },
         { status: 400 }
@@ -185,20 +191,26 @@ export async function PUT(req: Request) {
     }
 
     // Get file from storage
+    console.log("[Analyze PUT] Fetching document from R2:", document.storageKey);
     const encryptedBuffer = await getFromR2(document.storageKey);
+    console.log("[Analyze PUT] Got encrypted buffer, size:", encryptedBuffer.length);
 
     // Decrypt the document before analysis
     const fileBuffer = await getDecryptedBuffer(encryptedBuffer, session.user.id);
+    console.log("[Analyze PUT] Decrypted buffer, size:", fileBuffer.length);
 
     // Analyze document (now decrypted)
+    console.log("[Analyze PUT] Starting AI analysis for:", document.originalName, "mimeType:", document.mimeType);
     const analysis = await analyzeDocument(
       session.user.id,
       fileBuffer,
       document.originalName,
       document.mimeType
     );
+    console.log("[Analyze PUT] Analysis result:", analysis.success, "fromCache:", analysis.fromCache);
 
     if (!analysis.success || !analysis.result) {
+      console.error("[Analyze PUT] Analysis failed:", analysis.error);
       return NextResponse.json(
         { error: analysis.error || "Analyse échouée" },
         { status: 400 }

@@ -104,14 +104,17 @@ export default function UploadPage() {
           // Step 2: If AI sorting is enabled, analyze and sort
           if (aiSortingEnabled && uploadData.document?.id) {
             try {
+              console.log("[Upload] Starting AI analysis for:", file.name, "type:", file.type);
               const analyzeResponse = await fetch("/api/documents/analyze", {
                 method: "PUT", // PUT for auto-sort
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ documentId: uploadData.document.id }),
               });
 
-              if (analyzeResponse.ok) {
-                const analyzeData = await analyzeResponse.json();
+              const analyzeData = await analyzeResponse.json();
+              console.log("[Upload] AI analysis response:", analyzeData);
+
+              if (analyzeResponse.ok && analyzeData.success) {
                 setAiResults(prev => ({
                   ...prev,
                   [file.name]: {
@@ -119,10 +122,26 @@ export default function UploadPage() {
                     type: analyzeData.result?.documentType || "autre",
                   },
                 }));
+              } else {
+                // Show AI error but don't fail the upload
+                console.error("[Upload] AI analysis failed:", analyzeData.error);
+                setAiResults(prev => ({
+                  ...prev,
+                  [file.name]: {
+                    category: "Analyse échouée",
+                    type: analyzeData.error || "Erreur inconnue",
+                  },
+                }));
               }
             } catch (aiError) {
-              console.error("AI analysis error:", aiError);
-              // Don't fail the upload if AI fails
+              console.error("[Upload] AI analysis error:", aiError);
+              setAiResults(prev => ({
+                ...prev,
+                [file.name]: {
+                  category: "Erreur",
+                  type: "Erreur réseau lors de l'analyse",
+                },
+              }));
             }
           }
 

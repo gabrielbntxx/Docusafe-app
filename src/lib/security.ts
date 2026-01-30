@@ -567,7 +567,7 @@ export async function validateFile(
   // 1. Vérifier que le type MIME est autorisé
   if (!(file.type in ALLOWED_FILE_TYPES)) {
     errors.push(
-      `Type de fichier non autorisé: ${file.type}. Types acceptés: PDF, JPG, PNG, GIF, WebP`
+      `Type de fichier non autorisé: ${file.type}. Types acceptés: PDF, Images (JPG, PNG, GIF, WebP), Audio (MP3, WAV), Vidéo (MP4, MOV, WebM)`
     );
   }
 

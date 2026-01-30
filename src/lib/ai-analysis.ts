@@ -1184,29 +1184,38 @@ export async function analyzeDocument(
   fromCache?: boolean;
   error?: string;
 }> {
+  console.log("[analyzeDocument] START - file:", fileName, "mimeType:", mimeType, "size:", fileBuffer.length);
+
   const fileHash = calculateFileHash(fileBuffer);
+  console.log("[analyzeDocument] File hash:", fileHash.substring(0, 16) + "...");
 
   // Check cache first
   const cached = await getCachedAnalysis(fileHash);
   if (cached) {
+    console.log("[analyzeDocument] Found in cache, returning cached result");
     return { success: true, result: cached, fromCache: true };
   }
 
   // Check usage limits
   const canUse = await canUseAIAnalysis(userId);
+  console.log("[analyzeDocument] canUseAI:", canUse.allowed, "reason:", canUse.reason || "OK");
   if (!canUse.allowed) {
     return { success: false, error: canUse.reason };
   }
 
   // Analyze with AI
+  console.log("[analyzeDocument] Calling analyzeDocumentWithAI...");
   const result = await analyzeDocumentWithAI(fileBuffer, fileName, mimeType);
+  console.log("[analyzeDocument] AI result:", result.documentType, "confidence:", result.confidence, "suggestedFolder:", result.suggestedFolder);
 
   // Cache the result
   await cacheAnalysis(fileHash, result);
+  console.log("[analyzeDocument] Cached result");
 
   // Increment usage
   await incrementAIUsage(userId);
 
+  console.log("[analyzeDocument] END - success");
   return { success: true, result, fromCache: false };
 }
 
