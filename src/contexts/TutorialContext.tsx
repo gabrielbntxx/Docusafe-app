@@ -4,7 +4,8 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 
 export type TutorialStep = {
   id: string;
-  target: string; // CSS selector for the element to highlight
+  target: string; // CSS selector for the element to highlight (desktop)
+  mobileTarget?: string; // CSS selector for mobile element
   titleKey: string; // Translation key for title
   descriptionKey: string; // Translation key for description
   position: "top" | "bottom" | "left" | "right";
@@ -22,6 +23,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: "upload",
     target: "[data-tutorial='upload-button']",
+    mobileTarget: "[data-tutorial='mobile-upload']",
     titleKey: "tutorialUploadTitle",
     descriptionKey: "tutorialUploadDesc",
     position: "right",
@@ -29,6 +31,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: "documents",
     target: "[data-tutorial='documents-link']",
+    mobileTarget: "[data-tutorial='mobile-documents']",
     titleKey: "tutorialDocumentsTitle",
     descriptionKey: "tutorialDocumentsDesc",
     position: "right",
@@ -36,6 +39,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: "folders",
     target: "[data-tutorial='folders-link']",
+    mobileTarget: "[data-tutorial='mobile-folders']",
     titleKey: "tutorialFoldersTitle",
     descriptionKey: "tutorialFoldersDesc",
     position: "right",
@@ -43,6 +47,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: "search",
     target: "[data-tutorial='search-link']",
+    mobileTarget: "[data-tutorial='mobile-search']",
     titleKey: "tutorialSearchTitle",
     descriptionKey: "tutorialSearchDesc",
     position: "right",

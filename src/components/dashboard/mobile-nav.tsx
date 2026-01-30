@@ -108,6 +108,7 @@ export function MobileNav() {
 
           <button
             onClick={() => setIsOpen(!isOpen)}
+            data-tutorial="mobile-menu-button"
             className="flex h-9 w-9 items-center justify-center rounded-xl bg-neutral-100/80 text-neutral-600 transition-colors hover:bg-neutral-200/80 dark:bg-white/5 dark:text-neutral-400 dark:hover:bg-white/10"
             aria-label="Toggle menu"
           >

@@ -16,11 +16,11 @@ export function BottomNav() {
   const { t } = useTranslation();
 
   const navItems = [
-    { key: "dashboard", label: "Accueil", href: "/dashboard", icon: LayoutDashboard },
-    { key: "documents", label: "Documents", href: "/dashboard/documents", icon: FileText },
-    { key: "add", label: "", href: "/dashboard/upload", icon: Plus, isCenter: true },
-    { key: "folders", label: "Dossiers", href: "/dashboard/my-files", icon: Folder },
-    { key: "search", label: "Recherche", href: "/dashboard/search", icon: Search },
+    { key: "dashboard", label: "Accueil", href: "/dashboard", icon: LayoutDashboard, tutorialId: "mobile-dashboard" },
+    { key: "documents", label: "Documents", href: "/dashboard/documents", icon: FileText, tutorialId: "mobile-documents" },
+    { key: "add", label: "", href: "/dashboard/upload", icon: Plus, isCenter: true, tutorialId: "mobile-upload" },
+    { key: "folders", label: "Dossiers", href: "/dashboard/my-files", icon: Folder, tutorialId: "mobile-folders" },
+    { key: "search", label: "Recherche", href: "/dashboard/search", icon: Search, tutorialId: "mobile-search" },
   ];
 
   return (
@@ -37,6 +37,7 @@ export function BottomNav() {
                 <Link
                   key={item.key}
                   href={item.href}
+                  data-tutorial={item.tutorialId}
                   className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-500 text-white shadow-lg shadow-blue-500/30 -mt-4"
                 >
                   <Plus className="h-6 w-6" strokeWidth={2.5} />
@@ -48,6 +49,7 @@ export function BottomNav() {
               <Link
                 key={item.key}
                 href={item.href}
+                data-tutorial={item.tutorialId}
                 className="flex flex-col items-center justify-center w-16 h-full"
               >
                 <item.icon className={`h-5 w-5 ${
