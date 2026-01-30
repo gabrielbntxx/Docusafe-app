@@ -146,7 +146,7 @@ export function MobileNav() {
           <div className="p-3 space-y-1">
             {/* Help */}
             <Link
-              href="#"
+              href="/dashboard/help"
               onClick={closeMenu}
               className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-neutral-600 hover:bg-white active:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-white/5"
             >
@@ -159,7 +159,7 @@ export function MobileNav() {
 
             {/* Support */}
             <Link
-              href="#"
+              href="/dashboard/support"
               onClick={closeMenu}
               className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-neutral-600 hover:bg-white active:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-white/5"
             >
