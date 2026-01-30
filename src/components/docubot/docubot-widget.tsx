@@ -88,13 +88,14 @@ export function DocuBotWidget() {
     }, 200);
   };
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+  const handleSend = async (directMessage?: string) => {
+    const messageToSend = directMessage || input.trim();
+    if (!messageToSend || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: input.trim(),
+      content: messageToSend,
       timestamp: new Date(),
     };
 
@@ -158,8 +159,7 @@ export function DocuBotWidget() {
   };
 
   const handleQuickAction = (query: string) => {
-    setInput(query);
-    setTimeout(() => handleSend(), 100);
+    handleSend(query);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

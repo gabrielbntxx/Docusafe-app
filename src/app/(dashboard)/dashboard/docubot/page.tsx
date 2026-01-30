@@ -59,13 +59,14 @@ export default function DocuBotPage() {
     inputRef.current?.focus();
   }, []);
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+  const handleSend = async (directMessage?: string) => {
+    const messageToSend = directMessage || input.trim();
+    if (!messageToSend || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: input.trim(),
+      content: messageToSend,
       timestamp: new Date(),
     };
 
@@ -112,8 +113,7 @@ export default function DocuBotPage() {
   };
 
   const handleQuickAction = (query: string) => {
-    setInput(query);
-    setTimeout(() => handleSend(), 100);
+    handleSend(query);
   };
 
   return (
