@@ -141,17 +141,13 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
     endTutorial();
   };
 
-  const currentStepData = isActive ? TUTORIAL_STEPS[currentStep] : null;
-
-  // Don't render until initialized to avoid hydration issues
-  if (!isInitialized) {
-    return <>{children}</>;
-  }
+  // Don't show tutorial until initialized to avoid hydration issues
+  const currentStepData = isActive && isInitialized ? TUTORIAL_STEPS[currentStep] : null;
 
   return (
     <TutorialContext.Provider
       value={{
-        isActive,
+        isActive: isActive && isInitialized,
         currentStep,
         currentStepData,
         totalSteps: TUTORIAL_STEPS.length,
