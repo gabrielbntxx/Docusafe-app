@@ -844,9 +844,119 @@ function classifyMediaByFilename(
 
 // Maximum file size for inline base64 analysis (20MB)
 const MAX_INLINE_SIZE = 20 * 1024 * 1024;
+// Maximum file size for File API upload (2GB)
+const MAX_FILE_API_SIZE = 2 * 1024 * 1024 * 1024;
+
+/**
+ * Upload file to Gemini File API for large files
+ * Returns the file URI to use in generateContent
+ */
+async function uploadToGeminiFileAPI(
+  fileBuffer: Buffer,
+  fileName: string,
+  mimeType: string,
+  apiKey: string
+): Promise<string> {
+  console.log("[Gemini File API] Uploading file:", fileName, "size:", fileBuffer.length);
+
+  // Step 1: Start resumable upload
+  const startResponse = await fetch(
+    `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: {
+        "X-Goog-Upload-Protocol": "resumable",
+        "X-Goog-Upload-Command": "start",
+        "X-Goog-Upload-Header-Content-Length": String(fileBuffer.length),
+        "X-Goog-Upload-Header-Content-Type": mimeType,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        file: {
+          display_name: fileName,
+        },
+      }),
+    }
+  );
+
+  if (!startResponse.ok) {
+    const errorText = await startResponse.text();
+    console.error("[Gemini File API] Start upload failed:", errorText);
+    throw new Error(`Failed to start upload: ${startResponse.status}`);
+  }
+
+  const uploadUrl = startResponse.headers.get("X-Goog-Upload-URL");
+  if (!uploadUrl) {
+    throw new Error("No upload URL returned from Gemini File API");
+  }
+
+  console.log("[Gemini File API] Got upload URL, uploading data...");
+
+  // Step 2: Upload the file data
+  const uploadResponse = await fetch(uploadUrl, {
+    method: "POST",
+    headers: {
+      "X-Goog-Upload-Command": "upload, finalize",
+      "X-Goog-Upload-Offset": "0",
+      "Content-Type": mimeType,
+    },
+    body: new Uint8Array(fileBuffer),
+  });
+
+  if (!uploadResponse.ok) {
+    const errorText = await uploadResponse.text();
+    console.error("[Gemini File API] Upload failed:", errorText);
+    throw new Error(`Failed to upload file: ${uploadResponse.status}`);
+  }
+
+  const uploadResult = await uploadResponse.json();
+  console.log("[Gemini File API] Upload complete:", uploadResult);
+
+  const fileUri = uploadResult.file?.uri;
+  if (!fileUri) {
+    throw new Error("No file URI returned from upload");
+  }
+
+  // Step 3: Wait for file to be processed (videos take time)
+  let fileState = uploadResult.file?.state;
+  const fileName2 = uploadResult.file?.name;
+
+  if (fileState === "PROCESSING") {
+    console.log("[Gemini File API] File is processing, waiting...");
+
+    // Poll for completion (max 2 minutes for videos)
+    for (let i = 0; i < 24; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait 5 seconds
+
+      const statusResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/${fileName2}?key=${apiKey}`
+      );
+
+      if (statusResponse.ok) {
+        const statusResult = await statusResponse.json();
+        fileState = statusResult.state;
+        console.log("[Gemini File API] File state:", fileState);
+
+        if (fileState === "ACTIVE") {
+          console.log("[Gemini File API] File is ready!");
+          break;
+        } else if (fileState === "FAILED") {
+          throw new Error("File processing failed");
+        }
+      }
+    }
+
+    if (fileState !== "ACTIVE") {
+      throw new Error("File processing timeout");
+    }
+  }
+
+  return fileUri;
+}
 
 /**
  * Analyze document with Gemini AI - VERSION ULTRA
+ * Uses File API for large files (videos/audio > 20MB)
  */
 export async function analyzeDocumentWithAI(
   fileBuffer: Buffer,
@@ -858,21 +968,21 @@ export async function analyzeDocumentWithAI(
 
   console.log("[AI Analysis] Starting ULTRA analysis for:", fileName, "mimeType:", mimeType, "size:", fileSize);
 
-  // Check if file is too large for inline analysis
-  if (fileSize > MAX_INLINE_SIZE) {
-    console.log("[AI Analysis] File too large for inline analysis, using filename classification");
-    if (mimeType.startsWith("video/") || mimeType.startsWith("audio/")) {
-      return classifyMediaByFilename(fileName, mimeType);
-    }
-  }
-
   if (!apiKey) {
     console.error("[AI Analysis] GEMINI_API_KEY not configured!");
     throw new Error("GEMINI_API_KEY not configured");
   }
 
-  const base64Data = fileBuffer.toString("base64");
-  console.log("[AI Analysis] Base64 data length:", base64Data.length);
+  // Check if file is too large even for File API
+  if (fileSize > MAX_FILE_API_SIZE) {
+    console.log("[AI Analysis] File too large even for File API, using filename classification");
+    if (mimeType.startsWith("video/") || mimeType.startsWith("audio/")) {
+      return classifyMediaByFilename(fileName, mimeType);
+    }
+  }
+
+  const isLargeFile = fileSize > MAX_INLINE_SIZE;
+  const isMediaFile = mimeType.startsWith("video/") || mimeType.startsWith("audio/");
 
   let geminiMimeType = mimeType;
 
@@ -912,6 +1022,37 @@ export async function analyzeDocumentWithAI(
   console.log("[AI Analysis] Using mimeType for Gemini:", geminiMimeType);
 
   try {
+    // Determine which method to use based on file size
+    let filePart: { inline_data: { mime_type: string; data: string } } | { file_data: { mime_type: string; file_uri: string } };
+
+    if (isLargeFile && isMediaFile) {
+      // Use File API for large media files (video/audio > 20MB)
+      console.log("[AI Analysis] Using File API for large media file...");
+      try {
+        const fileUri = await uploadToGeminiFileAPI(fileBuffer, fileName, geminiMimeType, apiKey);
+        filePart = {
+          file_data: {
+            mime_type: geminiMimeType,
+            file_uri: fileUri,
+          },
+        };
+        console.log("[AI Analysis] File uploaded successfully, URI:", fileUri);
+      } catch (uploadError) {
+        console.error("[AI Analysis] File API upload failed, falling back to filename classification:", uploadError);
+        return classifyMediaByFilename(fileName, mimeType);
+      }
+    } else {
+      // Use inline base64 for small files
+      const base64Data = fileBuffer.toString("base64");
+      console.log("[AI Analysis] Using inline base64, length:", base64Data.length);
+      filePart = {
+        inline_data: {
+          mime_type: geminiMimeType,
+          data: base64Data,
+        },
+      };
+    }
+
     console.log("[AI Analysis] Calling Gemini API with ULTRA prompt...");
 
     const response = await fetch(
@@ -926,12 +1067,7 @@ export async function analyzeDocumentWithAI(
             {
               parts: [
                 { text: AI_CLASSIFICATION_PROMPT },
-                {
-                  inline_data: {
-                    mime_type: geminiMimeType,
-                    data: base64Data,
-                  },
-                },
+                filePart,
               ],
             },
           ],
