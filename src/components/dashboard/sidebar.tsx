@@ -13,6 +13,8 @@ import {
   Search,
   CreditCard,
   Bot,
+  HelpCircle,
+  MessageCircle,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -86,6 +88,35 @@ export function Sidebar() {
             </Link>
           );
         })}
+
+        {/* Help & Support */}
+        <div className="mt-4 pt-4 border-t border-black/5 dark:border-white/5">
+          <p className="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+            Assistance
+          </p>
+          <Link
+            href="/dashboard/help"
+            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+              pathname === "/dashboard/help"
+                ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
+                : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/5 dark:hover:text-white"
+            }`}
+          >
+            <HelpCircle className={`h-5 w-5 ${pathname === "/dashboard/help" ? "text-blue-500" : ""}`} />
+            Aide
+          </Link>
+          <Link
+            href="/dashboard/support"
+            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+              pathname === "/dashboard/support"
+                ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
+                : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/5 dark:hover:text-white"
+            }`}
+          >
+            <MessageCircle className={`h-5 w-5 ${pathname === "/dashboard/support" ? "text-blue-500" : ""}`} />
+            Support
+          </Link>
+        </div>
       </nav>
 
       {/* Bottom Navigation */}
