@@ -43,7 +43,6 @@ export function TutorialOverlay() {
 
     const element = document.querySelector(currentStepData.target);
     if (!element) {
-      // Element not found, try to find it with a delay or skip
       setTargetPosition(null);
       setTooltipStyle({
         position: "fixed",
@@ -55,7 +54,7 @@ export function TutorialOverlay() {
     }
 
     const rect = element.getBoundingClientRect();
-    const padding = 8;
+    const padding = 6;
 
     setTargetPosition({
       top: rect.top - padding,
@@ -64,39 +63,34 @@ export function TutorialOverlay() {
       height: rect.height + padding * 2,
     });
 
-    // Calculate tooltip position based on the step's position preference
-    const tooltipWidth = 320;
-    const tooltipHeight = 200;
-    const gap = 16;
+    // Calculate tooltip position
+    const tooltipWidth = 300;
+    const gap = 12;
 
     let style: React.CSSProperties = { position: "fixed" };
 
     switch (currentStepData.position) {
       case "right":
-        style.top = rect.top + rect.height / 2;
+        style.top = rect.top;
         style.left = rect.right + gap;
-        style.transform = "translateY(-50%)";
         // If tooltip would go off screen, position it below instead
         if (rect.right + gap + tooltipWidth > window.innerWidth) {
           style.top = rect.bottom + gap;
-          style.left = rect.left;
-          style.transform = "none";
+          style.left = Math.max(16, rect.left);
+          style.maxWidth = `calc(100vw - 32px)`;
         }
         break;
       case "left":
-        style.top = rect.top + rect.height / 2;
+        style.top = rect.top;
         style.right = window.innerWidth - rect.left + gap;
-        style.transform = "translateY(-50%)";
         break;
       case "bottom":
         style.top = rect.bottom + gap;
-        style.left = rect.left + rect.width / 2;
-        style.transform = "translateX(-50%)";
+        style.left = Math.max(16, rect.left);
         break;
       case "top":
         style.bottom = window.innerHeight - rect.top + gap;
-        style.left = rect.left + rect.width / 2;
-        style.transform = "translateX(-50%)";
+        style.left = Math.max(16, rect.left);
         break;
     }
 
@@ -105,11 +99,13 @@ export function TutorialOverlay() {
 
   useEffect(() => {
     if (isActive) {
-      calculatePosition();
+      // Small delay to ensure DOM elements are rendered
+      const timer = setTimeout(calculatePosition, 100);
       window.addEventListener("resize", calculatePosition);
       window.addEventListener("scroll", calculatePosition);
 
       return () => {
+        clearTimeout(timer);
         window.removeEventListener("resize", calculatePosition);
         window.removeEventListener("scroll", calculatePosition);
       };
@@ -123,30 +119,52 @@ export function TutorialOverlay() {
   const isCentered = isWelcome || isComplete;
 
   return (
-    <div className="fixed inset-0 z-[100]">
-      {/* Dark overlay with spotlight cutout */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-all duration-300">
-        {targetPosition && (
-          <div
-            className="absolute rounded-2xl ring-4 ring-blue-500/50 ring-offset-2 ring-offset-transparent transition-all duration-300"
-            style={{
-              top: targetPosition.top,
-              left: targetPosition.left,
-              width: targetPosition.width,
-              height: targetPosition.height,
-              boxShadow: `
-                0 0 0 9999px rgba(0, 0, 0, 0.6),
-                0 0 30px 10px rgba(59, 130, 246, 0.3)
-              `,
-              background: "transparent",
-            }}
-          />
-        )}
-      </div>
+    <div className="fixed inset-0 z-[100] pointer-events-none">
+      {/* SVG mask for spotlight effect - no blur, clean cutout */}
+      <svg className="absolute inset-0 w-full h-full pointer-events-auto">
+        <defs>
+          <mask id="spotlight-mask">
+            {/* White = visible (dark overlay), Black = hidden (spotlight hole) */}
+            <rect x="0" y="0" width="100%" height="100%" fill="white" />
+            {targetPosition && (
+              <rect
+                x={targetPosition.left}
+                y={targetPosition.top}
+                width={targetPosition.width}
+                height={targetPosition.height}
+                rx="12"
+                fill="black"
+              />
+            )}
+          </mask>
+        </defs>
+        {/* Dark overlay with mask */}
+        <rect
+          x="0"
+          y="0"
+          width="100%"
+          height="100%"
+          fill="rgba(0, 0, 0, 0.7)"
+          mask="url(#spotlight-mask)"
+        />
+      </svg>
+
+      {/* Highlight ring around target element */}
+      {targetPosition && (
+        <div
+          className="absolute rounded-xl ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent transition-all duration-300 pointer-events-none"
+          style={{
+            top: targetPosition.top,
+            left: targetPosition.left,
+            width: targetPosition.width,
+            height: targetPosition.height,
+          }}
+        />
+      )}
 
       {/* Tooltip/Dialog */}
       <div
-        className={`z-10 w-[320px] rounded-2xl bg-white p-5 shadow-2xl dark:bg-neutral-800 ${
+        className={`pointer-events-auto z-10 w-[300px] max-w-[calc(100vw-32px)] rounded-2xl bg-white p-4 shadow-2xl dark:bg-neutral-800 ${
           isCentered ? "text-center" : ""
         }`}
         style={tooltipStyle}
@@ -154,25 +172,25 @@ export function TutorialOverlay() {
         {/* Close button */}
         <button
           onClick={skipTutorial}
-          className="absolute right-3 top-3 rounded-full p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
+          className="absolute right-2 top-2 rounded-full p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
         >
           <X className="h-4 w-4" />
         </button>
 
         {/* Icon for welcome/complete */}
         {isCentered && (
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/30">
-            <Sparkles className="h-8 w-8 text-white" />
+          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/30">
+            <Sparkles className="h-7 w-7 text-white" />
           </div>
         )}
 
-        {/* Step indicator */}
+        {/* Step indicator dots */}
         {!isCentered && (
-          <div className="mb-2 flex items-center gap-1">
+          <div className="mb-2 flex items-center gap-1 pr-6">
             {Array.from({ length: totalSteps }).map((_, i) => (
               <div
                 key={i}
-                className={`h-1.5 flex-1 rounded-full transition-colors ${
+                className={`h-1 flex-1 rounded-full transition-colors ${
                   i <= currentStep
                     ? "bg-blue-500"
                     : "bg-neutral-200 dark:bg-neutral-600"
@@ -183,10 +201,10 @@ export function TutorialOverlay() {
         )}
 
         {/* Content */}
-        <h3 className="mb-2 text-lg font-bold text-neutral-900 dark:text-white">
+        <h3 className="mb-1.5 text-base font-bold text-neutral-900 dark:text-white pr-6">
           {t(currentStepData.titleKey as any)}
         </h3>
-        <p className="mb-5 text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">
+        <p className="mb-4 text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">
           {t(currentStepData.descriptionKey as any)}
         </p>
 
@@ -195,16 +213,16 @@ export function TutorialOverlay() {
           {!isWelcome && (
             <button
               onClick={prevStep}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-neutral-200 text-neutral-600 hover:bg-neutral-50 dark:border-neutral-600 dark:text-neutral-400 dark:hover:bg-neutral-700"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-200 text-neutral-600 hover:bg-neutral-50 dark:border-neutral-600 dark:text-neutral-400 dark:hover:bg-neutral-700"
             >
-              <ChevronLeft className="h-5 w-5" />
+              <ChevronLeft className="h-4 w-4" />
             </button>
           )}
 
           {isWelcome && (
             <button
               onClick={skipTutorial}
-              className="flex-1 rounded-xl border border-neutral-200 py-2.5 text-sm font-medium text-neutral-600 hover:bg-neutral-50 dark:border-neutral-600 dark:text-neutral-400 dark:hover:bg-neutral-700"
+              className="flex-1 rounded-lg border border-neutral-200 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-50 dark:border-neutral-600 dark:text-neutral-400 dark:hover:bg-neutral-700"
             >
               {t("tutorialSkip" as any)}
             </button>
@@ -212,7 +230,7 @@ export function TutorialOverlay() {
 
           <button
             onClick={nextStep}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 active:scale-[0.98]"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-blue-500 py-2 text-sm font-semibold text-white hover:bg-blue-600 active:scale-[0.98]"
           >
             {isComplete
               ? t("tutorialFinish" as any)
@@ -225,7 +243,7 @@ export function TutorialOverlay() {
 
         {/* Step count */}
         {!isCentered && (
-          <p className="mt-3 text-center text-xs text-neutral-400 dark:text-neutral-500">
+          <p className="mt-2 text-center text-xs text-neutral-400 dark:text-neutral-500">
             {currentStep + 1} / {totalSteps}
           </p>
         )}
