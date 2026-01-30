@@ -911,23 +911,35 @@ async function analyzeDocument(userId: string, documentId: string) {
           contents: [{
             parts: [
               {
-                text: `Analyse ce document en détail et extrait TOUTES les informations importantes.
+                text: `Tu es un expert en analyse de documents. Examine ATTENTIVEMENT ce document et extrait ABSOLUMENT TOUTES les informations visibles.
+
+IMPORTANT : Lis CHAQUE texte visible sur l'image/document, même les petits caractères, logos, titres en gros, etc.
 
 Réponds en JSON avec cette structure :
 {
-  "type": "type de document (facture, contrat, pièce d'identité, etc.)",
-  "titre": "titre ou objet du document",
-  "dates": ["liste des dates importantes"],
-  "montants": ["liste des montants avec devises"],
-  "personnes": ["noms de personnes mentionnées"],
-  "organisations": ["noms d'entreprises/organisations"],
-  "references": ["numéros de référence, facture, contrat, etc."],
-  "adresses": ["adresses mentionnées"],
-  "resumé": "résumé en 2-3 phrases",
-  "pointsCles": ["3-5 points clés à retenir"]
+  "type": "type précis (billet de concert, facture, carte d'identité, contrat, etc.)",
+  "titre": "titre principal ou objet du document",
+  "evenement": {
+    "nom": "nom de l'événement, concert, spectacle, match (ex: 'Concert Jul', 'PSG vs OM')",
+    "artiste": "nom de l'artiste, groupe, ou équipes si c'est un spectacle/concert/match",
+    "lieu": "nom du lieu (Stade de France, Accor Arena, etc.)",
+    "date": "date et heure de l'événement",
+    "place": "numéro de place, rang, tribune, catégorie"
+  },
+  "dates": ["toutes les dates mentionnées"],
+  "montants": ["tous les prix et montants avec devises"],
+  "personnes": ["noms de personnes (acheteur, bénéficiaire, etc.)"],
+  "organisations": ["entreprises, organisateurs, vendeurs"],
+  "references": ["numéros de commande, référence, code-barres si visible"],
+  "resumé": "résumé clair en 2-3 phrases incluant les infos PRINCIPALES (qui, quoi, où, quand, combien)",
+  "pointsCles": ["5 informations les plus importantes à retenir"]
 }
 
-Si une catégorie n'a pas d'information, mets un tableau vide [].`,
+RÈGLES :
+- Pour un billet : le nom de l'ARTISTE/ÉVÉNEMENT est L'INFO LA PLUS IMPORTANTE
+- Cherche les gros titres, logos, noms en évidence
+- Si tu vois un nom d'artiste (Jul, Beyoncé, etc.), mets-le dans "artiste"
+- Ne laisse AUCUN champ vide si l'info est visible sur le document`,
               },
               {
                 inline_data: {
@@ -1219,12 +1231,29 @@ export async function POST(request: NextRequest) {
               break;
             case "analyzeDocument":
               const a = functionResult.analysis;
-              formattedResponse = `🔍 Analyse de "${functionResult.documentName}" :\n\n`;
-              if (a.type) formattedResponse += `Type : ${a.type}\n`;
-              if (a.resumé) formattedResponse += `\n${a.resumé}\n`;
-              if (a.pointsCles?.length) formattedResponse += `\nPoints clés :\n${a.pointsCles.map((p: string) => `• ${p}`).join("\n")}`;
-              if (a.montants?.length) formattedResponse += `\n\nMontants : ${a.montants.join(", ")}`;
-              if (a.dates?.length) formattedResponse += `\nDates : ${a.dates.join(", ")}`;
+              formattedResponse = `🔍 **Analyse de "${functionResult.documentName}"**\n\n`;
+              if (a.type) formattedResponse += `📋 **Type** : ${a.type}\n\n`;
+
+              // Event info (concerts, shows, matches)
+              if (a.evenement) {
+                const e = a.evenement;
+                if (e.artiste || e.nom) {
+                  formattedResponse += `🎤 **Événement** : ${e.artiste || e.nom}\n`;
+                }
+                if (e.lieu) formattedResponse += `📍 **Lieu** : ${e.lieu}\n`;
+                if (e.date) formattedResponse += `📅 **Date** : ${e.date}\n`;
+                if (e.place) formattedResponse += `💺 **Place** : ${e.place}\n`;
+                formattedResponse += "\n";
+              }
+
+              if (a.resumé) formattedResponse += `${a.resumé}\n\n`;
+
+              if (a.montants?.length) formattedResponse += `💰 **Montant** : ${a.montants.join(", ")}\n`;
+              if (a.personnes?.length) formattedResponse += `👤 **Nom** : ${a.personnes.join(", ")}\n`;
+
+              if (a.pointsCles?.length) {
+                formattedResponse += `\n📌 **Points clés** :\n${a.pointsCles.map((p: string) => `• ${p}`).join("\n")}`;
+              }
               break;
             case "moveDocument":
               formattedResponse = `✅ ${functionResult.message}`;
