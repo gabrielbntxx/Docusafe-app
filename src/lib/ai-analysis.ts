@@ -738,6 +738,114 @@ Réponds UNIQUEMENT avec ce JSON (PAS de \`\`\`, PAS de markdown):
 5. Si tu détectes plusieurs thèmes, choisis le principal`;
 
 /**
+ * Classify media files based on filename when AI analysis fails or file is too large
+ */
+function classifyMediaByFilename(
+  fileName: string,
+  mimeType: string
+): AIAnalysisResult {
+  const lowerName = fileName.toLowerCase();
+  const isVideo = mimeType.startsWith("video/");
+  const isAudio = mimeType.startsWith("audio/");
+
+  console.log("[AI Fallback] Classifying by filename:", fileName, "isVideo:", isVideo, "isAudio:", isAudio);
+
+  // Keywords for classification
+  const keywords = {
+    cours: ["cours", "lecture", "lesson", "class", "chapter", "chapitre", "module", "formation", "tutorial", "tuto"],
+    reunion: ["reunion", "meeting", "zoom", "teams", "call", "conference", "webinar"],
+    musique: ["music", "musique", "song", "chanson", "track", "album", "clip", "concert"],
+    podcast: ["podcast", "episode", "ep", "emission"],
+    voyage: ["vacances", "vacation", "trip", "voyage", "travel", "holiday"],
+    gaming: ["game", "gaming", "stream", "twitch", "gameplay", "playthrough"],
+    evenement: ["mariage", "wedding", "anniversaire", "birthday", "fete", "party", "noel", "christmas"],
+    memo: ["memo", "note", "voice", "vocal", "enregistrement", "recording"],
+    presentation: ["presentation", "powerpoint", "slides", "ppt", "keynote"],
+    interview: ["interview", "entretien", "discussion"],
+  };
+
+  let documentType = isVideo ? "video_autre" : "audio_autre";
+  let suggestedFolder = isVideo ? "Vidéos" : "Audio";
+  let topic = "";
+
+  // Check each keyword category
+  for (const [category, words] of Object.entries(keywords)) {
+    if (words.some(word => lowerName.includes(word))) {
+      switch (category) {
+        case "cours":
+          documentType = isVideo ? "video_cours" : "audio_cours";
+          // Try to extract subject from filename
+          const subjects = ["informatique", "math", "physique", "chimie", "droit", "economie", "anglais", "francais", "histoire", "geo", "python", "java", "javascript", "excel", "word"];
+          const foundSubject = subjects.find(s => lowerName.includes(s));
+          topic = foundSubject ? foundSubject.charAt(0).toUpperCase() + foundSubject.slice(1) : "";
+          suggestedFolder = isVideo
+            ? (topic ? `Cours Vidéo ${topic}` : "Cours Vidéo")
+            : (topic ? `Cours Audio ${topic}` : "Cours Audio");
+          break;
+        case "reunion":
+          documentType = isVideo ? "video_reunion" : "audio_reunion";
+          suggestedFolder = isVideo ? "Réunions Vidéo" : "Réunions Audio";
+          break;
+        case "musique":
+          documentType = isVideo ? "video_musique" : "audio_musique";
+          suggestedFolder = isVideo ? "Clips Musicaux" : "Musique";
+          break;
+        case "podcast":
+          documentType = isVideo ? "video_autre" : "audio_podcast";
+          suggestedFolder = "Podcasts";
+          break;
+        case "voyage":
+          documentType = isVideo ? "video_voyage" : "audio_autre";
+          suggestedFolder = isVideo ? "Vidéos Voyages" : "Audio Voyages";
+          break;
+        case "gaming":
+          documentType = isVideo ? "video_gaming" : "audio_autre";
+          suggestedFolder = "Gaming";
+          break;
+        case "evenement":
+          documentType = isVideo ? "video_evenement" : "audio_autre";
+          suggestedFolder = isVideo ? "Vidéos Événements" : "Audio Événements";
+          break;
+        case "memo":
+          documentType = isVideo ? "video_personnelle" : "audio_memo_vocal";
+          suggestedFolder = isVideo ? "Vidéos Personnelles" : "Mémos Vocaux";
+          break;
+        case "presentation":
+          documentType = isVideo ? "video_presentation" : "audio_autre";
+          suggestedFolder = "Présentations";
+          break;
+        case "interview":
+          documentType = isVideo ? "video_autre" : "audio_interview";
+          suggestedFolder = "Interviews";
+          break;
+      }
+      break; // Stop at first match
+    }
+  }
+
+  // Map to category
+  const categoryKey = TYPE_TO_CATEGORY[documentType] || "AUTRE";
+  const category = DOCUMENT_CATEGORIES[categoryKey].name;
+
+  console.log("[AI Fallback] Result:", documentType, "->", suggestedFolder);
+
+  return {
+    documentType,
+    category,
+    confidence: 0.6, // Lower confidence for filename-based classification
+    suggestedName: fileName,
+    suggestedFolder,
+    extractedData: {
+      topic: topic || undefined,
+      description: `Classifié automatiquement basé sur le nom du fichier`,
+    },
+  };
+}
+
+// Maximum file size for inline base64 analysis (20MB)
+const MAX_INLINE_SIZE = 20 * 1024 * 1024;
+
+/**
  * Analyze document with Gemini AI - VERSION ULTRA
  */
 export async function analyzeDocumentWithAI(
@@ -746,8 +854,17 @@ export async function analyzeDocumentWithAI(
   mimeType: string
 ): Promise<AIAnalysisResult> {
   const apiKey = process.env.GEMINI_API_KEY;
+  const fileSize = fileBuffer.length;
 
-  console.log("[AI Analysis] Starting ULTRA analysis for:", fileName, "mimeType:", mimeType, "size:", fileBuffer.length);
+  console.log("[AI Analysis] Starting ULTRA analysis for:", fileName, "mimeType:", mimeType, "size:", fileSize);
+
+  // Check if file is too large for inline analysis
+  if (fileSize > MAX_INLINE_SIZE) {
+    console.log("[AI Analysis] File too large for inline analysis, using filename classification");
+    if (mimeType.startsWith("video/") || mimeType.startsWith("audio/")) {
+      return classifyMediaByFilename(fileName, mimeType);
+    }
+  }
 
   if (!apiKey) {
     console.error("[AI Analysis] GEMINI_API_KEY not configured!");
@@ -898,6 +1015,14 @@ export async function analyzeDocumentWithAI(
     };
   } catch (error) {
     console.error("[AI Analysis] CRITICAL ERROR:", error);
+
+    // For audio/video files, try to classify based on filename
+    if (mimeType.startsWith("video/") || mimeType.startsWith("audio/")) {
+      console.log("[AI Analysis] Falling back to filename classification for media file");
+      const fallbackResult = classifyMediaByFilename(fileName, mimeType);
+      fallbackResult.rawResponse = `FALLBACK: ${error instanceof Error ? error.message : "Unknown error"}`;
+      return fallbackResult;
+    }
 
     return {
       documentType: "autre",
