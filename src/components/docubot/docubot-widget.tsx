@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import {
   MessageCircle,
   X,
@@ -16,6 +16,7 @@ import {
   Receipt,
   ChevronDown,
 } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 type Message = {
   id: string;
@@ -25,29 +26,38 @@ type Message = {
   isLoading?: boolean;
 };
 
-const WELCOME_MESSAGE: Message = {
-  id: "welcome",
-  role: "assistant",
-  content: "Salut ! Je suis DocuBot, ton assistant. Je peux t'aider à :\n\n• Chercher des documents\n• Analyser leur contenu\n• Les déplacer dans des dossiers\n• Répondre à tes questions\n\nQue puis-je faire pour toi ?",
-  timestamp: new Date(),
-};
-
-const QUICK_ACTIONS = [
-  { label: "Documents récents", icon: FileSearch, query: "Montre-moi mes documents récents" },
-  { label: "Mes dossiers", icon: FolderOpen, query: "Liste mes dossiers" },
-  { label: "Chercher facture", icon: Receipt, query: "Cherche mes factures" },
-  { label: "Résumer un doc", icon: FileText, query: "Résume mon dernier document" },
-];
-
 export function DocuBotWidget() {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([WELCOME_MESSAGE]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const welcomeMessage: Message = useMemo(() => ({
+    id: "welcome",
+    role: "assistant",
+    content: t("docubotWelcomeWidget"),
+    timestamp: new Date(),
+  }), [t]);
+
+  const quickActions = useMemo(() => [
+    { label: t("docubotRecentDocs"), icon: FileSearch, query: t("docubotQueryRecentDocs") },
+    { label: t("docubotMyFolders"), icon: FolderOpen, query: t("docubotQueryFolders") },
+    { label: t("docubotSearchInvoice"), icon: Receipt, query: t("docubotQueryInvoices") },
+    { label: t("docubotSummarizeDoc"), icon: FileText, query: t("docubotQuerySummarize") },
+  ], [t]);
+
+  const [messages, setMessages] = useState<Message[]>([welcomeMessage]);
+
+  // Update welcome message when language changes
+  useEffect(() => {
+    setMessages(prev => prev.map(m =>
+      m.id === "welcome" ? { ...m, content: t("docubotWelcomeWidget") } : m
+    ));
+  }, [t]);
 
   // Auto-scroll to bottom when new messages
   useEffect(() => {
@@ -123,7 +133,7 @@ export function DocuBotWidget() {
           m.id === loadingId
             ? {
                 ...m,
-                content: data.response || "Désolé, je n'ai pas pu traiter ta demande.",
+                content: data.response || t("docubotError"),
                 isLoading: false,
               }
             : m
@@ -136,7 +146,7 @@ export function DocuBotWidget() {
           m.id === loadingId
             ? {
                 ...m,
-                content: "Oups, une erreur s'est produite. Réessaie !",
+                content: t("docubotErrorGeneric"),
                 isLoading: false,
               }
             : m
@@ -211,7 +221,7 @@ export function DocuBotWidget() {
           </div>
           <div>
             <h3 className="font-semibold">DocuBot</h3>
-            <p className="text-xs text-white/80">Assistant intelligent</p>
+            <p className="text-xs text-white/80">{t("docubotSmartAssistant")}</p>
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -266,7 +276,7 @@ export function DocuBotWidget() {
               {message.isLoading ? (
                 <div className="flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  <span className="text-sm">Réflexion en cours...</span>
+                  <span className="text-sm">{t("docubotThinking")}</span>
                 </div>
               ) : (
                 <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
@@ -280,11 +290,11 @@ export function DocuBotWidget() {
         {messages.length <= 2 && (
           <div className="mt-4 space-y-3">
             <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
-              Actions rapides
+              {t("docubotQuickActions")}
             </p>
             {/* Horizontal scroll on mobile, wrap on desktop */}
             <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 lg:flex-wrap lg:overflow-visible scrollbar-hide">
-              {QUICK_ACTIONS.map((action) => (
+              {quickActions.map((action) => (
                 <button
                   key={action.label}
                   onClick={() => handleQuickAction(action.query)}
@@ -308,7 +318,7 @@ export function DocuBotWidget() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Pose-moi une question..."
+            placeholder={t("docubotPlaceholder")}
             disabled={isLoading}
             className="flex-1 rounded-full border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 placeholder-neutral-500 outline-none transition-all focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white dark:placeholder-neutral-400 dark:focus:border-blue-500"
           />
@@ -325,7 +335,7 @@ export function DocuBotWidget() {
           </button>
         </div>
         <p className="mt-3 text-center text-[10px] text-neutral-400 dark:text-neutral-500">
-          DocuBot peut faire des erreurs. Vérifie les informations importantes.
+          {t("docubotDisclaimer")}
         </p>
       </div>
     </div>

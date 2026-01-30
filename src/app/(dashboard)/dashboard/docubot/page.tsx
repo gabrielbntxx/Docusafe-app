@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import {
   Bot,
   Send,
@@ -11,6 +11,7 @@ import {
   FileText,
   Receipt,
 } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 type Message = {
   id: string;
@@ -20,26 +21,35 @@ type Message = {
   isLoading?: boolean;
 };
 
-const WELCOME_MESSAGE: Message = {
-  id: "welcome",
-  role: "assistant",
-  content: "Salut ! Je suis DocuBot. Comment puis-je t'aider ?",
-  timestamp: new Date(),
-};
-
-const QUICK_ACTIONS = [
-  { label: "Documents récents", icon: FileSearch, query: "Montre-moi mes documents récents" },
-  { label: "Mes dossiers", icon: FolderOpen, query: "Liste mes dossiers" },
-  { label: "Chercher facture", icon: Receipt, query: "Cherche mes factures" },
-  { label: "Résumer un doc", icon: FileText, query: "Résume mon dernier document" },
-];
-
 export default function DocuBotPage() {
-  const [messages, setMessages] = useState<Message[]>([WELCOME_MESSAGE]);
+  const { t } = useTranslation();
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const welcomeMessage: Message = useMemo(() => ({
+    id: "welcome",
+    role: "assistant",
+    content: t("docubotWelcome"),
+    timestamp: new Date(),
+  }), [t]);
+
+  const quickActions = useMemo(() => [
+    { label: t("docubotRecentDocs"), icon: FileSearch, query: t("docubotQueryRecentDocs") },
+    { label: t("docubotMyFolders"), icon: FolderOpen, query: t("docubotQueryFolders") },
+    { label: t("docubotSearchInvoice"), icon: Receipt, query: t("docubotQueryInvoices") },
+    { label: t("docubotSummarizeDoc"), icon: FileText, query: t("docubotQuerySummarize") },
+  ], [t]);
+
+  const [messages, setMessages] = useState<Message[]>([welcomeMessage]);
+
+  // Update welcome message when language changes
+  useEffect(() => {
+    setMessages(prev => prev.map(m =>
+      m.id === "welcome" ? { ...m, content: t("docubotWelcome") } : m
+    ));
+  }, [t]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -84,7 +94,7 @@ export default function DocuBotPage() {
       setMessages((prev) =>
         prev.map((m) =>
           m.id === loadingId
-            ? { ...m, content: data.response || "Désolé, une erreur s'est produite.", isLoading: false }
+            ? { ...m, content: data.response || t("docubotError"), isLoading: false }
             : m
         )
       );
@@ -92,7 +102,7 @@ export default function DocuBotPage() {
       setMessages((prev) =>
         prev.map((m) =>
           m.id === loadingId
-            ? { ...m, content: "Oups, une erreur s'est produite.", isLoading: false }
+            ? { ...m, content: t("docubotErrorGeneric"), isLoading: false }
             : m
         )
       );
@@ -148,9 +158,9 @@ export default function DocuBotPage() {
         {/* Quick actions */}
         {messages.length <= 2 && (
           <div className="pt-4">
-            <p className="text-xs text-neutral-500 mb-2">Actions rapides</p>
+            <p className="text-xs text-neutral-500 mb-2">{t("docubotQuickActions")}</p>
             <div className="flex flex-wrap gap-2">
-              {QUICK_ACTIONS.map((action) => (
+              {quickActions.map((action) => (
                 <button
                   key={action.label}
                   onClick={() => handleQuickAction(action.query)}
@@ -174,7 +184,7 @@ export default function DocuBotPage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), handleSend())}
-            placeholder="Pose-moi une question..."
+            placeholder={t("docubotPlaceholder")}
             disabled={isLoading}
             className="flex-1 rounded-full border border-neutral-200 bg-neutral-50 px-4 py-2.5 text-sm outline-none focus:border-blue-400 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
           />
