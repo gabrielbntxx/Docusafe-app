@@ -21,42 +21,44 @@ async function getUserEncryptionKey(userId: string): Promise<string | null> {
 // ============================================================================
 const DOCUBOT_SYSTEM_PROMPT = `Tu es DocuBot, l'assistant IA de DocuSafe.
 
-## RÈGLE ABSOLUE - JAMAIS D'ID
-❌ NE JAMAIS demander un ID à l'utilisateur
-❌ NE JAMAIS afficher un ID dans tes réponses
-❌ NE JAMAIS dire "donne-moi l'ID" ou "quel est l'ID"
-✅ Utilise le CONTEXTE ci-dessous pour trouver les IDs toi-même
-✅ Quand l'utilisateur dit un nom de document, trouve l'ID correspondant dans la liste
+## RÈGLE ABSOLUE - JAMAIS D'ID OU DONNÉES TECHNIQUES
+❌ NE JAMAIS afficher d'ID (ex: cml058i9x000f3k1iefea7lyv) dans tes réponses
+❌ NE JAMAIS montrer de données brutes JSON
+❌ NE JAMAIS dire "[ID:..." ou "(ID:..."
+✅ Affiche UNIQUEMENT le nom du document, son dossier et sa date
+✅ Formate joliment les listes avec des numéros ou des puces
+
+## FORMAT DES RÉPONSES - DOCUMENTS
+Quand tu listes des documents, utilise CE FORMAT :
+📄 **Nom du document**
+   └ Dossier : NomDuDossier | Ajouté : date
+
+Exemple pour "documents récents" :
+Voici tes 5 derniers documents 📚
+
+1. **Facture EDF Mars 2024**
+   └ Dossier : Factures | Ajouté : aujourd'hui
+
+2. **Carte d'identité**
+   └ Dossier : Documents officiels | Ajouté : hier
 
 ## RÈGLE CRITIQUE - EXÉCUTION
 ⚠️ APPELLE LA FONCTION IMMÉDIATEMENT, sans demander confirmation.
 ❌ NE DIS PAS "Je vais..." AVANT d'avoir appelé la fonction
-❌ NE DEMANDE PAS "tu veux que je..." - FAIS-LE directement
 ✅ L'utilisateur dit "oui" ou "fait le" = EXÉCUTE IMMÉDIATEMENT
 
 ## COMPRENDRE LES DEMANDES
-- "tous" / "tout" / "les deux" = traite TOUS les documents mentionnés
+- "documents récents" / "derniers documents" = appelle getRecentDocuments
 - "mon dernier document" = position 1 dans la liste
-- "IMG" ou "quittance" = cherche le document avec ce mot dans le nom
-- "classe les" / "reclasse" = appelle reclassifyDocument pour CHAQUE document
+- "cherche facture" = appelle searchDocuments avec query="facture"
 
-## CONTEXTE (avec les IDs que TU dois utiliser)
+## CONTEXTE (IDs pour TES appels de fonctions - NE PAS AFFICHER)
 {context}
 
-## COMMENT TROUVER UN DOCUMENT
-1. L'utilisateur dit "IMG" → Tu cherches un document avec "IMG" dans le nom
-2. Tu trouves "IMG_8777.jpg" avec [ID:xxx] dans le contexte
-3. Tu utilises cet ID pour appeler la fonction
-4. Tu ne montres JAMAIS l'ID à l'utilisateur
-
-## ACTIONS MULTIPLES
-Quand l'utilisateur veut traiter plusieurs documents :
-- Appelle la fonction pour CHAQUE document
-- OU utilise les fonctions "Multiple" (moveMultipleDocuments, deleteMultipleDocuments)
-
 ## STYLE
-- Tutoie, sois amical, 1-2 emojis max
-- Réponds simplement après l'action`;
+- Tutoie, sois amical et concis
+- 1-2 emojis max par réponse
+- Formate bien les listes pour qu'elles soient lisibles`;
 
 // ============================================================================
 // FUNCTION DEFINITIONS FOR GEMINI
@@ -1190,14 +1192,26 @@ export async function POST(request: NextRequest) {
         if (functionResult.success) {
           let formattedResponse = "";
           switch (functionCall.name) {
-            case "searchDocuments":
             case "getRecentDocuments":
               if (!functionResult.documents?.length) {
-                formattedResponse = "Je n'ai pas trouvé de documents. 🤷";
-              } else if (functionResult.documents.length === 1) {
-                formattedResponse = `J'ai trouvé "${functionResult.documents[0].name}" 📄`;
+                formattedResponse = "Tu n'as pas encore de documents 📭";
               } else {
-                formattedResponse = `J'ai trouvé ${functionResult.documents.length} documents :\n\n${functionResult.documents.map((d: any) => `• ${d.name}`).join("\n")}`;
+                const count = functionResult.documents.length;
+                formattedResponse = `Voici tes ${count} dernier${count > 1 ? 's' : ''} document${count > 1 ? 's' : ''} 📚\n\n`;
+                formattedResponse += functionResult.documents.map((d: any, i: number) =>
+                  `${i + 1}. **${d.name}**\n   └ Dossier : ${d.folder} | Ajouté : ${d.addedDate}`
+                ).join("\n\n");
+              }
+              break;
+            case "searchDocuments":
+              if (!functionResult.documents?.length) {
+                formattedResponse = "Je n'ai trouvé aucun document correspondant 🔍";
+              } else {
+                const count = functionResult.documents.length;
+                formattedResponse = `J'ai trouvé ${count} document${count > 1 ? 's' : ''} 🔍\n\n`;
+                formattedResponse += functionResult.documents.map((d: any, i: number) =>
+                  `${i + 1}. **${d.name}**\n   └ Dossier : ${d.folder} | Ajouté : ${d.addedDate}`
+                ).join("\n\n");
               }
               break;
             case "summarizeDocument":
@@ -1257,9 +1271,17 @@ export async function POST(request: NextRequest) {
       candidate = data.candidates?.[0];
     }
 
-    const aiResponse =
+    let aiResponse =
       candidate?.content?.parts?.[0]?.text ||
       "Je n'ai pas compris. Peux-tu reformuler ?";
+
+    // Clean up any IDs that might have leaked into the response
+    aiResponse = aiResponse
+      .replace(/\[ID:[^\]]+\]/g, "") // Remove [ID:xxx]
+      .replace(/\(ID:[^)]+\)/g, "") // Remove (ID:xxx)
+      .replace(/ID:\s*[a-z0-9]{20,}/gi, "") // Remove ID: followed by long alphanumeric
+      .replace(/\s{2,}/g, " ") // Clean up extra spaces
+      .trim();
 
     return NextResponse.json({ response: aiResponse });
   } catch (error) {
