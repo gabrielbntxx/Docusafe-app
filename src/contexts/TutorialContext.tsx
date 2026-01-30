@@ -8,8 +8,11 @@ export type TutorialStep = {
   mobileTarget?: string; // CSS selector for mobile element
   titleKey: string; // Translation key for title
   descriptionKey: string; // Translation key for description
+  mobileTitleKey?: string; // Mobile-specific title
+  mobileDescriptionKey?: string; // Mobile-specific description
   position: "top" | "bottom" | "left" | "right";
-  route?: string; // Optional route to navigate to
+  desktopOnly?: boolean; // Skip this step on mobile
+  mobileOnly?: boolean; // Skip this step on desktop
 };
 
 export const TUTORIAL_STEPS: TutorialStep[] = [
@@ -52,12 +55,14 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     descriptionKey: "tutorialSearchDesc",
     position: "right",
   },
+  // Desktop only steps
   {
     id: "docubot",
     target: "[data-tutorial='docubot-link']",
     titleKey: "tutorialDocubotTitle",
     descriptionKey: "tutorialDocubotDesc",
     position: "right",
+    desktopOnly: true,
   },
   {
     id: "settings",
@@ -65,6 +70,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     titleKey: "tutorialSettingsTitle",
     descriptionKey: "tutorialSettingsDesc",
     position: "right",
+    desktopOnly: true,
   },
   {
     id: "help",
@@ -72,6 +78,17 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     titleKey: "tutorialHelpTitle",
     descriptionKey: "tutorialHelpDesc",
     position: "right",
+    desktopOnly: true,
+  },
+  // Mobile only - menu explanation
+  {
+    id: "menu",
+    target: "body",
+    mobileTarget: "[data-tutorial='mobile-menu-button']",
+    titleKey: "tutorialMenuTitle",
+    descriptionKey: "tutorialMenuDesc",
+    position: "bottom",
+    mobileOnly: true,
   },
   {
     id: "complete",
@@ -93,6 +110,7 @@ type TutorialContextType = {
   prevStep: () => void;
   skipTutorial: () => void;
   hasCompletedTutorial: boolean;
+  isMobile: boolean;
 };
 
 const TutorialContext = createContext<TutorialContextType | null>(null);
@@ -102,9 +120,14 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [hasCompletedTutorial, setHasCompletedTutorial] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Check if tutorial was completed on mount
+  // Detect mobile and check tutorial completion on mount
   useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+
     const completed = localStorage.getItem("docusafe_tutorial_completed");
     if (completed !== "true") {
       setHasCompletedTutorial(false);
@@ -114,7 +137,16 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
       }, 1000);
     }
     setIsInitialized(true);
+
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
+  // Filter steps based on device type
+  const filteredSteps = TUTORIAL_STEPS.filter((step) => {
+    if (isMobile && step.desktopOnly) return false;
+    if (!isMobile && step.mobileOnly) return false;
+    return true;
+  });
 
   const startTutorial = () => {
     setCurrentStep(0);
@@ -129,7 +161,7 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   };
 
   const nextStep = () => {
-    if (currentStep < TUTORIAL_STEPS.length - 1) {
+    if (currentStep < filteredSteps.length - 1) {
       setCurrentStep((prev) => prev + 1);
     } else {
       endTutorial();
@@ -147,7 +179,7 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   };
 
   // Don't show tutorial until initialized to avoid hydration issues
-  const currentStepData = isActive && isInitialized ? TUTORIAL_STEPS[currentStep] : null;
+  const currentStepData = isActive && isInitialized ? filteredSteps[currentStep] : null;
 
   return (
     <TutorialContext.Provider
@@ -155,13 +187,14 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
         isActive: isActive && isInitialized,
         currentStep,
         currentStepData,
-        totalSteps: TUTORIAL_STEPS.length,
+        totalSteps: filteredSteps.length,
         startTutorial,
         endTutorial,
         nextStep,
         prevStep,
         skipTutorial,
         hasCompletedTutorial,
+        isMobile,
       }}
     >
       {children}

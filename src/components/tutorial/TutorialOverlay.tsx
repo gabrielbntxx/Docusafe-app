@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useTutorial } from "@/contexts/TutorialContext";
 import { useTranslation } from "@/hooks/useTranslation";
-import { X, ChevronLeft, ChevronRight, Sparkles, FileText, Upload, Folder, Search, Bot, Settings, HelpCircle } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Sparkles, FileText, Upload, Folder, Search, Bot, Settings, HelpCircle, Menu } from "lucide-react";
 
 type Position = {
   top: number;
@@ -21,6 +21,7 @@ const stepIcons: Record<string, React.ElementType> = {
   docubot: Bot,
   settings: Settings,
   help: HelpCircle,
+  menu: Menu,
 };
 
 export function TutorialOverlay() {
@@ -32,21 +33,11 @@ export function TutorialOverlay() {
     nextStep,
     prevStep,
     skipTutorial,
+    isMobile,
   } = useTutorial();
   const { t } = useTranslation();
   const [targetPosition, setTargetPosition] = useState<Position | null>(null);
   const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({});
-  const [isMobile, setIsMobile] = useState(false);
-
-  // Detect mobile
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024);
-    };
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
 
   const calculatePosition = useCallback(() => {
     if (!currentStepData) return;
