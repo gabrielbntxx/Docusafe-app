@@ -18,7 +18,6 @@ export default async function SettingsPage() {
       name: true,
       email: true,
       language: true,
-      folderPin: true,
       theme: true,
       notificationsEnabled: true,
     },
@@ -35,7 +34,6 @@ export default async function SettingsPage() {
         name: user.name || "",
         email: user.email,
         language: user.language,
-        hasFolderPin: !!user.folderPin,
         theme: user.theme,
         notifications: user.notificationsEnabled === 1,
       }}
