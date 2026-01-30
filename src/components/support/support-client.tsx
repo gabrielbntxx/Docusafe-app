@@ -12,10 +12,12 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export function SupportClient() {
   const [copied, setCopied] = useState(false);
   const email = "docusafe.contact@gmail.com";
+  const { t } = useTranslation();
 
   const copyEmail = () => {
     navigator.clipboard.writeText(email);
@@ -32,7 +34,7 @@ export function SupportClient() {
           className="mb-4 inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-300"
         >
           <ArrowLeft className="h-4 w-4" />
-          Retour au dashboard
+          {t("backToDashboard")}
         </Link>
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-500 shadow-lg shadow-cyan-500/25">
@@ -40,10 +42,10 @@ export function SupportClient() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-neutral-900 dark:text-white sm:text-2xl">
-              Support
+              {t("support")}
             </h1>
             <p className="text-sm text-neutral-500 dark:text-neutral-400">
-              Nous sommes là pour vous aider
+              {t("supportDescription")}
             </p>
           </div>
         </div>
@@ -56,9 +58,9 @@ export function SupportClient() {
             <Mail className="h-7 w-7" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-semibold">Contactez-nous par email</h2>
+            <h2 className="text-lg font-semibold">{t("contactByEmail")}</h2>
             <p className="mt-1 text-sm text-cyan-100">
-              Notre équipe vous répondra dans les plus brefs délais.
+              {t("teamWillRespond")}
             </p>
 
             {/* Email display and copy */}
@@ -73,12 +75,12 @@ export function SupportClient() {
                 {copied ? (
                   <>
                     <CheckCircle className="h-4 w-4" />
-                    <span className="text-sm">Copié !</span>
+                    <span className="text-sm">{t("copied")}</span>
                   </>
                 ) : (
                   <>
                     <Copy className="h-4 w-4" />
-                    <span className="text-sm">Copier</span>
+                    <span className="text-sm">{t("copyEmail")}</span>
                   </>
                 )}
               </button>
@@ -90,7 +92,7 @@ export function SupportClient() {
               className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 font-medium text-cyan-600 shadow-lg transition-all hover:bg-cyan-50 active:scale-95"
             >
               <Mail className="h-4 w-4" />
-              Envoyer un email
+              {t("sendEmail")}
               <ExternalLink className="h-3.5 w-3.5" />
             </a>
           </div>
@@ -106,10 +108,10 @@ export function SupportClient() {
             </div>
             <div>
               <h3 className="font-semibold text-neutral-900 dark:text-white">
-                Délai de réponse
+                {t("responseTime")}
               </h3>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                Sous 24-48 heures
+                {t("responseTimeValue")}
               </p>
             </div>
           </div>
@@ -122,10 +124,10 @@ export function SupportClient() {
             </div>
             <div>
               <h3 className="font-semibold text-neutral-900 dark:text-white">
-                Support en français
+                {t("frenchSupport")}
               </h3>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                Équipe francophone
+                {t("frenchTeam")}
               </p>
             </div>
           </div>
@@ -136,24 +138,24 @@ export function SupportClient() {
       <div className="mt-6 rounded-2xl bg-white p-5 shadow-sm dark:bg-neutral-800/50">
         <h3 className="flex items-center gap-2 font-semibold text-neutral-900 dark:text-white">
           <HelpCircle className="h-5 w-5 text-amber-500" />
-          Pour un traitement plus rapide
+          {t("forFasterProcessing")}
         </h3>
         <ul className="mt-3 space-y-2 text-sm text-neutral-600 dark:text-neutral-400">
           <li className="flex items-start gap-2">
             <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
-            Décrivez votre problème le plus précisément possible
+            {t("describeProblem")}
           </li>
           <li className="flex items-start gap-2">
             <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
-            Indiquez votre adresse email de connexion à DocuSafe
+            {t("indicateEmail")}
           </li>
           <li className="flex items-start gap-2">
             <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
-            Si possible, joignez des captures d&apos;écran du problème
+            {t("attachScreenshots")}
           </li>
           <li className="flex items-start gap-2">
             <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
-            Mentionnez l&apos;appareil utilisé (iPhone, Android, PC, Mac)
+            {t("mentionDevice")}
           </li>
         </ul>
       </div>
@@ -161,14 +163,14 @@ export function SupportClient() {
       {/* Help Link */}
       <div className="mt-6 rounded-2xl bg-neutral-50 p-5 dark:bg-neutral-900/50">
         <p className="text-sm text-neutral-600 dark:text-neutral-400">
-          Avant de nous contacter, consultez notre{" "}
+          {t("beforeContacting")}{" "}
           <Link
             href="/dashboard/help"
             className="font-medium text-cyan-600 hover:text-cyan-700 dark:text-cyan-400 dark:hover:text-cyan-300"
           >
-            Centre d&apos;aide
+            {t("helpCenterLink")}
           </Link>{" "}
-          qui répond aux questions les plus fréquentes.
+          {t("whichAnswersQuestions")}
         </p>
       </div>
     </div>

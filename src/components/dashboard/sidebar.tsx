@@ -92,7 +92,7 @@ export function Sidebar() {
         {/* Help & Support */}
         <div className="mt-4 pt-4 border-t border-black/5 dark:border-white/5">
           <p className="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-            Assistance
+            {t("assistance")}
           </p>
           <Link
             href="/dashboard/help"
@@ -103,7 +103,7 @@ export function Sidebar() {
             }`}
           >
             <HelpCircle className={`h-5 w-5 ${pathname === "/dashboard/help" ? "text-blue-500" : ""}`} />
-            Aide
+            {t("help")}
           </Link>
           <Link
             href="/dashboard/support"
@@ -114,7 +114,7 @@ export function Sidebar() {
             }`}
           >
             <MessageCircle className={`h-5 w-5 ${pathname === "/dashboard/support" ? "text-blue-500" : ""}`} />
-            Support
+            {t("support")}
           </Link>
         </div>
       </nav>

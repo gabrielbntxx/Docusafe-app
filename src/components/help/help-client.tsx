@@ -17,199 +17,134 @@ import {
   Image,
   Video,
   Music,
-  Lock,
-  Bell,
-  Settings,
-  CreditCard,
   Mail,
   HelpCircle,
 } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
+import type { TranslationKey } from "@/lib/translations";
 
 type GuideSection = {
   id: string;
-  title: string;
+  titleKey: TranslationKey;
   icon: React.ElementType;
   color: string;
-  description: string;
+  descriptionKey: TranslationKey;
   steps: {
-    title: string;
-    content: string;
+    titleKey: TranslationKey;
+    contentKey: TranslationKey;
   }[];
 };
 
 const guides: GuideSection[] = [
   {
     id: "upload",
-    title: "Importer des documents",
+    titleKey: "guideUpload",
     icon: Upload,
     color: "blue",
-    description: "Apprenez à ajouter vos fichiers dans DocuSafe",
+    descriptionKey: "guideUploadDesc",
     steps: [
-      {
-        title: "Formats acceptés",
-        content: "DocuSafe accepte les fichiers PDF, images (JPG, PNG, GIF, WebP), fichiers audio (MP3, WAV) et vidéos (MP4, MOV, WebM). La taille maximale est de 100 MB par fichier.",
-      },
-      {
-        title: "Glisser-déposer",
-        content: "Faites glisser vos fichiers directement dans la zone d'upload sur la page d'ajout de documents. Vous pouvez importer plusieurs fichiers en même temps.",
-      },
-      {
-        title: "Tri automatique par IA",
-        content: "Activez le bouton 'Tri automatique par IA' avant l'upload pour que DocuSafe analyse et classe automatiquement vos documents dans des dossiers appropriés.",
-      },
+      { titleKey: "guideUploadStep1", contentKey: "guideUploadStep1" },
+      { titleKey: "guideUploadStep2", contentKey: "guideUploadStep2" },
+      { titleKey: "guideUploadStep3", contentKey: "guideUploadStep3" },
+      { titleKey: "guideUploadStep4", contentKey: "guideUploadStep4" },
     ],
   },
   {
     id: "folders",
-    title: "Organiser avec des dossiers",
+    titleKey: "guideFolders",
     icon: FolderOpen,
     color: "amber",
-    description: "Créez et gérez vos dossiers personnalisés",
+    descriptionKey: "guideFoldersDesc",
     steps: [
-      {
-        title: "Créer un dossier",
-        content: "Cliquez sur 'Nouveau dossier' dans la page Mes fichiers. Donnez-lui un nom, choisissez une icône et une couleur pour le personnaliser.",
-      },
-      {
-        title: "Déplacer des documents",
-        content: "Sélectionnez un ou plusieurs documents, puis utilisez le bouton 'Déplacer' pour les ranger dans un dossier existant.",
-      },
-      {
-        title: "Dossiers protégés par PIN",
-        content: "Activez la protection PIN dans les Paramètres, puis verrouillez vos dossiers sensibles. Un code à 4 chiffres sera requis pour y accéder.",
-      },
+      { titleKey: "guideFoldersStep1", contentKey: "guideFoldersStep1" },
+      { titleKey: "guideFoldersStep2", contentKey: "guideFoldersStep2" },
+      { titleKey: "guideFoldersStep3", contentKey: "guideFoldersStep3" },
+      { titleKey: "guideFoldersStep4", contentKey: "guideFoldersStep4" },
     ],
   },
   {
     id: "search",
-    title: "Rechercher des documents",
+    titleKey: "guideSearch",
     icon: Search,
     color: "violet",
-    description: "Retrouvez rapidement vos fichiers",
+    descriptionKey: "guideSearchDesc",
     steps: [
-      {
-        title: "Recherche intelligente",
-        content: "La barre de recherche analyse le nom, les tags, le type de document et même les données extraites par l'IA (émetteur, montant, date...).",
-      },
-      {
-        title: "Filtres rapides",
-        content: "Utilisez les filtres par type de fichier (PDF, Images, Audio, Vidéo) et par période (Aujourd'hui, Cette semaine, Ce mois) pour affiner vos résultats.",
-      },
-      {
-        title: "Recherches récentes",
-        content: "Vos dernières recherches sont sauvegardées pour un accès rapide. Cliquez sur une recherche récente pour la relancer.",
-      },
+      { titleKey: "guideSearchStep1", contentKey: "guideSearchStep1" },
+      { titleKey: "guideSearchStep2", contentKey: "guideSearchStep2" },
+      { titleKey: "guideSearchStep3", contentKey: "guideSearchStep3" },
+      { titleKey: "guideSearchStep4", contentKey: "guideSearchStep4" },
     ],
   },
   {
     id: "docubot",
-    title: "DocuBot - Assistant IA",
+    titleKey: "guideDocubot",
     icon: Bot,
     color: "emerald",
-    description: "Posez des questions sur vos documents",
+    descriptionKey: "guideDocubotDesc",
     steps: [
-      {
-        title: "Qu'est-ce que DocuBot ?",
-        content: "DocuBot est votre assistant intelligent. Il peut répondre à des questions sur vos documents, faire des résumés et vous aider à retrouver des informations.",
-      },
-      {
-        title: "Comment l'utiliser",
-        content: "Accédez à DocuBot depuis le menu. Posez vos questions en langage naturel, par exemple : 'Quel est le montant de ma dernière facture EDF ?'",
-      },
-      {
-        title: "Suggestions de questions",
-        content: "DocuBot vous propose des questions suggérées basées sur vos documents récents. Cliquez dessus pour obtenir rapidement des informations.",
-      },
+      { titleKey: "guideDocubotStep1", contentKey: "guideDocubotStep1" },
+      { titleKey: "guideDocubotStep2", contentKey: "guideDocubotStep2" },
+      { titleKey: "guideDocubotStep3", contentKey: "guideDocubotStep3" },
+      { titleKey: "guideDocubotStep4", contentKey: "guideDocubotStep4" },
     ],
   },
   {
     id: "ai-sorting",
-    title: "Tri automatique par IA",
+    titleKey: "guideAiSort",
     icon: Sparkles,
     color: "pink",
-    description: "Laissez l'IA organiser vos documents",
+    descriptionKey: "guideAiSortDesc",
     steps: [
-      {
-        title: "Comment ça marche",
-        content: "L'IA analyse le contenu de vos documents (texte, images, audio, vidéo) pour déterminer leur type et les classer dans des dossiers précis.",
-      },
-      {
-        title: "Dossiers intelligents",
-        content: "Au lieu de créer des dossiers génériques comme 'Documents', l'IA crée des dossiers précis comme 'Factures EDF 2024' ou 'Cours Informatique'.",
-      },
-      {
-        title: "Activer le tri automatique",
-        content: "Lors de l'upload, activez le bouton violet 'Tri automatique par IA'. Vos documents seront analysés et classés automatiquement.",
-      },
+      { titleKey: "guideAiSortStep1", contentKey: "guideAiSortStep1" },
+      { titleKey: "guideAiSortStep2", contentKey: "guideAiSortStep2" },
+      { titleKey: "guideAiSortStep3", contentKey: "guideAiSortStep3" },
+      { titleKey: "guideAiSortStep4", contentKey: "guideAiSortStep4" },
     ],
   },
   {
     id: "share",
-    title: "Partager des documents",
+    titleKey: "guideShare",
     icon: Share2,
     color: "cyan",
-    description: "Partagez vos fichiers en toute sécurité",
+    descriptionKey: "guideShareDesc",
     steps: [
-      {
-        title: "Créer un lien de partage",
-        content: "Sélectionnez un document et cliquez sur 'Partager'. Un lien unique sera généré que vous pouvez envoyer à n'importe qui.",
-      },
-      {
-        title: "Protection par mot de passe",
-        content: "Optionnellement, protégez votre lien avec un mot de passe. Le destinataire devra le saisir pour accéder au document.",
-      },
-      {
-        title: "Date d'expiration",
-        content: "Définissez une date d'expiration pour que le lien devienne invalide après un certain temps. Idéal pour les documents sensibles.",
-      },
+      { titleKey: "guideShareStep1", contentKey: "guideShareStep1" },
+      { titleKey: "guideShareStep2", contentKey: "guideShareStep2" },
+      { titleKey: "guideShareStep3", contentKey: "guideShareStep3" },
+      { titleKey: "guideShareStep4", contentKey: "guideShareStep4" },
     ],
   },
   {
     id: "security",
-    title: "Sécurité et confidentialité",
+    titleKey: "guideSecurity",
     icon: Shield,
     color: "green",
-    description: "Vos documents sont protégés",
+    descriptionKey: "guideSecurityDesc",
     steps: [
-      {
-        title: "Chiffrement de bout en bout",
-        content: "Tous vos documents sont chiffrés avant d'être stockés. Même nous ne pouvons pas les lire. Seul vous avez la clé de déchiffrement.",
-      },
-      {
-        title: "PIN de dossier",
-        content: "Ajoutez une couche de sécurité supplémentaire avec un PIN à 4 chiffres pour vos dossiers les plus sensibles.",
-      },
-      {
-        title: "Connexion sécurisée",
-        content: "Votre compte est protégé par un mot de passe fort. Nous recommandons d'utiliser un mot de passe unique pour DocuSafe.",
-      },
+      { titleKey: "guideSecurityStep1", contentKey: "guideSecurityStep1" },
+      { titleKey: "guideSecurityStep2", contentKey: "guideSecurityStep2" },
+      { titleKey: "guideSecurityStep3", contentKey: "guideSecurityStep3" },
+      { titleKey: "guideSecurityStep4", contentKey: "guideSecurityStep4" },
     ],
   },
   {
     id: "email-import",
-    title: "Import par email",
+    titleKey: "guideEmail",
     icon: Mail,
     color: "indigo",
-    description: "Envoyez des documents par email",
+    descriptionKey: "guideEmailDesc",
     steps: [
-      {
-        title: "Votre adresse d'import",
-        content: "Chaque compte a une adresse email unique (ex: votrenom-abc123@import.docusafe.app). Trouvez-la dans les Paramètres.",
-      },
-      {
-        title: "Envoyer des documents",
-        content: "Transférez n'importe quel email avec pièces jointes à cette adresse. Les fichiers seront automatiquement importés dans DocuSafe.",
-      },
-      {
-        title: "Types de fichiers",
-        content: "Seuls les fichiers supportés (PDF, images, audio, vidéo) seront importés. Les autres pièces jointes seront ignorées.",
-      },
+      { titleKey: "guideEmailStep1", contentKey: "guideEmailStep1" },
+      { titleKey: "guideEmailStep2", contentKey: "guideEmailStep2" },
+      { titleKey: "guideEmailStep3", contentKey: "guideEmailStep3" },
+      { titleKey: "guideEmailStep4", contentKey: "guideEmailStep4" },
     ],
   },
 ];
 
 export function HelpClient() {
   const [expandedGuide, setExpandedGuide] = useState<string | null>("upload");
+  const { t } = useTranslation();
 
   const toggleGuide = (id: string) => {
     setExpandedGuide(expandedGuide === id ? null : id);
@@ -238,7 +173,7 @@ export function HelpClient() {
           className="mb-4 inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-300"
         >
           <ArrowLeft className="h-4 w-4" />
-          Retour au dashboard
+          {t("backToDashboard")}
         </Link>
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg shadow-amber-500/25">
@@ -246,10 +181,10 @@ export function HelpClient() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-neutral-900 dark:text-white sm:text-2xl">
-              Centre d&apos;aide
+              {t("helpCenter")}
             </h1>
             <p className="text-sm text-neutral-500 dark:text-neutral-400">
-              Guides et tutoriels pour utiliser DocuSafe
+              {t("helpDescription")}
             </p>
           </div>
         </div>
@@ -260,7 +195,7 @@ export function HelpClient() {
         {[
           { icon: FileText, label: "PDF", color: "text-red-500" },
           { icon: Image, label: "Images", color: "text-blue-500" },
-          { icon: Video, label: "Vidéos", color: "text-purple-500" },
+          { icon: Video, label: "Videos", color: "text-purple-500" },
           { icon: Music, label: "Audio", color: "text-pink-500" },
         ].map((item) => (
           <div
@@ -294,10 +229,10 @@ export function HelpClient() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-neutral-900 dark:text-white">
-                    {guide.title}
+                    {t(guide.titleKey)}
                   </h3>
                   <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
-                    {guide.description}
+                    {t(guide.descriptionKey)}
                   </p>
                 </div>
                 {isExpanded ? (
@@ -317,11 +252,8 @@ export function HelpClient() {
                           {index + 1}
                         </div>
                         <div>
-                          <h4 className="font-medium text-neutral-900 dark:text-white text-sm">
-                            {step.title}
-                          </h4>
-                          <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
-                            {step.content}
+                          <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                            {t(step.contentKey)}
                           </p>
                         </div>
                       </div>
@@ -336,15 +268,15 @@ export function HelpClient() {
 
       {/* Support Link */}
       <div className="mt-6 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-500 p-5 text-white shadow-lg shadow-cyan-500/25">
-        <h3 className="font-semibold">Besoin d&apos;aide supplémentaire ?</h3>
+        <h3 className="font-semibold">{t("supportTitle")}</h3>
         <p className="mt-1 text-sm text-cyan-100">
-          Notre équipe support est là pour vous aider.
+          {t("supportDescription")}
         </p>
         <Link
           href="/dashboard/support"
           className="mt-3 inline-flex items-center gap-2 rounded-xl bg-white/20 px-4 py-2 text-sm font-medium backdrop-blur-sm transition-colors hover:bg-white/30"
         >
-          Contacter le support
+          {t("contactByEmail")}
           <ChevronRight className="h-4 w-4" />
         </Link>
       </div>
