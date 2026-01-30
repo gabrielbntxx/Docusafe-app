@@ -17,9 +17,9 @@ async function getUserEncryptionKey(userId: string): Promise<string | null> {
 }
 
 // ============================================================================
-// DOCUBOT SYSTEM PROMPT
+// DOCUBOT SYSTEM PROMPTS (Bilingual FR/EN)
 // ============================================================================
-const DOCUBOT_SYSTEM_PROMPT = `Tu es DocuBot, l'assistant IA de DocuSafe.
+const DOCUBOT_SYSTEM_PROMPT_FR = `Tu es DocuBot, l'assistant IA de DocuSafe.
 
 ## RÈGLE ABSOLUE - JAMAIS D'ID OU DONNÉES TECHNIQUES
 ❌ NE JAMAIS afficher d'ID (ex: cml058i9x000f3k1iefea7lyv) dans tes réponses
@@ -59,6 +59,47 @@ Voici tes 5 derniers documents 📚
 - Tutoie, sois amical et concis
 - 1-2 emojis max par réponse
 - Formate bien les listes pour qu'elles soient lisibles`;
+
+const DOCUBOT_SYSTEM_PROMPT_EN = `You are DocuBot, DocuSafe's AI assistant.
+
+## ABSOLUTE RULE - NEVER SHOW IDs OR TECHNICAL DATA
+❌ NEVER display IDs (e.g., cml058i9x000f3k1iefea7lyv) in your responses
+❌ NEVER show raw JSON data
+❌ NEVER say "[ID:..." or "(ID:..."
+✅ Show ONLY the document name, its folder and date
+✅ Format lists nicely with numbers or bullet points
+
+## RESPONSE FORMAT - DOCUMENTS
+When listing documents, use THIS FORMAT:
+📄 **Document name**
+   └ Folder: FolderName | Added: date
+
+Example for "recent documents":
+Here are your 5 most recent documents 📚
+
+1. **Electric Bill March 2024**
+   └ Folder: Bills | Added: today
+
+2. **ID Card**
+   └ Folder: Official Documents | Added: yesterday
+
+## CRITICAL RULE - EXECUTION
+⚠️ CALL THE FUNCTION IMMEDIATELY, without asking for confirmation.
+❌ DON'T SAY "I will..." BEFORE calling the function
+✅ User says "yes" or "do it" = EXECUTE IMMEDIATELY
+
+## UNDERSTANDING REQUESTS
+- "recent documents" / "latest documents" = call getRecentDocuments
+- "my latest document" = position 1 in the list
+- "search invoice" = call searchDocuments with query="invoice"
+
+## CONTEXT (IDs for YOUR function calls - DO NOT DISPLAY)
+{context}
+
+## STYLE
+- Be friendly and concise
+- 1-2 emojis max per response
+- Format lists nicely so they're readable`;
 
 // ============================================================================
 // FUNCTION DEFINITIONS FOR GEMINI
@@ -256,14 +297,23 @@ const FUNCTION_DECLARATIONS = [
 // FUNCTION IMPLEMENTATIONS
 // ============================================================================
 
-// Helper: format date in friendly way
-function formatFriendlyDate(date: Date): string {
+// Helper: format date in friendly way (with language support)
+function formatFriendlyDate(date: Date, lang: string = "fr"): string {
   const now = new Date();
   const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-  if (diffDays === 0) return "aujourd'hui";
-  if (diffDays === 1) return "hier";
-  if (diffDays < 7) return `il y a ${diffDays} jours`;
-  return `le ${date.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}`;
+  const isEnglish = lang === "en";
+
+  if (isEnglish) {
+    if (diffDays === 0) return "today";
+    if (diffDays === 1) return "yesterday";
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString("en-US", { day: "numeric", month: "long" });
+  } else {
+    if (diffDays === 0) return "aujourd'hui";
+    if (diffDays === 1) return "hier";
+    if (diffDays < 7) return `il y a ${diffDays} jours`;
+    return `le ${date.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}`;
+  }
 }
 
 async function getRecentDocuments(userId: string, count: number = 5) {
@@ -1059,8 +1109,8 @@ export async function POST(request: NextRequest) {
 
     const userId = session.user.id;
 
-    // Get user context
-    const [folders, recentDocs] = await Promise.all([
+    // Get user context and language preference
+    const [folders, recentDocs, userSettings] = await Promise.all([
       db.folder.findMany({
         where: { userId },
         select: { id: true, name: true, _count: { select: { documents: true } } },
@@ -1079,24 +1129,41 @@ export async function POST(request: NextRequest) {
         orderBy: { uploadedAt: "desc" },
         take: 15,
       }),
+      db.user.findUnique({
+        where: { id: userId },
+        select: { language: true },
+      }),
     ]);
+
+    // Determine user language (default to French)
+    const userLang = userSettings?.language || "fr";
+    const isEnglish = userLang === "en";
 
     // Build smart context with numbered documents and helpful info
     const foldersContext = folders.length
       ? folders.map((f) => `• ${f.name} (${f._count.documents} docs) [ID:${f.id}]`).join("\n")
-      : "Aucun dossier";
+      : isEnglish ? "No folders" : "Aucun dossier";
 
-    // Format date in friendly way
+    // Format date in friendly way based on language
     const formatSmartDate = (date: Date) => {
       const now = new Date();
       const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-      if (diffDays === 0) return "aujourd'hui";
-      if (diffDays === 1) return "hier";
-      if (diffDays < 7) return `il y a ${diffDays} jours`;
-      return date.toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
+      if (isEnglish) {
+        if (diffDays === 0) return "today";
+        if (diffDays === 1) return "yesterday";
+        if (diffDays < 7) return `${diffDays} days ago`;
+        return date.toLocaleDateString("en-US", { day: "numeric", month: "long" });
+      } else {
+        if (diffDays === 0) return "aujourd'hui";
+        if (diffDays === 1) return "hier";
+        if (diffDays < 7) return `il y a ${diffDays} jours`;
+        return date.toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
+      }
     };
 
-    // Number documents (1 = most recent = "dernier document")
+    // Number documents (1 = most recent)
+    const folderLabel = isEnglish ? "Folder" : "Dossier";
+    const uncategorizedLabel = isEnglish ? "uncategorized" : "non classé";
     const docsContext = recentDocs.length
       ? recentDocs
           .map((d, index) => {
@@ -1104,15 +1171,18 @@ export async function POST(request: NextRequest) {
             const dateStr = formatSmartDate(new Date(d.uploadedAt));
             const category = d.aiCategory || "";
             const type = d.aiDocumentType || "";
-            // Build searchable keywords
             const keywords = [d.displayName.toLowerCase(), category.toLowerCase(), type.toLowerCase()].filter(Boolean).join(" ");
-            return `${position}. "${d.displayName}" | ${category || type || "Document"} | Dossier: ${d.folder?.name || "non classé"} | ${dateStr} [ID:${d.id}] (mots-clés: ${keywords})`;
+            return `${position}. "${d.displayName}" | ${category || type || "Document"} | ${folderLabel}: ${d.folder?.name || uncategorizedLabel} | ${dateStr} [ID:${d.id}] (keywords: ${keywords})`;
           })
           .join("\n")
-      : "Aucun document";
+      : isEnglish ? "No documents" : "Aucun document";
 
-    const context = `DOSSIERS DISPONIBLES:\n${foldersContext}\n\nDOCUMENTS (1 = le plus récent = "dernier document"):\n${docsContext}\n\nRAPPEL: Position 1 = document le plus récent. Quand l'utilisateur dit "mon dernier document", utilise celui en position 1.`;
-    const systemPrompt = DOCUBOT_SYSTEM_PROMPT.replace("{context}", context);
+    const context = isEnglish
+      ? `AVAILABLE FOLDERS:\n${foldersContext}\n\nDOCUMENTS (1 = most recent = "latest document"):\n${docsContext}\n\nREMINDER: Position 1 = most recent document. When the user says "my latest document", use the one at position 1.`
+      : `DOSSIERS DISPONIBLES:\n${foldersContext}\n\nDOCUMENTS (1 = le plus récent = "dernier document"):\n${docsContext}\n\nRAPPEL: Position 1 = document le plus récent. Quand l'utilisateur dit "mon dernier document", utilise celui en position 1.`;
+
+    const basePrompt = isEnglish ? DOCUBOT_SYSTEM_PROMPT_EN : DOCUBOT_SYSTEM_PROMPT_FR;
+    const systemPrompt = basePrompt.replace("{context}", context);
 
     // Build conversation
     const conversationHistory = (history || []).slice(-8).map((msg: any) => ({
@@ -1123,10 +1193,15 @@ export async function POST(request: NextRequest) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
-        { response: "Service temporairement indisponible." },
+        { response: isEnglish ? "Service temporarily unavailable." : "Service temporairement indisponible." },
         { status: 200 }
       );
     }
+
+    // Model acknowledgment message based on language
+    const modelAck = isEnglish
+      ? "Got it! I'm DocuBot, ready to help you with your documents."
+      : "Compris ! Je suis DocuBot, prêt à t'aider avec tes documents.";
 
     // First call to Gemini with function declarations
     let response = await fetch(
@@ -1137,7 +1212,7 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify({
           contents: [
             { role: "user", parts: [{ text: systemPrompt }] },
-            { role: "model", parts: [{ text: "Compris ! Je suis DocuBot, prêt à t'aider avec tes documents." }] },
+            { role: "model", parts: [{ text: modelAck }] },
             ...conversationHistory,
             { role: "user", parts: [{ text: message }] },
           ],
@@ -1150,7 +1225,7 @@ export async function POST(request: NextRequest) {
     if (!response.ok) {
       console.error("Gemini API error:", await response.text());
       return NextResponse.json(
-        { response: "Désolé, je n'ai pas pu traiter ta demande." },
+        { response: isEnglish ? "Sorry, I couldn't process your request." : "Désolé, je n'ai pas pu traiter ta demande." },
         { status: 200 }
       );
     }
@@ -1169,6 +1244,9 @@ export async function POST(request: NextRequest) {
 
       console.log("[DocuBot] Function result:", functionResult);
 
+      // Short model acknowledgment for second call
+      const modelAckShort = isEnglish ? "Got it! I'm DocuBot." : "Compris ! Je suis DocuBot.";
+
       // Second call to Gemini with function result
       response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
@@ -1178,7 +1256,7 @@ export async function POST(request: NextRequest) {
           body: JSON.stringify({
             contents: [
               { role: "user", parts: [{ text: systemPrompt }] },
-              { role: "model", parts: [{ text: "Compris ! Je suis DocuBot." }] },
+              { role: "model", parts: [{ text: modelAckShort }] },
               ...conversationHistory,
               { role: "user", parts: [{ text: message }] },
               { role: "model", parts: [{ functionCall }] },
@@ -1203,106 +1281,149 @@ export async function POST(request: NextRequest) {
         // If second call fails, format result ourselves (simple, human-friendly)
         if (functionResult.success) {
           let formattedResponse = "";
+          const folderLabel = isEnglish ? "Folder" : "Dossier";
+          const addedLabel = isEnglish ? "Added" : "Ajouté";
+
           switch (functionCall.name) {
             case "getRecentDocuments":
               if (!functionResult.documents?.length) {
-                formattedResponse = "Tu n'as pas encore de documents 📭";
+                formattedResponse = isEnglish ? "You don't have any documents yet 📭" : "Tu n'as pas encore de documents 📭";
               } else {
                 const count = functionResult.documents.length;
-                formattedResponse = `Voici tes ${count} dernier${count > 1 ? 's' : ''} document${count > 1 ? 's' : ''} 📚\n\n`;
+                formattedResponse = isEnglish
+                  ? `Here are your ${count} most recent document${count > 1 ? 's' : ''} 📚\n\n`
+                  : `Voici tes ${count} dernier${count > 1 ? 's' : ''} document${count > 1 ? 's' : ''} 📚\n\n`;
                 formattedResponse += functionResult.documents.map((d: any, i: number) =>
-                  `${i + 1}. **${d.name}**\n   └ Dossier : ${d.folder} | Ajouté : ${d.addedDate}`
+                  `${i + 1}. **${d.name}**\n   └ ${folderLabel} : ${d.folder} | ${addedLabel} : ${d.addedDate}`
                 ).join("\n\n");
               }
               break;
             case "searchDocuments":
               if (!functionResult.documents?.length) {
-                formattedResponse = "Je n'ai trouvé aucun document correspondant 🔍";
+                formattedResponse = isEnglish ? "No matching documents found 🔍" : "Je n'ai trouvé aucun document correspondant 🔍";
               } else {
                 const count = functionResult.documents.length;
-                formattedResponse = `J'ai trouvé ${count} document${count > 1 ? 's' : ''} 🔍\n\n`;
+                formattedResponse = isEnglish
+                  ? `Found ${count} document${count > 1 ? 's' : ''} 🔍\n\n`
+                  : `J'ai trouvé ${count} document${count > 1 ? 's' : ''} 🔍\n\n`;
                 formattedResponse += functionResult.documents.map((d: any, i: number) =>
-                  `${i + 1}. **${d.name}**\n   └ Dossier : ${d.folder} | Ajouté : ${d.addedDate}`
+                  `${i + 1}. **${d.name}**\n   └ ${folderLabel} : ${d.folder} | ${addedLabel} : ${d.addedDate}`
                 ).join("\n\n");
               }
               break;
             case "summarizeDocument":
-              formattedResponse = `📝 Résumé de "${functionResult.document}" :\n\n${functionResult.summary}`;
+              formattedResponse = isEnglish
+                ? `📝 Summary of "${functionResult.document}":\n\n${functionResult.summary}`
+                : `📝 Résumé de "${functionResult.document}" :\n\n${functionResult.summary}`;
               break;
             case "analyzeDocument":
               const a = functionResult.analysis;
-              formattedResponse = `🔍 **Analyse de "${functionResult.documentName}"**\n\n`;
+              formattedResponse = isEnglish
+                ? `🔍 **Analysis of "${functionResult.documentName}"**\n\n`
+                : `🔍 **Analyse de "${functionResult.documentName}"**\n\n`;
               if (a.type) formattedResponse += `📋 **Type** : ${a.type}\n\n`;
 
               // Event info (concerts, shows, matches)
               if (a.evenement) {
                 const e = a.evenement;
                 if (e.artiste || e.nom) {
-                  formattedResponse += `🎤 **Événement** : ${e.artiste || e.nom}\n`;
+                  formattedResponse += isEnglish
+                    ? `🎤 **Event** : ${e.artiste || e.nom}\n`
+                    : `🎤 **Événement** : ${e.artiste || e.nom}\n`;
                 }
-                if (e.lieu) formattedResponse += `📍 **Lieu** : ${e.lieu}\n`;
+                if (e.lieu) formattedResponse += isEnglish ? `📍 **Venue** : ${e.lieu}\n` : `📍 **Lieu** : ${e.lieu}\n`;
                 if (e.date) formattedResponse += `📅 **Date** : ${e.date}\n`;
-                if (e.place) formattedResponse += `💺 **Place** : ${e.place}\n`;
+                if (e.place) formattedResponse += isEnglish ? `💺 **Seat** : ${e.place}\n` : `💺 **Place** : ${e.place}\n`;
                 formattedResponse += "\n";
               }
 
               if (a.resumé) formattedResponse += `${a.resumé}\n\n`;
 
-              if (a.montants?.length) formattedResponse += `💰 **Montant** : ${a.montants.join(", ")}\n`;
-              if (a.personnes?.length) formattedResponse += `👤 **Nom** : ${a.personnes.join(", ")}\n`;
+              if (a.montants?.length) formattedResponse += isEnglish
+                ? `💰 **Amount** : ${a.montants.join(", ")}\n`
+                : `💰 **Montant** : ${a.montants.join(", ")}\n`;
+              if (a.personnes?.length) formattedResponse += isEnglish
+                ? `👤 **Name** : ${a.personnes.join(", ")}\n`
+                : `👤 **Nom** : ${a.personnes.join(", ")}\n`;
 
               if (a.pointsCles?.length) {
-                formattedResponse += `\n📌 **Points clés** :\n${a.pointsCles.map((p: string) => `• ${p}`).join("\n")}`;
+                formattedResponse += isEnglish
+                  ? `\n📌 **Key points** :\n${a.pointsCles.map((p: string) => `• ${p}`).join("\n")}`
+                  : `\n📌 **Points clés** :\n${a.pointsCles.map((p: string) => `• ${p}`).join("\n")}`;
               }
               break;
             case "moveDocument":
               formattedResponse = `✅ ${functionResult.message}`;
               break;
             case "moveMultipleDocuments":
-              formattedResponse = `✅ ${functionResult.movedCount} document(s) déplacé(s) vers "${functionResult.folderName}" !`;
+              formattedResponse = isEnglish
+                ? `✅ ${functionResult.movedCount} document(s) moved to "${functionResult.folderName}"!`
+                : `✅ ${functionResult.movedCount} document(s) déplacé(s) vers "${functionResult.folderName}" !`;
               break;
             case "deleteDocument":
-              formattedResponse = `🗑️ Document "${functionResult.deletedName}" supprimé !`;
+              formattedResponse = isEnglish
+                ? `🗑️ Document "${functionResult.deletedName}" deleted!`
+                : `🗑️ Document "${functionResult.deletedName}" supprimé !`;
               break;
             case "deleteMultipleDocuments":
-              formattedResponse = `🗑️ ${functionResult.deletedCount} document(s) supprimé(s) !`;
+              formattedResponse = isEnglish
+                ? `🗑️ ${functionResult.deletedCount} document(s) deleted!`
+                : `🗑️ ${functionResult.deletedCount} document(s) supprimé(s) !`;
               break;
             case "renameDocument":
-              formattedResponse = `✏️ Document renommé en "${functionResult.newName}" !`;
+              formattedResponse = isEnglish
+                ? `✏️ Document renamed to "${functionResult.newName}"!`
+                : `✏️ Document renommé en "${functionResult.newName}" !`;
               break;
             case "createFolder":
-              formattedResponse = `📁 Dossier "${functionResult.folderName}" créé !`;
+              formattedResponse = isEnglish
+                ? `📁 Folder "${functionResult.folderName}" created!`
+                : `📁 Dossier "${functionResult.folderName}" créé !`;
               break;
             case "deleteFolder":
-              formattedResponse = `🗑️ Dossier "${functionResult.folderName}" supprimé !`;
+              formattedResponse = isEnglish
+                ? `🗑️ Folder "${functionResult.folderName}" deleted!`
+                : `🗑️ Dossier "${functionResult.folderName}" supprimé !`;
               break;
             case "renameFolder":
-              formattedResponse = `✏️ Dossier renommé en "${functionResult.newName}" !`;
+              formattedResponse = isEnglish
+                ? `✏️ Folder renamed to "${functionResult.newName}"!`
+                : `✏️ Dossier renommé en "${functionResult.newName}" !`;
               break;
             case "reclassifyDocument":
-              formattedResponse = `🔄 Document reclassé dans "${functionResult.newCategory}" !`;
+              formattedResponse = isEnglish
+                ? `🔄 Document reclassified to "${functionResult.newCategory}"!`
+                : `🔄 Document reclassé dans "${functionResult.newCategory}" !`;
               break;
             case "reclassifyMultipleDocuments":
-              formattedResponse = `🔄 ${functionResult.reclassifiedCount} document(s) reclassé(s) !`;
+              formattedResponse = isEnglish
+                ? `🔄 ${functionResult.reclassifiedCount} document(s) reclassified!`
+                : `🔄 ${functionResult.reclassifiedCount} document(s) reclassé(s) !`;
               break;
             case "listFolders":
-              formattedResponse = `📁 Tes ${functionResult.folders.length} dossier(s) :\n\n${functionResult.folders.map((f: any) => `• ${f.name} (${f.documentCount} doc${f.documentCount > 1 ? 's' : ''})`).join("\n")}`;
+              formattedResponse = isEnglish
+                ? `📁 Your ${functionResult.folders.length} folder(s):\n\n${functionResult.folders.map((f: any) => `• ${f.name} (${f.documentCount} doc${f.documentCount > 1 ? 's' : ''})`).join("\n")}`
+                : `📁 Tes ${functionResult.folders.length} dossier(s) :\n\n${functionResult.folders.map((f: any) => `• ${f.name} (${f.documentCount} doc${f.documentCount > 1 ? 's' : ''})`).join("\n")}`;
               break;
             default:
-              formattedResponse = "✅ C'est fait !";
+              formattedResponse = isEnglish ? "✅ Done!" : "✅ C'est fait !";
           }
           return NextResponse.json({ response: formattedResponse });
         }
-        return NextResponse.json({ response: `❌ ${functionResult.error || "Désolé, je n'ai pas réussi. Réessaie ?"}` });
+        const defaultError = isEnglish ? "Sorry, I couldn't do that. Try again?" : "Désolé, je n'ai pas réussi. Réessaie ?";
+        return NextResponse.json({ response: `❌ ${functionResult.error || defaultError}` });
       }
 
       data = await response.json();
       candidate = data.candidates?.[0];
     }
 
+    const fallbackMessage = isEnglish
+      ? "I didn't understand. Can you rephrase?"
+      : "Je n'ai pas compris. Peux-tu reformuler ?";
+
     let aiResponse =
-      candidate?.content?.parts?.[0]?.text ||
-      "Je n'ai pas compris. Peux-tu reformuler ?";
+      candidate?.content?.parts?.[0]?.text || fallbackMessage;
 
     // Clean up any IDs that might have leaked into the response
     aiResponse = aiResponse
@@ -1315,8 +1436,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ response: aiResponse });
   } catch (error) {
     console.error("DocuBot error:", error);
+    // Note: We don't have access to isEnglish here due to scope, so we use French as default
     return NextResponse.json(
-      { response: "Oups, une erreur s'est produite. Réessaie !" },
+      { response: "Oops, something went wrong. Try again! / Oups, une erreur s'est produite. Réessaie !" },
       { status: 200 }
     );
   }

@@ -316,8 +316,8 @@ export function SettingsClient({ user }: { user: UserSettings }) {
           </div>
         </div>
 
-        {/* Notifications Settings */}
-        <div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-neutral-800/50 sm:rounded-3xl sm:shadow-xl sm:shadow-black/5 dark:sm:shadow-none">
+        {/* Notifications Settings - Full Width */}
+        <div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-neutral-800/50 sm:rounded-3xl sm:shadow-xl sm:shadow-black/5 dark:sm:shadow-none lg:col-span-2">
           <div className="flex items-center gap-3 border-b border-neutral-100 p-4 dark:border-neutral-700/50 sm:p-5">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 shadow-md shadow-violet-500/20 sm:h-11 sm:w-11">
               <Bell className="h-5 w-5 text-white" />
@@ -330,52 +330,56 @@ export function SettingsClient({ user }: { user: UserSettings }) {
                 {t("manageNotifications")}
               </p>
             </div>
+            {notifications && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2.5 py-0.5 text-[10px] font-semibold text-violet-700 dark:bg-violet-500/20 dark:text-violet-400">
+                <Check className="h-2.5 w-2.5" />
+                {t("enabled")}
+              </span>
+            )}
           </div>
 
-          <div className="p-2 sm:p-3">
-            <button
-              onClick={() => setNotifications(!notifications)}
-              className="flex w-full items-center justify-between rounded-xl p-3 transition-all hover:bg-neutral-50 active:bg-neutral-100 dark:hover:bg-neutral-700/30 sm:p-3"
-            >
-              <div className="flex items-center gap-3">
+          <div className="p-3 sm:p-4">
+            <div className="flex items-center justify-between rounded-xl bg-neutral-50 p-4 dark:bg-neutral-700/30">
+              <div className="flex items-center gap-4">
                 <div
-                  className={`flex h-8 w-8 items-center justify-center rounded-lg ${
+                  className={`flex h-12 w-12 items-center justify-center rounded-xl ${
                     notifications
                       ? "bg-violet-100 dark:bg-violet-500/20"
                       : "bg-neutral-200 dark:bg-neutral-600"
                   }`}
                 >
                   <Bell
-                    className={`h-4 w-4 ${
+                    className={`h-6 w-6 ${
                       notifications
                         ? "text-violet-600 dark:text-violet-400"
                         : "text-neutral-500 dark:text-neutral-400"
                     }`}
                   />
                 </div>
-                <div className="text-left">
-                  <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                <div>
+                  <p className="text-sm font-semibold text-neutral-900 dark:text-white">
                     {t("pushNotifications")}
                   </p>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                    {notifications ? t("enabled") : t("disabled")}
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                    {t("notificationsDescription")}
                   </p>
                 </div>
               </div>
-              <div
-                className={`relative h-6 w-11 rounded-full transition-colors ${
+              <button
+                onClick={() => setNotifications(!notifications)}
+                className={`relative h-7 w-12 rounded-full transition-colors ${
                   notifications
                     ? "bg-violet-500"
                     : "bg-neutral-300 dark:bg-neutral-600"
                 }`}
               >
                 <div
-                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                  className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow-md transition-transform ${
                     notifications ? "translate-x-[22px]" : "translate-x-0.5"
                   }`}
                 />
-              </div>
-            </button>
+              </button>
+            </div>
           </div>
         </div>
 
