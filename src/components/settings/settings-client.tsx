@@ -1,19 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useTheme } from "@/components/providers/theme-provider";
 import { useTutorial } from "@/contexts/TutorialContext";
 import {
   Globe,
-  Lock,
   Bell,
   Moon,
   Sun,
   Save,
   Check,
-  Shield,
   X,
   Sparkles,
   Mail,
@@ -29,7 +26,6 @@ type UserSettings = {
   name: string;
   email: string;
   language: string;
-  hasFolderPin: boolean;
   theme: string;
   notifications: boolean;
 };
@@ -40,18 +36,12 @@ const LANGUAGES = [
 ];
 
 export function SettingsClient({ user }: { user: UserSettings }) {
-  const router = useRouter();
   const { t } = useTranslation();
   const { setTheme: setGlobalTheme } = useTheme();
   const { startTutorial, hasCompletedTutorial } = useTutorial();
   const [language, setLanguage] = useState(user.language);
   const [theme, setTheme] = useState(user.theme);
   const [notifications, setNotifications] = useState(user.notifications);
-  const [showPinModal, setShowPinModal] = useState(false);
-  const [pin, setPin] = useState("");
-  const [confirmPin, setConfirmPin] = useState("");
-  const [currentPin, setCurrentPin] = useState("");
-  const [isRemovingPin, setIsRemovingPin] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">(
     "idle"
   );
@@ -133,68 +123,6 @@ export function SettingsClient({ user }: { user: UserSettings }) {
     }
   };
 
-  const handleSetPin = async () => {
-    if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
-      alert("PIN must be exactly 4 digits");
-      return;
-    }
-
-    if (pin !== confirmPin) {
-      alert("PINs do not match");
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/settings/pin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pin }),
-      });
-
-      if (response.ok) {
-        setShowPinModal(false);
-        setPin("");
-        setConfirmPin("");
-        router.refresh();
-        alert("PIN successfully set");
-      } else {
-        const data = await response.json();
-        alert(data.error || "Error setting PIN");
-      }
-    } catch (error) {
-      console.error("Error setting PIN:", error);
-      alert("Error setting PIN");
-    }
-  };
-
-  const handleRemovePin = async () => {
-    if (currentPin.length !== 4 || !/^\d{4}$/.test(currentPin)) {
-      alert("Enter your current 4-digit PIN");
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/settings/pin", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentPin }),
-      });
-
-      if (response.ok) {
-        setIsRemovingPin(false);
-        setCurrentPin("");
-        router.refresh();
-        alert("PIN successfully removed");
-      } else {
-        const data = await response.json();
-        alert(data.error || "Error removing PIN");
-      }
-    } catch (error) {
-      console.error("Error removing PIN:", error);
-      alert("Error removing PIN");
-    }
-  };
-
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-0">
       {/* Mobile Header */}
@@ -206,159 +134,6 @@ export function SettingsClient({ user }: { user: UserSettings }) {
           {t("managePreferences")}
         </p>
       </div>
-
-      {/* PIN Modal */}
-      {showPinModal && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center sm:p-4">
-          <div className="w-full max-h-[90vh] overflow-y-auto rounded-t-[28px] bg-white p-5 shadow-2xl dark:bg-neutral-900 sm:max-w-md sm:rounded-[28px]">
-            <div className="mb-5 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500">
-                  <Shield className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-base font-semibold text-neutral-900 dark:text-white">
-                    Set Folder PIN
-                  </h3>
-                  <p className="text-xs text-neutral-500">Protect your folders</p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setShowPinModal(false);
-                  setPin("");
-                  setConfirmPin("");
-                }}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 transition-all hover:bg-neutral-200 active:scale-95 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  New PIN (4 digits)
-                </label>
-                <input
-                  type="password"
-                  inputMode="numeric"
-                  maxLength={4}
-                  value={pin}
-                  onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
-                  placeholder="••••"
-                  className="w-full rounded-2xl border-0 bg-neutral-100 px-4 py-3.5 text-center text-xl tracking-[0.5em] text-neutral-900 placeholder-neutral-400 outline-none transition-all focus:ring-2 focus:ring-blue-500/30 dark:bg-neutral-800 dark:text-white dark:placeholder-neutral-500"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  Confirm PIN
-                </label>
-                <input
-                  type="password"
-                  inputMode="numeric"
-                  maxLength={4}
-                  value={confirmPin}
-                  onChange={(e) =>
-                    setConfirmPin(e.target.value.replace(/\D/g, ""))
-                  }
-                  placeholder="••••"
-                  className="w-full rounded-2xl border-0 bg-neutral-100 px-4 py-3.5 text-center text-xl tracking-[0.5em] text-neutral-900 placeholder-neutral-400 outline-none transition-all focus:ring-2 focus:ring-blue-500/30 dark:bg-neutral-800 dark:text-white dark:placeholder-neutral-500"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() => {
-                    setShowPinModal(false);
-                    setPin("");
-                    setConfirmPin("");
-                  }}
-                  className="flex-1 rounded-2xl border border-neutral-200 bg-white py-3.5 text-sm font-semibold text-neutral-700 transition-all hover:bg-neutral-50 active:scale-[0.98] dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSetPin}
-                  disabled={pin.length !== 4 || confirmPin.length !== 4}
-                  className="flex-1 rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-500 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl active:scale-[0.98] disabled:opacity-50 disabled:shadow-none"
-                >
-                  Set PIN
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Remove PIN Modal */}
-      {isRemovingPin && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center sm:p-4">
-          <div className="w-full max-h-[90vh] overflow-y-auto rounded-t-[28px] bg-white p-5 shadow-2xl dark:bg-neutral-900 sm:max-w-md sm:rounded-[28px]">
-            <div className="mb-5 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-red-500 to-rose-500">
-                  <Shield className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-base font-semibold text-neutral-900 dark:text-white">
-                    Remove Folder PIN
-                  </h3>
-                  <p className="text-xs text-neutral-500">Disable folder protection</p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setIsRemovingPin(false);
-                  setCurrentPin("");
-                }}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 transition-all hover:bg-neutral-200 active:scale-95 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  Current PIN
-                </label>
-                <input
-                  type="password"
-                  inputMode="numeric"
-                  maxLength={4}
-                  value={currentPin}
-                  onChange={(e) =>
-                    setCurrentPin(e.target.value.replace(/\D/g, ""))
-                  }
-                  placeholder="••••"
-                  className="w-full rounded-2xl border-0 bg-neutral-100 px-4 py-3.5 text-center text-xl tracking-[0.5em] text-neutral-900 placeholder-neutral-400 outline-none transition-all focus:ring-2 focus:ring-red-500/30 dark:bg-neutral-800 dark:text-white dark:placeholder-neutral-500"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() => {
-                    setIsRemovingPin(false);
-                    setCurrentPin("");
-                  }}
-                  className="flex-1 rounded-2xl border border-neutral-200 bg-white py-3.5 text-sm font-semibold text-neutral-700 transition-all hover:bg-neutral-50 active:scale-[0.98] dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleRemovePin}
-                  disabled={currentPin.length !== 4}
-                  className="flex-1 rounded-2xl bg-gradient-to-r from-red-500 to-rose-500 py-3.5 text-sm font-semibold text-white shadow-lg shadow-red-500/25 transition-all hover:shadow-xl active:scale-[0.98] disabled:opacity-50 disabled:shadow-none"
-                >
-                  Remove PIN
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Email Guide Modal */}
       {showEmailGuide && (
@@ -601,85 +376,6 @@ export function SettingsClient({ user }: { user: UserSettings }) {
                 />
               </div>
             </button>
-          </div>
-        </div>
-
-        {/* Security Settings */}
-        <div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-neutral-800/50 sm:rounded-3xl sm:shadow-xl sm:shadow-black/5 dark:sm:shadow-none">
-          <div className="flex items-center gap-3 border-b border-neutral-100 p-4 dark:border-neutral-700/50 sm:p-5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-green-500 shadow-md shadow-emerald-500/20 sm:h-11 sm:w-11">
-              <Lock className="h-5 w-5 text-white" />
-            </div>
-            <div className="flex-1">
-              <h2 className="text-[15px] font-semibold text-neutral-900 dark:text-white sm:text-base">
-                {t("security")}
-              </h2>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                {t("protectWithPin")}
-              </p>
-            </div>
-            {user.hasFolderPin && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">
-                <Sparkles className="h-2.5 w-2.5" />
-                Active
-              </span>
-            )}
-          </div>
-
-          <div className="p-3 sm:p-4">
-            <div className="flex items-center justify-between rounded-xl bg-neutral-50 p-3 dark:bg-neutral-700/30 sm:p-3.5">
-              <div className="flex items-center gap-3">
-                <div
-                  className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                    user.hasFolderPin
-                      ? "bg-emerald-100 dark:bg-emerald-500/20"
-                      : "bg-neutral-200 dark:bg-neutral-600"
-                  }`}
-                >
-                  <Shield
-                    className={`h-4 w-4 ${
-                      user.hasFolderPin
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-neutral-500 dark:text-neutral-400"
-                    }`}
-                  />
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
-                    {t("folderPin")}
-                  </h3>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                    {user.hasFolderPin ? t("pinEnabled") : t("pinDisabled")}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-3 flex gap-2">
-              {user.hasFolderPin ? (
-                <>
-                  <button
-                    onClick={() => setShowPinModal(true)}
-                    className="flex-1 rounded-xl border border-neutral-200 bg-white py-2.5 text-sm font-semibold text-neutral-700 transition-all hover:bg-neutral-50 active:scale-[0.98] dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-600"
-                  >
-                    {t("changePin")}
-                  </button>
-                  <button
-                    onClick={() => setIsRemovingPin(true)}
-                    className="flex-1 rounded-xl bg-red-50 py-2.5 text-sm font-semibold text-red-600 transition-all hover:bg-red-100 active:scale-[0.98] dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20"
-                  >
-                    {t("removePin")}
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => setShowPinModal(true)}
-                  className="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-green-500 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-500/20 transition-all hover:shadow-lg active:scale-[0.98]"
-                >
-                  {t("setPin")}
-                </button>
-              )}
-            </div>
           </div>
         </div>
 
