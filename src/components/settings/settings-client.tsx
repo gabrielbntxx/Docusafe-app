@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useTheme } from "@/components/providers/theme-provider";
+import { useTutorial } from "@/contexts/TutorialContext";
 import {
   Globe,
   Lock,
@@ -19,6 +20,8 @@ import {
   Copy,
   HelpCircle,
   ChevronRight,
+  Play,
+  GraduationCap,
 } from "lucide-react";
 
 type UserSettings = {
@@ -40,6 +43,7 @@ export function SettingsClient({ user }: { user: UserSettings }) {
   const router = useRouter();
   const { t } = useTranslation();
   const { setTheme: setGlobalTheme } = useTheme();
+  const { startTutorial, hasCompletedTutorial } = useTutorial();
   const [language, setLanguage] = useState(user.language);
   const [theme, setTheme] = useState(user.theme);
   const [notifications, setNotifications] = useState(user.notifications);
@@ -751,6 +755,55 @@ export function SettingsClient({ user }: { user: UserSettings }) {
                 {t("emailGuide")}
               </button>
             </div>
+          </div>
+        </div>
+
+        {/* Tutorial Settings - Full Width */}
+        <div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-neutral-800/50 sm:rounded-3xl sm:shadow-xl sm:shadow-black/5 dark:sm:shadow-none lg:col-span-2">
+          <div className="flex items-center gap-3 border-b border-neutral-100 p-4 dark:border-neutral-700/50 sm:p-5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 shadow-md shadow-purple-500/20 sm:h-11 sm:w-11">
+              <GraduationCap className="h-5 w-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-[15px] font-semibold text-neutral-900 dark:text-white sm:text-base">
+                {t("tutorial")}
+              </h2>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                {t("tutorialSettingsDescription")}
+              </p>
+            </div>
+            {hasCompletedTutorial && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">
+                <Check className="h-2.5 w-2.5" />
+                {t("completed")}
+              </span>
+            )}
+          </div>
+
+          <div className="p-3 sm:p-4">
+            <div className="flex items-center justify-between rounded-xl bg-neutral-50 p-3 dark:bg-neutral-700/30 sm:p-3.5">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-500/20">
+                  <Sparkles className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">
+                    {t("guidedTour")}
+                  </h3>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                    {t("guidedTourDescription")}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={startTutorial}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 py-2.5 text-sm font-semibold text-white shadow-md shadow-purple-500/20 transition-all hover:shadow-lg active:scale-[0.98]"
+            >
+              <Play className="h-4 w-4" />
+              {t("restartTutorial")}
+            </button>
           </div>
         </div>
       </div>

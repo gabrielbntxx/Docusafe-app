@@ -20,17 +20,17 @@ import { signOut } from "next-auth/react";
 import { useTranslation } from "@/hooks/useTranslation";
 import type { TranslationKey } from "@/lib/translations";
 
-const navigation: Array<{ nameKey: TranslationKey; href: string; icon: any }> = [
+const navigation: Array<{ nameKey: TranslationKey; href: string; icon: any; tutorialId?: string }> = [
   { nameKey: "dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { nameKey: "myDocuments", href: "/dashboard/documents", icon: FileText },
-  { nameKey: "myFiles", href: "/dashboard/my-files", icon: Folder },
-  { nameKey: "search", href: "/dashboard/search", icon: Search },
+  { nameKey: "myDocuments", href: "/dashboard/documents", icon: FileText, tutorialId: "documents-link" },
+  { nameKey: "myFiles", href: "/dashboard/my-files", icon: Folder, tutorialId: "folders-link" },
+  { nameKey: "search", href: "/dashboard/search", icon: Search, tutorialId: "search-link" },
 ];
 
-const bottomNavigation: Array<{ nameKey: TranslationKey; href: string; icon: any }> = [
-  { nameKey: "docubot", href: "/dashboard/docubot", icon: Bot },
+const bottomNavigation: Array<{ nameKey: TranslationKey; href: string; icon: any; tutorialId?: string }> = [
+  { nameKey: "docubot", href: "/dashboard/docubot", icon: Bot, tutorialId: "docubot-link" },
   { nameKey: "subscription", href: "/dashboard/subscription", icon: CreditCard },
-  { nameKey: "settings", href: "/dashboard/settings", icon: Settings },
+  { nameKey: "settings", href: "/dashboard/settings", icon: Settings, tutorialId: "settings-link" },
 ];
 
 export function Sidebar() {
@@ -59,6 +59,7 @@ export function Sidebar() {
       <div className="px-4 py-2">
         <Link
           href="/dashboard/upload"
+          data-tutorial="upload-button"
           className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl hover:shadow-blue-500/30 hover:scale-[1.02] active:scale-[0.98]"
         >
           <Upload className="h-4 w-4" />
@@ -77,6 +78,7 @@ export function Sidebar() {
             <Link
               key={item.nameKey}
               href={item.href}
+              data-tutorial={item.tutorialId}
               className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
                 isActive
                   ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
@@ -96,6 +98,7 @@ export function Sidebar() {
           </p>
           <Link
             href="/dashboard/help"
+            data-tutorial="help-link"
             className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
               pathname === "/dashboard/help"
                 ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
@@ -130,6 +133,7 @@ export function Sidebar() {
             <Link
               key={item.nameKey}
               href={item.href}
+              data-tutorial={item.tutorialId}
               className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
                 isActive
                   ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
