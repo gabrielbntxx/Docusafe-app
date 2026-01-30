@@ -189,7 +189,7 @@ export default function DocuBotPage() {
             className="flex-1 rounded-full border border-neutral-200 bg-neutral-50 px-4 py-2.5 text-sm outline-none focus:border-blue-400 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
           />
           <button
-            onClick={handleSend}
+            onClick={() => handleSend()}
             disabled={!input.trim() || isLoading}
             className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 text-white disabled:opacity-50"
           >

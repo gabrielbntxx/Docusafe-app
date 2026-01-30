@@ -323,7 +323,7 @@ export function DocuBotWidget() {
             className="flex-1 rounded-full border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 placeholder-neutral-500 outline-none transition-all focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white dark:placeholder-neutral-400 dark:focus:border-blue-500"
           />
           <button
-            onClick={handleSend}
+            onClick={() => handleSend()}
             disabled={!input.trim() || isLoading}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md transition-all hover:shadow-lg active:scale-95 disabled:opacity-50 disabled:shadow-none"
           >
