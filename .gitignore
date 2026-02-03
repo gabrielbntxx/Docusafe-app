@@ -11,3 +11,6 @@ tsconfig.tsbuildinfo
 
 /src/generated/prisma
 uploads/
+
+# Separate projects
+ma-video-saas/

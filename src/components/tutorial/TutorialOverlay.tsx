@@ -170,9 +170,10 @@ export function TutorialOverlay() {
   const StepIcon = stepIcons[currentStepData.id] || Sparkles;
 
   return (
+    // IMPORTANT: pointer-events-none on container so clicks pass through to underlying UI
     <div className="fixed inset-0 z-[100] pointer-events-none">
-      {/* SVG mask for spotlight effect */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-auto">
+      {/* SVG mask for spotlight effect - purely visual, no click blocking */}
+      <svg className="absolute inset-0 w-full h-full">
         <defs>
           <mask id="spotlight-mask">
             <rect x="0" y="0" width="100%" height="100%" fill="white" />
@@ -201,7 +202,7 @@ export function TutorialOverlay() {
       {/* Highlight ring around target element */}
       {targetPosition && (
         <div
-          className="absolute rounded-xl ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent transition-all duration-300 pointer-events-none"
+          className="absolute rounded-xl ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent transition-all duration-300"
           style={{
             top: targetPosition.top,
             left: targetPosition.left,
@@ -211,9 +212,9 @@ export function TutorialOverlay() {
         />
       )}
 
-      {/* Tooltip/Dialog - Adapted for mobile */}
+      {/* Tooltip/Dialog - Only this element captures clicks */}
       <div
-        className={`pointer-events-auto z-10 rounded-2xl bg-white p-4 shadow-2xl dark:bg-neutral-800 ${
+        className={`pointer-events-auto rounded-2xl bg-white p-4 shadow-2xl dark:bg-neutral-800 ${
           isMobile ? "w-[calc(100vw-32px)] max-w-[340px]" : "w-[300px] max-w-[calc(100vw-32px)]"
         } ${isCentered || isMobile ? "text-center" : ""}`}
         style={tooltipStyle}
