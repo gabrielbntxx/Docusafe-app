@@ -22,23 +22,23 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     // Only run on client side
     if (typeof window === "undefined") return;
 
-    // Ensure we start in light mode
-    document.documentElement.classList.remove("dark");
-
     if (status === "authenticated") {
       const userTheme = (session?.user?.theme as Theme) || "light";
       setThemeState(userTheme);
-      
-      // Apply theme
+
+      // Apply theme and save to localStorage for instant loading next time
       if (userTheme === "dark") {
         document.documentElement.classList.add("dark");
+        localStorage.setItem("docusafe-theme", "dark");
       } else {
         document.documentElement.classList.remove("dark");
+        localStorage.setItem("docusafe-theme", "light");
       }
       setIsLoading(false);
     } else if (status === "unauthenticated") {
       setThemeState("light");
       document.documentElement.classList.remove("dark");
+      localStorage.removeItem("docusafe-theme");
       setIsLoading(false);
     }
   }, [session, status]);
@@ -48,11 +48,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     setThemeState(newTheme);
 
-    // Apply theme
+    // Apply theme and save to localStorage
     if (newTheme === "dark") {
       document.documentElement.classList.add("dark");
+      localStorage.setItem("docusafe-theme", "dark");
     } else {
       document.documentElement.classList.remove("dark");
+      localStorage.setItem("docusafe-theme", "light");
     }
   };
 

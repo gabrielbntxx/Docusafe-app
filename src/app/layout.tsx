@@ -25,9 +25,14 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              // Force light mode on initial load, theme will be set by ThemeProvider
+              // Apply theme from localStorage immediately to prevent flash
               try {
-                document.documentElement.classList.remove('dark');
+                const theme = localStorage.getItem('docusafe-theme');
+                if (theme === 'dark') {
+                  document.documentElement.classList.add('dark');
+                } else {
+                  document.documentElement.classList.remove('dark');
+                }
               } catch (e) {}
             `,
           }}
