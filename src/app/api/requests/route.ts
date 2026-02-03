@@ -34,6 +34,19 @@ export async function GET() {
         _count: {
           select: { uploads: true },
         },
+        uploads: {
+          select: {
+            id: true,
+            originalName: true,
+            fileType: true,
+            sizeBytes: true,
+            uploaderName: true,
+            uploaderEmail: true,
+            note: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: "desc" },
+        },
       },
     });
 
@@ -52,6 +65,16 @@ export async function GET() {
         viewCount: r.viewCount,
         hasPassword: !!r.password,
         createdAt: r.createdAt.toISOString(),
+        uploads: r.uploads.map((u) => ({
+          id: u.id,
+          originalName: u.originalName,
+          fileType: u.fileType,
+          sizeBytes: u.sizeBytes.toString(),
+          uploaderName: u.uploaderName,
+          uploaderEmail: u.uploaderEmail,
+          note: u.note,
+          createdAt: u.createdAt.toISOString(),
+        })),
       }))
     );
   } catch (error) {

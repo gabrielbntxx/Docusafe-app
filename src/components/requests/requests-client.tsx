@@ -22,9 +22,23 @@ import {
   Link2,
   AlertCircle,
   Sparkles,
+  ChevronDown,
+  ChevronUp,
+  MessageSquare,
 } from "lucide-react";
 
 type PlanType = "FREE" | "STUDENT" | "PRO" | "BUSINESS";
+
+type RequestUpload = {
+  id: string;
+  originalName: string;
+  fileType: string;
+  sizeBytes: string;
+  uploaderName: string | null;
+  uploaderEmail: string | null;
+  note: string | null;
+  createdAt: string;
+};
 
 type DocumentRequest = {
   id: string;
@@ -40,6 +54,7 @@ type DocumentRequest = {
   viewCount: number;
   hasPassword: boolean;
   createdAt: string;
+  uploads?: RequestUpload[];
 };
 
 type RequestsClientProps = {
@@ -54,6 +69,7 @@ export function RequestsClient({ userPlan, requests: initialRequests }: Requests
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [expandedRequest, setExpandedRequest] = useState<string | null>(null);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -94,7 +110,7 @@ export function RequestsClient({ userPlan, requests: initialRequests }: Requests
 
       if (response.ok) {
         const newRequest = await response.json();
-        setRequests([newRequest, ...requests]);
+        setRequests([{ ...newRequest, uploads: [] }, ...requests]);
         setShowCreateModal(false);
         resetForm();
       }
@@ -161,6 +177,24 @@ export function RequestsClient({ userPlan, requests: initialRequests }: Requests
       day: "numeric",
       month: "short",
       year: "numeric",
+    });
+  };
+
+  const formatFileSize = (bytes: string) => {
+    const size = parseInt(bytes);
+    if (size < 1024) return `${size} B`;
+    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+    if (size < 1024 * 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(size / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+  };
+
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("fr-FR", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -365,6 +399,86 @@ export function RequestsClient({ userPlan, requests: initialRequests }: Requests
                       </span>
                     )}
                   </div>
+
+                  {/* Uploaded Files Section */}
+                  {request.uploads && request.uploads.length > 0 && (
+                    <div className="mt-4">
+                      <button
+                        onClick={() => setExpandedRequest(expandedRequest === request.id ? null : request.id)}
+                        className="flex w-full items-center justify-between rounded-xl bg-violet-50 px-4 py-3 text-sm font-medium text-violet-700 transition-all hover:bg-violet-100 dark:bg-violet-500/10 dark:text-violet-400 dark:hover:bg-violet-500/20"
+                      >
+                        <span className="flex items-center gap-2">
+                          <FileUp className="h-4 w-4" />
+                          {request.uploads.length} fichier{request.uploads.length > 1 ? "s" : ""} reçu{request.uploads.length > 1 ? "s" : ""}
+                        </span>
+                        {expandedRequest === request.id ? (
+                          <ChevronUp className="h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4" />
+                        )}
+                      </button>
+
+                      {expandedRequest === request.id && (
+                        <div className="mt-3 space-y-3">
+                          {request.uploads.map((upload) => (
+                            <div
+                              key={upload.id}
+                              className="rounded-xl border border-neutral-100 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-800/50"
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-500/20">
+                                  <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-medium text-neutral-900 dark:text-white truncate">
+                                    {upload.originalName}
+                                  </p>
+                                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+                                    <span>{formatFileSize(upload.sizeBytes)}</span>
+                                    <span>•</span>
+                                    <span>{formatDateTime(upload.createdAt)}</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Uploader Info */}
+                              {(upload.uploaderName || upload.uploaderEmail || upload.note) && (
+                                <div className="mt-3 space-y-2 border-t border-neutral-200 pt-3 dark:border-neutral-700">
+                                  {upload.uploaderName && (
+                                    <div className="flex items-center gap-2 text-sm">
+                                      <User className="h-3.5 w-3.5 text-neutral-400" />
+                                      <span className="text-neutral-700 dark:text-neutral-300">
+                                        {upload.uploaderName}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {upload.uploaderEmail && (
+                                    <div className="flex items-center gap-2 text-sm">
+                                      <Mail className="h-3.5 w-3.5 text-neutral-400" />
+                                      <a
+                                        href={`mailto:${upload.uploaderEmail}`}
+                                        className="text-blue-600 hover:underline dark:text-blue-400"
+                                      >
+                                        {upload.uploaderEmail}
+                                      </a>
+                                    </div>
+                                  )}
+                                  {upload.note && (
+                                    <div className="flex items-start gap-2 text-sm">
+                                      <MessageSquare className="h-3.5 w-3.5 mt-0.5 text-neutral-400" />
+                                      <p className="text-neutral-600 dark:text-neutral-400 italic">
+                                        &quot;{upload.note}&quot;
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div className="mt-4 flex items-center gap-2">
                     <button
