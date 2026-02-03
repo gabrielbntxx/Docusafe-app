@@ -270,3 +270,70 @@ model SharedItem {
   @@index([folderId])
   @@index([documentId])
 }
+
+// ============================================
+// DOCUMENT REQUESTS
+// ============================================
+
+// Request for documents from external users
+model DocumentRequest {
+  id            String   @id @default(cuid())
+  userId        String   // Owner who created the request
+  token         String   @unique // Unique token for the request URL
+
+  // Request details
+  title         String   // Title of the request
+  description   String?  // Description/instructions
+  recipientName String?  // Name of the person/company
+  recipientEmail String? // Email to notify
+
+  // Security
+  password      String?  // Optional password (hashed)
+  expiresAt     DateTime // Expiration date
+  maxFiles      Int      @default(5) // Max files allowed
+  maxFileSize   Int      @default(10) // Max file size in MB
+
+  // Status
+  status        String   @default("pending") // pending, completed, expired
+  filesReceived Int      @default(0)
+
+  // Stats
+  viewCount     Int      @default(0)
+  lastViewedAt  DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  uploads       RequestUpload[]
+
+  @@index([userId])
+  @@index([token])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+// Files uploaded to a request
+model RequestUpload {
+  id            String   @id @default(cuid())
+  requestId     String
+  documentId    String?  // Link to Document if saved
+
+  // File info
+  originalName  String
+  fileType      String
+  mimeType      String
+  sizeBytes     BigInt
+  storageKey    String   // S3/R2 key
+
+  // Metadata
+  uploaderName  String?  // Name provided by uploader
+  uploaderEmail String?  // Email provided by uploader
+  note          String?  // Note from uploader
+
+  createdAt     DateTime @default(now())
+
+  request       DocumentRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+}
