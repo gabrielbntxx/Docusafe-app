@@ -9,7 +9,6 @@ import {
   Bell,
   Moon,
   Sun,
-  Save,
   Check,
   X,
   Sparkles,
@@ -89,7 +88,11 @@ export function SettingsClient({ user }: { user: UserSettings }) {
     }
   };
 
-  const handleSaveSettings = async () => {
+  // Auto-save a single setting
+  const saveSettingImmediately = async (
+    settingName: "language" | "theme" | "notifications",
+    value: string | boolean
+  ) => {
     setSaveStatus("saving");
 
     try {
@@ -97,30 +100,47 @@ export function SettingsClient({ user }: { user: UserSettings }) {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          language,
-          theme,
-          notifications,
+          [settingName]: value,
         }),
       });
 
       if (response.ok) {
         setSaveStatus("saved");
-        setGlobalTheme(theme as "light" | "dark");
+        setTimeout(() => setSaveStatus("idle"), 1500);
 
-        if (language !== user.language) {
+        // Apply theme immediately
+        if (settingName === "theme") {
+          setGlobalTheme(value as "light" | "dark");
+        }
+
+        // Reload for language change
+        if (settingName === "language" && value !== user.language) {
           setTimeout(() => window.location.reload(), 500);
-        } else {
-          setTimeout(() => setSaveStatus("idle"), 2000);
         }
       } else {
-        alert(t("error"));
         setSaveStatus("idle");
       }
     } catch (error) {
       console.error("Error saving settings:", error);
-      alert(t("error"));
       setSaveStatus("idle");
     }
+  };
+
+  // Handlers that auto-save
+  const handleLanguageChange = (newLanguage: string) => {
+    setLanguage(newLanguage);
+    saveSettingImmediately("language", newLanguage);
+  };
+
+  const handleThemeChange = (newTheme: string) => {
+    setTheme(newTheme);
+    saveSettingImmediately("theme", newTheme);
+  };
+
+  const handleNotificationsChange = () => {
+    const newValue = !notifications;
+    setNotifications(newValue);
+    saveSettingImmediately("notifications", newValue);
   };
 
   return (
@@ -224,7 +244,7 @@ export function SettingsClient({ user }: { user: UserSettings }) {
             {LANGUAGES.map((lang) => (
               <button
                 key={lang.code}
-                onClick={() => setLanguage(lang.code)}
+                onClick={() => handleLanguageChange(lang.code)}
                 className={`flex w-full items-center gap-3 rounded-xl p-3 transition-all sm:p-3 ${
                   language === lang.code
                     ? "bg-blue-50 dark:bg-blue-500/10"
@@ -269,7 +289,7 @@ export function SettingsClient({ user }: { user: UserSettings }) {
 
           <div className="p-2 sm:p-3">
             <button
-              onClick={() => setTheme("light")}
+              onClick={() => handleThemeChange("light")}
               className={`flex w-full items-center gap-3 rounded-xl p-3 transition-all sm:p-3 ${
                 theme === "light"
                   ? "bg-amber-50 dark:bg-amber-500/10"
@@ -292,7 +312,7 @@ export function SettingsClient({ user }: { user: UserSettings }) {
             </button>
 
             <button
-              onClick={() => setTheme("dark")}
+              onClick={() => handleThemeChange("dark")}
               className={`flex w-full items-center gap-3 rounded-xl p-3 transition-all sm:p-3 ${
                 theme === "dark"
                   ? "bg-amber-50 dark:bg-amber-500/10"
@@ -366,7 +386,7 @@ export function SettingsClient({ user }: { user: UserSettings }) {
                 </div>
               </div>
               <button
-                onClick={() => setNotifications(!notifications)}
+                onClick={handleNotificationsChange}
                 className={`relative h-7 w-12 rounded-full transition-colors ${
                   notifications
                     ? "bg-violet-500"
@@ -508,68 +528,30 @@ export function SettingsClient({ user }: { user: UserSettings }) {
         </div>
       </div>
 
-      {/* Save Button - Fixed Bottom on Mobile */}
-      <div className="fixed bottom-0 left-0 right-0 border-t border-neutral-200/80 bg-white/90 p-4 backdrop-blur-xl dark:border-neutral-800 dark:bg-neutral-900/90 z-40 safe-area-bottom lg:hidden">
-        <button
-          onClick={handleSaveSettings}
-          disabled={saveStatus === "saving"}
-          className={`w-full rounded-2xl py-3.5 text-sm font-semibold text-white shadow-lg transition-all ${
-            saveStatus === "saved"
-              ? "bg-emerald-500 shadow-emerald-500/25"
-              : "bg-gradient-to-r from-blue-500 to-cyan-500 shadow-blue-500/25 hover:shadow-xl"
-          } active:scale-[0.98] disabled:opacity-50 disabled:shadow-none`}
-        >
-          {saveStatus === "saving" ? (
-            <span className="flex items-center justify-center gap-2">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              {t("saving")}
-            </span>
-          ) : saveStatus === "saved" ? (
-            <span className="flex items-center justify-center gap-2">
-              <Check className="h-4 w-4" />
-              {t("saved")}
-            </span>
-          ) : (
-            <span className="flex items-center justify-center gap-2">
-              <Save className="h-4 w-4" />
-              {t("saveSettings")}
-            </span>
-          )}
-        </button>
-      </div>
-
-      {/* Desktop Save Button - In Header Position */}
-      <div className="hidden lg:fixed lg:right-8 lg:top-20 lg:block lg:z-40">
-        <button
-          onClick={handleSaveSettings}
-          disabled={saveStatus === "saving"}
-          className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition-all ${
-            saveStatus === "saved"
-              ? "bg-emerald-500 shadow-emerald-500/25"
-              : "bg-gradient-to-r from-blue-500 to-cyan-500 shadow-blue-500/25 hover:shadow-xl"
-          } active:scale-[0.98] disabled:opacity-50 disabled:shadow-none`}
-        >
-          {saveStatus === "saving" ? (
-            <>
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              {t("saving")}
-            </>
-          ) : saveStatus === "saved" ? (
-            <>
-              <Check className="h-4 w-4" />
-              {t("saved")}
-            </>
-          ) : (
-            <>
-              <Save className="h-4 w-4" />
-              {t("saveSettings")}
-            </>
-          )}
-        </button>
-      </div>
-
-      {/* Spacer for fixed button on mobile */}
-      <div className="h-24 lg:hidden" />
+      {/* Auto-save status indicator */}
+      {saveStatus !== "idle" && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 lg:bottom-8">
+          <div
+            className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-white shadow-lg ${
+              saveStatus === "saved"
+                ? "bg-emerald-500"
+                : "bg-blue-500"
+            }`}
+          >
+            {saveStatus === "saving" ? (
+              <>
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                {t("saving")}
+              </>
+            ) : (
+              <>
+                <Check className="h-4 w-4" />
+                {t("saved")}
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
