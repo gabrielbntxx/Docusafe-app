@@ -291,7 +291,7 @@ model DocumentRequest {
   password      String?  // Optional password (hashed)
   expiresAt     DateTime // Expiration date
   maxFiles      Int      @default(5) // Max files allowed
-  maxFileSize   Int      @default(10) // Max file size in MB
+  maxFileSize   Int      @default(1024) // Max file size in MB (1GB)
 
   // Status
   status        String   @default("pending") // pending, completed, expired

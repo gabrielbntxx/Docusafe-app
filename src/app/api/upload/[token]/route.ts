@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { randomBytes } from "crypto";
+import { randomBytes, createHash } from "crypto";
 import bcrypt from "bcryptjs";
 
 const s3Client = new S3Client({
@@ -13,6 +13,9 @@ const s3Client = new S3Client({
   },
 });
 
+// Maximum file size: 1GB
+const MAX_FILE_SIZE_BYTES = 1024 * 1024 * 1024;
+
 // POST - Upload a file to a request
 export async function POST(
   req: Request,
@@ -21,7 +24,7 @@ export async function POST(
   try {
     const { token } = params;
 
-    // Find the request
+    // Find the request with user info
     const request = await db.documentRequest.findUnique({
       where: { token },
       include: {
@@ -87,11 +90,10 @@ export async function POST(
       }
     }
 
-    // Validate file
-    const maxFileSize = (request.maxFileSize || 10) * 1024 * 1024; // Convert MB to bytes
-    if (file.size > maxFileSize) {
+    // Validate file size (max 1GB)
+    if (file.size > MAX_FILE_SIZE_BYTES) {
       return NextResponse.json(
-        { error: `File too large. Maximum size is ${request.maxFileSize}MB` },
+        { error: "File too large. Maximum size is 1GB" },
         { status: 400 }
       );
     }
@@ -117,10 +119,62 @@ export async function POST(
       })
     );
 
-    // Save upload record
+    // Calculate file hash for potential AI caching
+    const fileHash = createHash("sha256").update(fileBuffer).digest("hex");
+
+    // Find or create "Demandés" folder for the user
+    let demandesFolder = await db.folder.findFirst({
+      where: {
+        userId: request.userId,
+        name: "Demandés",
+      },
+    });
+
+    if (!demandesFolder) {
+      demandesFolder = await db.folder.create({
+        data: {
+          userId: request.userId,
+          name: "Demandés",
+          color: "#8B5CF6", // Purple color
+          icon: "inbox",
+          isDefault: 0,
+        },
+      });
+    }
+
+    // Create Document record for the user
+    const document = await db.document.create({
+      data: {
+        userId: request.userId,
+        folderId: demandesFolder.id,
+        originalName,
+        displayName: originalName,
+        fileType,
+        mimeType,
+        sizeBytes: file.size,
+        storageKey,
+        isEncrypted: 0,
+        aiAnalyzed: 0,
+        fileHash,
+        description: note?.trim() || (uploaderName ? `Envoyé par ${uploaderName}` : null),
+        tags: request.title || "",
+      },
+    });
+
+    // Update user storage stats
+    await db.user.update({
+      where: { id: request.userId },
+      data: {
+        documentsCount: { increment: 1 },
+        storageUsedBytes: { increment: file.size },
+      },
+    });
+
+    // Save upload record with document link
     const upload = await db.requestUpload.create({
       data: {
         requestId: request.id,
+        documentId: document.id,
         originalName,
         fileType,
         mimeType,
@@ -142,9 +196,20 @@ export async function POST(
       },
     });
 
+    // Create notification for the user
+    await db.notification.create({
+      data: {
+        userId: request.userId,
+        type: "document_received",
+        title: "Document reçu",
+        message: `${uploaderName || "Quelqu'un"} vous a envoyé "${originalName}" via votre demande "${request.title}"`,
+      },
+    });
+
     return NextResponse.json({
       success: true,
       uploadId: upload.id,
+      documentId: document.id,
     });
   } catch (error) {
     console.error("Error uploading file:", error);

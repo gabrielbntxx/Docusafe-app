@@ -329,6 +329,10 @@ export function UploadRequestClient({
               {remainingSlots} fichier{remainingSlots > 1 ? "s" : ""} restant{remainingSlots > 1 ? "s" : ""}
             </span>
             <span className="flex items-center gap-1.5">
+              <Upload className="h-3.5 w-3.5" />
+              Max 1 Go par fichier
+            </span>
+            <span className="flex items-center gap-1.5">
               <Clock className="h-3.5 w-3.5" />
               Expire le {formatDate(expiresAt)}
             </span>

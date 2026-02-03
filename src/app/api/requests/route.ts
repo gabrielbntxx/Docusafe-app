@@ -126,6 +126,7 @@ export async function POST(req: Request) {
         password: hashedPassword,
         expiresAt,
         maxFiles: maxFiles || 5,
+        maxFileSize: 1024, // 1GB max file size
       },
     });
 
