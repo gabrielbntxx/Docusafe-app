@@ -43,7 +43,8 @@ export function Sidebar() {
   };
 
   const handleNavigation = (href: string) => {
-    router.push(href);
+    // Use window.location for reliable navigation
+    window.location.href = href;
   };
 
   return (
