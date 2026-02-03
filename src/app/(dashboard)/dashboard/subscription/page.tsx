@@ -32,7 +32,7 @@ export default async function SubscriptionPage() {
 
   return (
     <SubscriptionClient
-      currentPlan={user.planType as "FREE" | "PRO"}
+      currentPlan={user.planType as "FREE" | "STUDENT" | "PRO" | "BUSINESS"}
       documentsCount={user.documentsCount || 0}
       storageUsedBytes={Number(user.storageUsedBytes) || 0}
       userEmail={user.email}
