@@ -60,6 +60,7 @@ export const translations = {
     downloadToView: "Download the file to view it",
     justNow: "Just now",
     subscription: "Subscription",
+    requests: "Requests",
     profile: "Profile",
 
     // My Folders
@@ -417,6 +418,7 @@ export const translations = {
     downloadToView: "Téléchargez le fichier pour le visualiser",
     justNow: "À l'instant",
     subscription: "Abonnement",
+    requests: "Demandes",
     profile: "Profil",
 
     // My Folders

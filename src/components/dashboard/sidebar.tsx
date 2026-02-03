@@ -15,6 +15,7 @@ import {
   Bot,
   HelpCircle,
   MessageCircle,
+  FileUp,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -25,6 +26,7 @@ const navigation: Array<{ nameKey: TranslationKey; href: string; icon: any; tuto
   { nameKey: "myDocuments", href: "/dashboard/documents", icon: FileText, tutorialId: "documents-link" },
   { nameKey: "myFiles", href: "/dashboard/my-files", icon: Folder, tutorialId: "folders-link" },
   { nameKey: "search", href: "/dashboard/search", icon: Search, tutorialId: "search-link" },
+  { nameKey: "requests", href: "/dashboard/requests", icon: FileUp },
 ];
 
 const bottomNavigation: Array<{ nameKey: TranslationKey; href: string; icon: any; tutorialId?: string }> = [
