@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   FileText,
@@ -35,36 +35,41 @@ const bottomNavigation: Array<{ nameKey: TranslationKey; href: string; icon: any
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { t } = useTranslation();
 
   const handleSignOut = async () => {
     await signOut({ callbackUrl: "/" });
   };
 
+  const handleNavigation = (href: string) => {
+    router.push(href);
+  };
+
   return (
     <aside className="hidden lg:fixed lg:left-0 lg:top-0 lg:z-40 lg:flex lg:h-screen lg:w-72 lg:flex-col lg:bg-white/70 lg:backdrop-blur-xl lg:border-r lg:border-black/5 dark:lg:bg-neutral-950/95 dark:lg:border-white/5">
       {/* Logo */}
       <div className="flex h-16 items-center px-6">
-        <Link href="/dashboard" className="flex items-center gap-3">
+        <button onClick={() => handleNavigation("/dashboard")} className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl overflow-hidden bg-white dark:bg-neutral-800 shadow-lg">
             <Image src="/logo.png" alt="DocuSafe" width={40} height={40} className="object-contain" />
           </div>
           <span className="text-xl font-semibold text-neutral-900 dark:text-white">
             DocuSafe
           </span>
-        </Link>
+        </button>
       </div>
 
       {/* Upload Button */}
       <div className="px-4 py-2">
-        <Link
-          href="/dashboard/upload"
+        <button
+          onClick={() => handleNavigation("/dashboard/upload")}
           data-tutorial="upload-button"
           className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl hover:shadow-blue-500/30 hover:scale-[1.02] active:scale-[0.98]"
         >
           <Upload className="h-4 w-4" />
           {t("addDocument")}
-        </Link>
+        </button>
       </div>
 
       {/* Main Navigation */}
@@ -75,11 +80,11 @@ export function Sidebar() {
         {navigation.map((item) => {
           const isActive = pathname === item.href;
           return (
-            <Link
+            <button
               key={item.nameKey}
-              href={item.href}
+              onClick={() => handleNavigation(item.href)}
               data-tutorial={item.tutorialId}
-              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
                 isActive
                   ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
                   : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/5 dark:hover:text-white"
@@ -87,7 +92,7 @@ export function Sidebar() {
             >
               <item.icon className={`h-5 w-5 ${isActive ? "text-blue-500" : ""}`} />
               {t(item.nameKey)}
-            </Link>
+            </button>
           );
         })}
 
@@ -96,10 +101,10 @@ export function Sidebar() {
           <p className="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
             {t("assistance")}
           </p>
-          <Link
-            href="/dashboard/help"
+          <button
+            onClick={() => handleNavigation("/dashboard/help")}
             data-tutorial="help-link"
-            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
               pathname === "/dashboard/help"
                 ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
                 : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/5 dark:hover:text-white"
@@ -107,10 +112,10 @@ export function Sidebar() {
           >
             <HelpCircle className={`h-5 w-5 ${pathname === "/dashboard/help" ? "text-blue-500" : ""}`} />
             {t("help")}
-          </Link>
-          <Link
-            href="/dashboard/support"
-            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+          </button>
+          <button
+            onClick={() => handleNavigation("/dashboard/support")}
+            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
               pathname === "/dashboard/support"
                 ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
                 : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/5 dark:hover:text-white"
@@ -118,7 +123,7 @@ export function Sidebar() {
           >
             <MessageCircle className={`h-5 w-5 ${pathname === "/dashboard/support" ? "text-blue-500" : ""}`} />
             {t("support")}
-          </Link>
+          </button>
         </div>
       </nav>
 
@@ -130,11 +135,11 @@ export function Sidebar() {
         {bottomNavigation.map((item) => {
           const isActive = pathname === item.href;
           return (
-            <Link
+            <button
               key={item.nameKey}
-              href={item.href}
+              onClick={() => handleNavigation(item.href)}
               data-tutorial={item.tutorialId}
-              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
                 isActive
                   ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
                   : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/5 dark:hover:text-white"
@@ -142,7 +147,7 @@ export function Sidebar() {
             >
               <item.icon className={`h-5 w-5 ${isActive ? "text-blue-500" : ""}`} />
               {t(item.nameKey)}
-            </Link>
+            </button>
           );
         })}
 
