@@ -72,12 +72,29 @@ export async function POST(req: Request) {
     // Parser le FormData
     const formData = await req.formData();
     const file = formData.get("file") as File;
+    const folderId = formData.get("folderId") as string | null;
 
     if (!file) {
       return NextResponse.json(
         { error: "Aucun fichier fourni" },
         { status: 400 }
       );
+    }
+
+    // Verify folder belongs to user if provided
+    if (folderId) {
+      const folder = await db.folder.findFirst({
+        where: {
+          id: folderId,
+          userId: session.user.id,
+        },
+      });
+      if (!folder) {
+        return NextResponse.json(
+          { error: "Dossier non trouvé" },
+          { status: 404 }
+        );
+      }
     }
 
     // Convertir le fichier en buffer pour validation
@@ -161,6 +178,7 @@ export async function POST(req: Request) {
     const document = await db.document.create({
       data: {
         userId: session.user.id,
+        folderId: folderId || null, // Associate with folder if provided
         originalName: fileValidation.sanitizedName, // Nom sanitisé
         displayName: fileValidation.sanitizedName,
         fileType,

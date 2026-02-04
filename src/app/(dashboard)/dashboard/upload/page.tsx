@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, X, FileText, File, Image as ImageIcon, FileCheck, Cloud, Sparkles, Wand2, FolderOpen, Loader2, Music, Video } from "lucide-react";
+import { Upload, X, FileText, File, Image as ImageIcon, FileCheck, Cloud, Sparkles, Wand2, FolderOpen, Loader2, Music, Video, FolderUp, Folder } from "lucide-react";
 
 type AIStatus = {
   allowed: boolean;
@@ -12,14 +12,23 @@ type AIStatus = {
   planType: string;
 };
 
+type FileWithPath = {
+  file: File;
+  relativePath: string;
+  folderName: string | null;
+};
+
 export default function UploadPage() {
   const router = useRouter();
   const [files, setFiles] = useState<File[]>([]);
+  const [folderFiles, setFolderFiles] = useState<FileWithPath[]>([]);
+  const [folderName, setFolderName] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
   const [error, setError] = useState<string | null>(null);
   const [fileErrors, setFileErrors] = useState<{ [key: string]: string }>({});
+  const folderInputRef = useRef<HTMLInputElement>(null);
 
   // AI sorting state
   const [aiSortingEnabled, setAiSortingEnabled] = useState(false);
@@ -69,6 +78,48 @@ export default function UploadPage() {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
       setFiles(prev => [...prev, ...selectedFiles]);
+      // Clear folder selection when adding individual files
+      setFolderFiles([]);
+      setFolderName(null);
+    }
+  };
+
+  const handleFolderSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const fileList = Array.from(e.target.files);
+
+      // Extract folder name from the first file's path
+      const firstPath = (fileList[0] as any).webkitRelativePath || "";
+      const rootFolderName = firstPath.split("/")[0] || "Dossier importé";
+
+      // Filter and map files with their relative paths
+      const validTypes = [
+        'application/pdf',
+        'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+        'audio/mpeg', 'audio/wav', 'audio/x-wav',
+        'video/mp4', 'video/quicktime', 'video/webm'
+      ];
+
+      const filesWithPaths: FileWithPath[] = fileList
+        .filter(file => {
+          // Skip hidden files and directories
+          const path = (file as any).webkitRelativePath || file.name;
+          if (path.includes("/.") || path.startsWith(".")) return false;
+          // Check file type (allow all if type is empty - browser may not detect some types)
+          return file.type === "" || validTypes.includes(file.type);
+        })
+        .map(file => ({
+          file,
+          relativePath: (file as any).webkitRelativePath || file.name,
+          folderName: rootFolderName,
+        }));
+
+      if (filesWithPaths.length > 0) {
+        setFolderFiles(filesWithPaths);
+        setFolderName(rootFolderName);
+        // Clear individual files when selecting a folder
+        setFiles([]);
+      }
     }
   };
 
@@ -76,8 +127,29 @@ export default function UploadPage() {
     setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const removeFolderFile = (index: number) => {
+    setFolderFiles(prev => {
+      const newFiles = prev.filter((_, i) => i !== index);
+      if (newFiles.length === 0) {
+        setFolderName(null);
+      }
+      return newFiles;
+    });
+  };
+
+  const clearFolder = () => {
+    setFolderFiles([]);
+    setFolderName(null);
+    if (folderInputRef.current) {
+      folderInputRef.current.value = "";
+    }
+  };
+
   const handleUpload = async () => {
-    if (files.length === 0) return;
+    const hasFiles = files.length > 0;
+    const hasFolderFiles = folderFiles.length > 0;
+
+    if (!hasFiles && !hasFolderFiles) return;
 
     setIsUploading(true);
     setError(null);
@@ -85,10 +157,51 @@ export default function UploadPage() {
     setAiResults({});
 
     let hasError = false;
+    let targetFolderId: string | null = null;
 
-    for (const file of files) {
+    // If uploading a folder, create it first
+    if (hasFolderFiles && folderName) {
+      try {
+        const folderResponse = await fetch("/api/folders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: folderName,
+            color: "#3B82F6",
+            icon: "folder",
+          }),
+        });
+
+        if (folderResponse.ok) {
+          const folderData = await folderResponse.json();
+          targetFolderId = folderData.id;
+        } else {
+          // Folder might already exist, try to find it
+          const listResponse = await fetch("/api/folders");
+          if (listResponse.ok) {
+            const folders = await listResponse.json();
+            const existingFolder = folders.find((f: any) => f.name === folderName);
+            if (existingFolder) {
+              targetFolderId = existingFolder.id;
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error creating folder:", err);
+      }
+    }
+
+    // Upload files (either individual or from folder)
+    const filesToUpload = hasFolderFiles
+      ? folderFiles.map(f => ({ file: f.file, name: f.file.name }))
+      : files.map(f => ({ file: f, name: f.name }));
+
+    for (const { file, name } of filesToUpload) {
       const formData = new FormData();
       formData.append("file", file);
+      if (targetFolderId) {
+        formData.append("folderId", targetFolderId);
+      }
 
       try {
         // Step 1: Upload the file
@@ -99,12 +212,12 @@ export default function UploadPage() {
 
         if (response.ok) {
           const uploadData = await response.json();
-          setUploadProgress(prev => ({ ...prev, [file.name]: aiSortingEnabled ? 50 : 100 }));
+          setUploadProgress(prev => ({ ...prev, [name]: aiSortingEnabled && !targetFolderId ? 50 : 100 }));
 
-          // Step 2: If AI sorting is enabled, analyze and sort
-          if (aiSortingEnabled && uploadData.document?.id) {
+          // Step 2: If AI sorting is enabled and NOT uploading to a specific folder, analyze and sort
+          if (aiSortingEnabled && !targetFolderId && uploadData.document?.id) {
             try {
-              console.log("[Upload] Starting AI analysis for:", file.name, "type:", file.type);
+              console.log("[Upload] Starting AI analysis for:", name, "type:", file.type);
               const analyzeResponse = await fetch("/api/documents/analyze", {
                 method: "PUT", // PUT for auto-sort
                 headers: { "Content-Type": "application/json" },
@@ -117,7 +230,7 @@ export default function UploadPage() {
               if (analyzeResponse.ok && analyzeData.success) {
                 setAiResults(prev => ({
                   ...prev,
-                  [file.name]: {
+                  [name]: {
                     category: analyzeData.result?.category || "Autres",
                     type: analyzeData.result?.documentType || "autre",
                   },
@@ -127,7 +240,7 @@ export default function UploadPage() {
                 console.error("[Upload] AI analysis failed:", analyzeData.error);
                 setAiResults(prev => ({
                   ...prev,
-                  [file.name]: {
+                  [name]: {
                     category: "Analyse échouée",
                     type: analyzeData.error || "Erreur inconnue",
                   },
@@ -137,7 +250,7 @@ export default function UploadPage() {
               console.error("[Upload] AI analysis error:", aiError);
               setAiResults(prev => ({
                 ...prev,
-                [file.name]: {
+                [name]: {
                   category: "Erreur",
                   type: "Erreur réseau lors de l'analyse",
                 },
@@ -145,11 +258,11 @@ export default function UploadPage() {
             }
           }
 
-          setUploadProgress(prev => ({ ...prev, [file.name]: 100 }));
+          setUploadProgress(prev => ({ ...prev, [name]: 100 }));
         } else {
           const errorData = await response.json();
           const errorMessage = errorData.error || "Erreur lors de l'upload";
-          setFileErrors(prev => ({ ...prev, [file.name]: errorMessage }));
+          setFileErrors(prev => ({ ...prev, [name]: errorMessage }));
           hasError = true;
 
           if (response.status === 403) {
@@ -159,7 +272,7 @@ export default function UploadPage() {
         }
       } catch (error) {
         console.error("Upload error:", error);
-        setFileErrors(prev => ({ ...prev, [file.name]: "Erreur réseau" }));
+        setFileErrors(prev => ({ ...prev, [name]: "Erreur réseau" }));
         hasError = true;
       }
     }
@@ -168,7 +281,7 @@ export default function UploadPage() {
 
     if (!hasError) {
       setTimeout(() => {
-        router.push("/dashboard/documents");
+        router.push("/dashboard/my-files");
       }, 1500);
     }
   };
@@ -222,50 +335,117 @@ export default function UploadPage() {
         </div>
       )}
 
-      {/* Drop Zone */}
-      <div
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        className={`relative overflow-hidden rounded-3xl border-2 border-dashed p-12 text-center transition-all ${
-          isDragging
-            ? "border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-500/10"
-            : "border-neutral-300 bg-white hover:border-blue-400 hover:bg-blue-50/50 dark:border-neutral-700 dark:bg-neutral-800/50 dark:hover:border-blue-500/50 dark:hover:bg-blue-500/5"
-        }`}
-      >
-        <input
-          type="file"
-          multiple
-          accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.mp3,.wav,.wave,.mp4,.m4v,.mov,.webm"
-          onChange={handleFileSelect}
-          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-        />
+      {/* Upload Options Grid */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        {/* Drop Zone - Files */}
+        <div
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={`relative overflow-hidden rounded-3xl border-2 border-dashed p-8 text-center transition-all ${
+            isDragging
+              ? "border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-500/10"
+              : "border-neutral-300 bg-white hover:border-blue-400 hover:bg-blue-50/50 dark:border-neutral-700 dark:bg-neutral-800/50 dark:hover:border-blue-500/50 dark:hover:bg-blue-500/5"
+          }`}
+        >
+          <input
+            type="file"
+            multiple
+            accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.mp3,.wav,.wave,.mp4,.m4v,.mov,.webm"
+            onChange={handleFileSelect}
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+          />
 
-        <div className="pointer-events-none space-y-4">
-          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-xl shadow-blue-500/25">
-            <Cloud className="h-10 w-10 text-white" />
+          <div className="pointer-events-none space-y-3">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-xl shadow-blue-500/25">
+              <Cloud className="h-8 w-8 text-white" />
+            </div>
+
+            <div>
+              <p className="text-lg font-semibold text-neutral-900 dark:text-white">
+                Fichiers
+              </p>
+              <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                Glissez ou cliquez pour sélectionner
+              </p>
+            </div>
+
+            <div className="flex flex-wrap justify-center gap-1.5">
+              <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-[10px] font-medium text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">PDF</span>
+              <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-[10px] font-medium text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">JPG</span>
+              <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-[10px] font-medium text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">PNG</span>
+              <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-[10px] font-medium text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">MP3</span>
+              <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-[10px] font-medium text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">MP4</span>
+            </div>
           </div>
+        </div>
 
-          <div>
-            <p className="text-xl font-semibold text-neutral-900 dark:text-white">
-              Glissez vos fichiers ici
-            </p>
-            <p className="mt-2 text-neutral-500 dark:text-neutral-400">
-              ou cliquez pour sélectionner
-            </p>
-          </div>
+        {/* Drop Zone - Folder */}
+        <div
+          className="relative overflow-hidden rounded-3xl border-2 border-dashed p-8 text-center transition-all border-violet-300 bg-white hover:border-violet-400 hover:bg-violet-50/50 dark:border-violet-500/30 dark:bg-neutral-800/50 dark:hover:border-violet-500/50 dark:hover:bg-violet-500/5"
+        >
+          <input
+            ref={folderInputRef}
+            type="file"
+            // @ts-ignore - webkitdirectory is a non-standard attribute
+            webkitdirectory=""
+            // @ts-ignore
+            directory=""
+            multiple
+            onChange={handleFolderSelect}
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+          />
 
-          <div className="flex flex-wrap justify-center gap-2">
-            <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">PDF</span>
-            <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">JPG</span>
-            <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">PNG</span>
-            <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">GIF</span>
-            <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">MP3</span>
-            <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">MP4</span>
-            <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">WAV</span>
+          <div className="pointer-events-none space-y-3">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-xl shadow-violet-500/25">
+              <FolderUp className="h-8 w-8 text-white" />
+            </div>
+
+            <div>
+              <p className="text-lg font-semibold text-neutral-900 dark:text-white">
+                Dossier complet
+              </p>
+              <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                Importez un dossier avec son contenu
+              </p>
+            </div>
+
+            <div className="flex justify-center">
+              <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-600 dark:bg-violet-500/20 dark:text-violet-400">
+                Crée automatiquement le dossier
+              </span>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Selected Folder Info */}
+      {folderName && folderFiles.length > 0 && (
+        <div className="rounded-3xl bg-gradient-to-r from-violet-50 to-purple-50 p-5 dark:from-violet-500/10 dark:to-purple-500/10 border border-violet-200 dark:border-violet-500/20">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-500/20">
+                <Folder className="h-6 w-6 text-violet-600 dark:text-violet-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-neutral-900 dark:text-white">
+                  {folderName}
+                </h3>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                  {folderFiles.length} fichier{folderFiles.length > 1 ? "s" : ""} à importer
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={clearFolder}
+              disabled={isUploading}
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-violet-600 transition-colors hover:bg-violet-100 dark:text-violet-400 dark:hover:bg-violet-500/20"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* AI Sorting Toggle */}
       {files.length > 0 && aiStatus && (
@@ -316,14 +496,19 @@ export default function UploadPage() {
       )}
 
       {/* Files List */}
-      {files.length > 0 && (
+      {(files.length > 0 || folderFiles.length > 0) && (
         <div className="space-y-4 rounded-3xl bg-white p-6 shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
-              Fichiers sélectionnés ({files.length})
+              {folderFiles.length > 0
+                ? `Dossier "${folderName}" (${folderFiles.length} fichiers)`
+                : `Fichiers sélectionnés (${files.length})`}
             </h3>
             <button
-              onClick={() => setFiles([])}
+              onClick={() => {
+                setFiles([]);
+                clearFolder();
+              }}
               disabled={isUploading}
               className="rounded-xl px-4 py-2 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-100 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-700"
             >
@@ -332,6 +517,7 @@ export default function UploadPage() {
           </div>
 
           <div className="space-y-2">
+            {/* Individual files */}
             {files.map((file, index) => {
               const FileIcon = getFileIcon(file);
               const progress = uploadProgress[file.name] || 0;
@@ -421,15 +607,95 @@ export default function UploadPage() {
                 </div>
               );
             })}
+
+            {/* Folder files */}
+            {folderFiles.map((fileData, index) => {
+              const FileIcon = getFileIcon(fileData.file);
+              const progress = uploadProgress[fileData.file.name] || 0;
+              const fileError = fileErrors[fileData.file.name];
+
+              return (
+                <div
+                  key={`folder-${index}`}
+                  className={`flex items-center gap-4 rounded-2xl p-4 transition-all ${
+                    fileError
+                      ? "bg-red-50 dark:bg-red-500/10"
+                      : "bg-violet-50/50 dark:bg-violet-500/5"
+                  }`}
+                >
+                  <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${
+                    fileError
+                      ? "bg-red-100 dark:bg-red-500/20"
+                      : progress === 100
+                      ? "bg-green-100 dark:bg-green-500/20"
+                      : "bg-violet-100 dark:bg-violet-500/20"
+                  }`}>
+                    {fileError ? (
+                      <X className="h-6 w-6 text-red-600 dark:text-red-400" />
+                    ) : progress === 100 ? (
+                      <FileCheck className="h-6 w-6 text-green-600 dark:text-green-400" />
+                    ) : isUploading && progress > 0 && progress < 100 ? (
+                      <Loader2 className="h-6 w-6 text-violet-600 dark:text-violet-400 animate-spin" />
+                    ) : (
+                      <FileIcon className="h-6 w-6 text-violet-600 dark:text-violet-400" />
+                    )}
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <p className="truncate font-medium text-neutral-900 dark:text-white">
+                      {fileData.file.name}
+                    </p>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                      {formatFileSize(fileData.file.size)}
+                    </p>
+
+                    {fileError && (
+                      <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                        {fileError}
+                      </p>
+                    )}
+
+                    {isUploading && progress > 0 && !fileError && progress < 100 && (
+                      <div className="mt-2">
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-violet-200 dark:bg-violet-900">
+                          <div
+                            className="h-full bg-gradient-to-r from-violet-500 to-purple-500 transition-all"
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {progress !== 100 && !isUploading && (
+                    <button
+                      onClick={() => removeFolderFile(index)}
+                      disabled={isUploading}
+                      className="flex h-9 w-9 items-center justify-center rounded-xl text-neutral-400 transition-colors hover:bg-red-100 hover:text-red-600 disabled:opacity-50 dark:hover:bg-red-500/20 dark:hover:text-red-400"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           <div className="flex gap-3 pt-4">
             <button
               onClick={handleUpload}
-              disabled={isUploading || files.length === 0}
-              className="flex-1 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl disabled:opacity-50 disabled:shadow-none"
+              disabled={isUploading || (files.length === 0 && folderFiles.length === 0)}
+              className={`flex-1 rounded-xl py-3 text-sm font-semibold text-white shadow-lg transition-all hover:shadow-xl disabled:opacity-50 disabled:shadow-none ${
+                folderFiles.length > 0
+                  ? "bg-gradient-to-r from-violet-500 to-purple-600 shadow-violet-500/25"
+                  : "bg-gradient-to-r from-blue-500 to-blue-600 shadow-blue-500/25"
+              }`}
             >
-              {isUploading ? "Upload en cours..." : `Uploader ${files.length} fichier${files.length > 1 ? "s" : ""}`}
+              {isUploading
+                ? "Upload en cours..."
+                : folderFiles.length > 0
+                ? `Importer le dossier (${folderFiles.length} fichiers)`
+                : `Uploader ${files.length} fichier${files.length > 1 ? "s" : ""}`}
             </button>
             <button
               onClick={() => router.push("/dashboard/documents")}
