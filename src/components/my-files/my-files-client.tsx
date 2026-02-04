@@ -27,6 +27,7 @@ import {
   Plus,
   GripVertical,
   Star,
+  MoreVertical,
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { PinModal } from "@/components/folders/pin-modal";
@@ -147,6 +148,20 @@ export function MyFilesClient({
   // Drag and drop state
   const [draggedDocument, setDraggedDocument] = useState<string | null>(null);
   const [dropTargetFolder, setDropTargetFolder] = useState<string | null>(null);
+
+  // Mobile move menu
+  const [movingDocumentId, setMovingDocumentId] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile on mount
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024 || 'ontouchstart' in window);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Navigation breadcrumb (for when viewing folder contents)
   const [folderPath, setFolderPath] = useState<FolderType[]>([]);
@@ -839,7 +854,7 @@ export function MyFilesClient({
                   onDragOver={(e) => handleDragOver(e, folder.id)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, folder.id)}
-                  className={`group flex items-center gap-3 rounded-xl p-3 transition-all ${
+                  className={`group flex items-center gap-2 lg:gap-3 rounded-xl p-2 lg:p-3 transition-all ${
                     dropTargetFolder === folder.id && draggedDocument
                       ? "bg-violet-100 ring-2 ring-violet-500 dark:bg-violet-500/20"
                       : selectedFolder === folder.id
@@ -849,10 +864,10 @@ export function MyFilesClient({
                 >
                   <button
                     onClick={() => openFolder(folder)}
-                    className="flex h-10 w-10 items-center justify-center rounded-xl flex-shrink-0 hover:ring-2 hover:ring-violet-500/30"
+                    className="flex h-9 w-9 lg:h-10 lg:w-10 items-center justify-center rounded-xl flex-shrink-0 hover:ring-2 hover:ring-violet-500/30"
                     style={{ backgroundColor: folder.color + "20" }}
                   >
-                    <Folder className="h-5 w-5" style={{ color: folder.color }} />
+                    <Folder className="h-4 w-4 lg:h-5 lg:w-5" style={{ color: folder.color }} />
                   </button>
 
                   <button
@@ -860,7 +875,7 @@ export function MyFilesClient({
                     className="flex flex-1 items-center gap-2 text-left min-w-0"
                   >
                     <div className="flex-1 min-w-0">
-                      <span className={`block truncate font-medium ${
+                      <span className={`block truncate text-sm font-medium ${
                         selectedFolder === folder.id
                           ? "text-violet-700 dark:text-violet-400"
                           : "text-neutral-700 dark:text-neutral-300"
@@ -871,35 +886,36 @@ export function MyFilesClient({
                         {folder.hasPin && (
                           <span className="flex items-center gap-1">
                             <Lock className="h-3 w-3" />
-                            {t("protected")}
+                            <span className="hidden sm:inline">{t("protected")}</span>
                           </span>
                         )}
                         {(folder.childrenCount ?? 0) > 0 && (
-                          <span>{folder.childrenCount} sous-dossier{(folder.childrenCount ?? 0) > 1 ? 's' : ''}</span>
+                          <span className="hidden sm:inline">{folder.childrenCount} sous-dossier{(folder.childrenCount ?? 0) > 1 ? 's' : ''}</span>
                         )}
                       </div>
                     </div>
                   </button>
 
-                  {/* Favorite star - always visible if favorited */}
+                  {/* Favorite star - always visible on mobile if favorited */}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       toggleFavorite(folder.id);
                     }}
-                    className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all ${
+                    className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all flex-shrink-0 ${
                       favorites.has(folder.id)
                         ? "text-yellow-500"
-                        : "text-neutral-300 opacity-0 group-hover:opacity-100 hover:text-yellow-500 dark:text-neutral-600"
+                        : "text-neutral-300 lg:opacity-0 lg:group-hover:opacity-100 hover:text-yellow-500 dark:text-neutral-600"
                     }`}
                     title={favorites.has(folder.id) ? "Retirer des favoris" : "Ajouter aux favoris"}
                   >
                     <Star className={`h-4 w-4 ${favorites.has(folder.id) ? "fill-current" : ""}`} />
                   </button>
 
-                  <span className="text-sm text-neutral-400 flex-shrink-0">{folder.documentCount}</span>
+                  <span className="text-xs lg:text-sm text-neutral-400 flex-shrink-0">{folder.documentCount}</span>
 
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {/* Action buttons - desktop only */}
+                  <div className="hidden lg:flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -930,6 +946,9 @@ export function MyFilesClient({
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
+
+                  {/* Mobile: chevron to indicate clickable */}
+                  <ChevronRight className="h-4 w-4 text-neutral-400 flex-shrink-0 lg:hidden" />
                 </div>
               ))}
             </div>
@@ -1085,7 +1104,7 @@ export function MyFilesClient({
                       onDragOver={(e) => handleDragOver(e, subfolder.id)}
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, subfolder.id)}
-                      className={`group flex items-center gap-3 rounded-xl p-3 transition-all ${
+                      className={`group flex items-center gap-2 lg:gap-3 rounded-xl p-2 lg:p-3 transition-all ${
                         dropTargetFolder === subfolder.id && draggedDocument
                           ? "bg-violet-100 ring-2 ring-violet-500 dark:bg-violet-500/20"
                           : "bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700/50"
@@ -1093,10 +1112,10 @@ export function MyFilesClient({
                     >
                       <button
                         onClick={() => openFolder(subfolder)}
-                        className="flex h-10 w-10 items-center justify-center rounded-xl flex-shrink-0 hover:ring-2 hover:ring-violet-500/30"
+                        className="flex h-9 w-9 lg:h-10 lg:w-10 items-center justify-center rounded-xl flex-shrink-0 hover:ring-2 hover:ring-violet-500/30"
                         style={{ backgroundColor: subfolder.color + "20" }}
                       >
-                        <Folder className="h-5 w-5" style={{ color: subfolder.color }} />
+                        <Folder className="h-4 w-4 lg:h-5 lg:w-5" style={{ color: subfolder.color }} />
                       </button>
                       <button
                         onClick={() => openFolder(subfolder)}
@@ -1111,16 +1130,16 @@ export function MyFilesClient({
                         </span>
                       </button>
 
-                      {/* Favorite star */}
+                      {/* Favorite star - always visible on mobile if favorited */}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleFavorite(subfolder.id);
                         }}
-                        className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all ${
+                        className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all flex-shrink-0 ${
                           favorites.has(subfolder.id)
                             ? "text-yellow-500"
-                            : "text-neutral-300 opacity-0 group-hover:opacity-100 hover:text-yellow-500 dark:text-neutral-600"
+                            : "text-neutral-300 lg:opacity-0 lg:group-hover:opacity-100 hover:text-yellow-500 dark:text-neutral-600"
                         }`}
                         title={favorites.has(subfolder.id) ? "Retirer des favoris" : "Ajouter aux favoris"}
                       >
@@ -1129,8 +1148,8 @@ export function MyFilesClient({
 
                       {subfolder.hasPin && <Lock className="h-4 w-4 text-neutral-400 flex-shrink-0" />}
 
-                      {/* Action buttons */}
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {/* Action buttons - desktop only */}
+                      <div className="hidden lg:flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -1163,6 +1182,9 @@ export function MyFilesClient({
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
+
+                      {/* Mobile: chevron to indicate clickable */}
+                      <ChevronRight className="h-4 w-4 text-neutral-400 flex-shrink-0 lg:hidden" />
                     </div>
                   ))}
                 </div>
@@ -1192,23 +1214,24 @@ export function MyFilesClient({
                     const Icon = getFileIcon(doc.fileType);
                     const isSelected = selectedDocuments.has(doc.id);
                     const isDragging = draggedDocument === doc.id;
+                    const isMoving = movingDocumentId === doc.id;
                     return (
                       <div
                         key={doc.id}
-                        draggable={!isSelectionMode}
-                        onDragStart={(e) => handleDragStart(e, doc.id)}
+                        draggable={!isSelectionMode && !isMobile}
+                        onDragStart={(e) => !isMobile && handleDragStart(e, doc.id)}
                         onDragEnd={handleDragEnd}
                         onClick={() => isSelectionMode && toggleDocumentSelection(doc.id)}
-                        className={`group flex items-center gap-3 rounded-xl p-3 transition-all ${
+                        className={`group flex items-center gap-2 lg:gap-3 rounded-xl p-2 lg:p-3 transition-all ${
                           isDragging
                             ? "opacity-50 ring-2 ring-violet-500"
                             : isSelected
                             ? "bg-blue-50 ring-2 ring-blue-500 dark:bg-blue-500/10"
                             : "bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700/50"
-                        } ${isSelectionMode ? "cursor-pointer" : "cursor-grab active:cursor-grabbing"}`}
+                        } ${isSelectionMode ? "cursor-pointer" : !isMobile ? "cursor-grab active:cursor-grabbing" : ""}`}
                       >
-                        {/* Drag handle */}
-                        {!isSelectionMode && (
+                        {/* Drag handle - desktop only */}
+                        {!isSelectionMode && !isMobile && (
                           <div className="flex-shrink-0 text-neutral-300 dark:text-neutral-600">
                             <GripVertical className="h-4 w-4" />
                           </div>
@@ -1231,8 +1254,8 @@ export function MyFilesClient({
                           </button>
                         )}
 
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-100 to-violet-100 dark:from-blue-500/20 dark:to-violet-500/20 flex-shrink-0">
-                          <Icon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                        <div className="flex h-9 w-9 lg:h-10 lg:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-100 to-violet-100 dark:from-blue-500/20 dark:to-violet-500/20 flex-shrink-0">
+                          <Icon className="h-4 w-4 lg:h-5 lg:w-5 text-blue-600 dark:text-blue-400" />
                         </div>
 
                         <div className="flex-1 min-w-0">
@@ -1254,6 +1277,66 @@ export function MyFilesClient({
                             {formatFileSize(doc.sizeBytes)}
                           </p>
                         </div>
+
+                        {/* Move menu button - mobile only */}
+                        {!isSelectionMode && (
+                          <div className="relative flex-shrink-0">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setMovingDocumentId(isMoving ? null : doc.id);
+                              }}
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </button>
+
+                            {/* Move dropdown menu */}
+                            {isMoving && (
+                              <>
+                                <div
+                                  className="fixed inset-0 z-40"
+                                  onClick={() => setMovingDocumentId(null)}
+                                />
+                                <div className="absolute right-0 bottom-full z-50 mb-2 w-48 max-h-64 overflow-y-auto rounded-xl border border-neutral-200 bg-white p-2 shadow-2xl dark:border-neutral-700 dark:bg-neutral-800">
+                                  <div className="mb-2 px-3 py-1.5 text-xs font-medium uppercase tracking-wide text-neutral-400">
+                                    {t("moveTo")}
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      handleMoveDocument(doc.id, null);
+                                      setMovingDocumentId(null);
+                                    }}
+                                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                                  >
+                                    <FolderOpen className="h-4 w-4 text-neutral-400 flex-shrink-0" />
+                                    <span className="truncate">{t("uncategorized")}</span>
+                                  </button>
+                                  {localFolders.filter(f => f.id !== doc.folderId).map((folder) => (
+                                    <button
+                                      key={folder.id}
+                                      onClick={() => {
+                                        if (folder.hasPin && !unlockedFolders.has(folder.id)) {
+                                          setPendingFolder(folder);
+                                          (window as any).pendingMoveOperation = { documentId: doc.id, targetFolderId: folder.id };
+                                          setMovingDocumentId(null);
+                                        } else {
+                                          handleMoveDocument(doc.id, folder.id);
+                                          setMovingDocumentId(null);
+                                        }
+                                      }}
+                                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                                    >
+                                      <Folder className="h-4 w-4 flex-shrink-0" style={{ color: folder.color }} />
+                                      <span className="flex-1 text-left truncate">{folder.name}</span>
+                                      {folder.hasPin && <Lock className="h-3 w-3 text-neutral-400 flex-shrink-0" />}
+                                    </button>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
