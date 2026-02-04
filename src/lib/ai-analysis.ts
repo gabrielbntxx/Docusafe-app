@@ -156,6 +156,24 @@ export const DOCUMENT_TYPES = {
   VIDEO_REUNION: "video_reunion",
   VIDEO_AUTRE: "video_autre",
 
+  // --- CODE & DÉVELOPPEMENT ---
+  CODE_SOURCE: "code_source",
+  CODE_PYTHON: "code_python",
+  CODE_JAVASCRIPT: "code_javascript",
+  CODE_JAVA: "code_java",
+  CODE_CPP: "code_cpp",
+  CODE_WEB: "code_web",
+  CONFIG_FILE: "config_file",
+  DATA_FILE: "data_file",
+  DOCUMENTATION_TECHNIQUE: "documentation_technique",
+  SCRIPT: "script",
+
+  // --- DOCUMENTS OFFICE ---
+  DOCUMENT_WORD: "document_word",
+  TABLEUR_EXCEL: "tableur_excel",
+  PRESENTATION_POWERPOINT: "presentation_powerpoint",
+  DOCUMENT_APPLE: "document_apple",
+
   // --- AUTRE ---
   RECETTE_CUISINE: "recette_cuisine",
   LISTE: "liste",
@@ -263,6 +281,18 @@ export const DOCUMENT_CATEGORIES = {
     icon: "video",
     color: "#EF4444",
     description: "Fichiers vidéo, tutoriels, cours, clips"
+  },
+  DEVELOPPEMENT: {
+    name: "Développement",
+    icon: "code",
+    color: "#22C55E",
+    description: "Fichiers de code, scripts, configurations"
+  },
+  OFFICE: {
+    name: "Documents Office",
+    icon: "file-spreadsheet",
+    color: "#2563EB",
+    description: "Word, Excel, PowerPoint, Pages, Numbers, Keynote"
   },
   AUTRE: {
     name: "Autres",
@@ -426,6 +456,24 @@ export const TYPE_TO_CATEGORY: Record<string, keyof typeof DOCUMENT_CATEGORIES> 
   video_presentation: "VIDEO",
   video_reunion: "VIDEO",
   video_autre: "VIDEO",
+
+  // Code & Développement
+  code_source: "DEVELOPPEMENT",
+  code_python: "DEVELOPPEMENT",
+  code_javascript: "DEVELOPPEMENT",
+  code_java: "DEVELOPPEMENT",
+  code_cpp: "DEVELOPPEMENT",
+  code_web: "DEVELOPPEMENT",
+  config_file: "DEVELOPPEMENT",
+  data_file: "DEVELOPPEMENT",
+  documentation_technique: "DEVELOPPEMENT",
+  script: "DEVELOPPEMENT",
+
+  // Documents Office
+  document_word: "OFFICE",
+  tableur_excel: "OFFICE",
+  presentation_powerpoint: "OFFICE",
+  document_apple: "OFFICE",
 
   // Autre
   recette_cuisine: "AUTRE",
@@ -686,6 +734,24 @@ Tu dois créer des noms de dossiers PRÉCIS et CONTEXTUELS, jamais génériques!
 - video_reunion: Réunion Zoom/Teams → Dossier: "Réunions Vidéo"
 - video_autre: Autre vidéo → Dossier selon contenu
 
+### 💻 CODE & DÉVELOPPEMENT (analyse le CONTENU du code!)
+- code_source: Code générique → Dossier: "Code [Langage]"
+- code_python: Script Python → Dossier: "Code Python" ou "Scripts Python"
+- code_javascript: JS/TS/React/Vue → Dossier: "Code JavaScript" ou "Projets React"
+- code_java: Code Java → Dossier: "Code Java"
+- code_cpp: C/C++/C# → Dossier: "Code C++"
+- code_web: HTML/CSS → Dossier: "Code Web" ou "Sites Web"
+- config_file: Config (json, yaml, env, ini) → Dossier: "Configurations"
+- data_file: Données (csv, json data) → Dossier: "Données [Sujet]"
+- documentation_technique: README, docs tech → Dossier: "Documentation"
+- script: Shell scripts, automation → Dossier: "Scripts"
+
+### 📄 DOCUMENTS OFFICE
+- document_word: Word, Pages → Dossier selon contenu (ex: "Rapports", "Lettres")
+- tableur_excel: Excel, Numbers → Dossier: "Tableaux [Sujet]" ou "Budget"
+- presentation_powerpoint: PowerPoint, Keynote → Dossier: "Présentations [Sujet]"
+- document_apple: Documents Apple spécifiques → Dossier selon contenu
+
 ### 📁 AUTRE
 - recette_cuisine, note_personnelle, document_professionnel, autre
 
@@ -708,6 +774,30 @@ Tu dois créer des noms de dossiers PRÉCIS et CONTEXTUELS, jamais génériques!
 | Enregistrement cours de droit | audio_cours | "Cours Audio Droit" |
 | Clip YouTube musique rock | video_musique | "Clips Rock" |
 | Réunion Zoom projet Alpha | video_reunion | "Réunions Projet Alpha" |
+| Script Python analyse données | code_python | "Scripts Python" |
+| Fichier main.js React app | code_javascript | "Code React" |
+| Classe Java UserService | code_java | "Code Java" |
+| fichier config.yaml | config_file | "Configurations" |
+| données_ventes.csv | data_file | "Données Ventes" |
+| README.md projet | documentation_technique | "Documentation Projets" |
+| script_backup.sh | script | "Scripts Système" |
+| Rapport annuel.docx | document_word | "Rapports" |
+| Budget_2024.xlsx | tableur_excel | "Budget 2024" |
+| Présentation_projet.pptx | presentation_powerpoint | "Présentations Projets" |
+
+## 💻 INSTRUCTIONS CODE & DOCUMENTS
+
+### Pour les fichiers CODE:
+- ANALYSE le contenu du code, pas juste l'extension
+- Identifie: langage, framework, type de projet, fonctionnalité principale
+- Exemples: "React component", "API endpoint", "Database model", "Unit test"
+- Suggère un dossier basé sur le projet ou la fonctionnalité
+
+### Pour les fichiers OFFICE (Word, Excel, PowerPoint):
+- ANALYSE le contenu textuel si possible
+- Pour Word: identifie le type (rapport, lettre, CV, contrat, etc.)
+- Pour Excel: identifie l'usage (budget, inventaire, planning, données)
+- Pour PowerPoint: identifie le sujet de la présentation
 
 ## 🔊 INSTRUCTIONS AUDIO/VIDÉO
 
@@ -847,6 +937,60 @@ const MAX_INLINE_SIZE = 20 * 1024 * 1024;
 // Maximum file size for File API upload (2GB)
 const MAX_FILE_API_SIZE = 2 * 1024 * 1024 * 1024;
 
+// Text-based file types that should be sent as plain text to AI
+const TEXT_BASED_MIME_TYPES = new Set([
+  // Code files
+  "text/plain",
+  "text/x-python",
+  "text/x-java",
+  "text/x-c",
+  "text/x-c++",
+  "text/javascript",
+  "application/javascript",
+  "text/typescript",
+  "application/typescript",
+  "text/x-ruby",
+  "text/x-php",
+  "text/x-swift",
+  "text/x-kotlin",
+  "text/x-go",
+  "text/x-rust",
+  "text/x-scala",
+  "text/x-perl",
+  "text/x-lua",
+  "text/x-shellscript",
+  "application/x-sh",
+  "text/x-sql",
+  "application/sql",
+  "text/css",
+  "text/html",
+  "application/xhtml+xml",
+  "text/xml",
+  "application/xml",
+  "application/json",
+  "text/yaml",
+  "application/x-yaml",
+  "text/markdown",
+  "text/x-markdown",
+  // Document formats that contain plain text
+  "text/csv",
+  "text/tab-separated-values",
+  "text/rtf",
+]);
+
+// Office document types that Gemini might analyze
+const OFFICE_MIME_TYPES = new Set([
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "application/vnd.apple.pages",
+  "application/vnd.apple.numbers",
+  "application/vnd.apple.keynote",
+]);
+
 /**
  * Upload file to Gemini File API for large files
  * Returns the file URI to use in generateContent
@@ -984,6 +1128,14 @@ export async function analyzeDocumentWithAI(
   const isLargeFile = fileSize > MAX_INLINE_SIZE;
   const isMediaFile = mimeType.startsWith("video/") || mimeType.startsWith("audio/");
 
+  // Determine if this is a text-based file that should be analyzed as text
+  const isTextBased = TEXT_BASED_MIME_TYPES.has(mimeType) ||
+                      mimeType.startsWith("text/") ||
+                      fileName.match(/\.(py|js|ts|jsx|tsx|java|c|cpp|h|hpp|cs|rb|php|swift|kt|go|rs|scala|pl|lua|sh|bash|sql|css|html|htm|xml|json|yaml|yml|md|txt|csv|tsv|ini|cfg|conf|log|rtf)$/i);
+
+  const isOfficeDoc = OFFICE_MIME_TYPES.has(mimeType) ||
+                      fileName.match(/\.(doc|docx|xls|xlsx|ppt|pptx|pages|numbers|key|odt|ods|odp)$/i);
+
   let geminiMimeType = mimeType;
 
   if (mimeType === "application/pdf") {
@@ -1016,41 +1168,57 @@ export async function analyzeDocumentWithAI(
     } else {
       geminiMimeType = "video/mp4"; // Default fallback for video
     }
+  } else if (isTextBased) {
+    geminiMimeType = "text/plain";
+  } else if (isOfficeDoc) {
+    // Keep original mime type for Office docs - Gemini might support some
+    geminiMimeType = mimeType;
   } else {
     geminiMimeType = "application/pdf";
   }
-  console.log("[AI Analysis] Using mimeType for Gemini:", geminiMimeType);
+  console.log("[AI Analysis] Using mimeType for Gemini:", geminiMimeType, "isTextBased:", isTextBased, "isOfficeDoc:", isOfficeDoc);
 
   try {
-    // Determine which method to use based on file size
-    let filePart: { inline_data: { mime_type: string; data: string } } | { file_data: { mime_type: string; file_uri: string } };
+    // Determine which method to use based on file size and type
+    let contentParts: Array<{ text: string } | { inline_data: { mime_type: string; data: string } } | { file_data: { mime_type: string; file_uri: string } }> = [];
 
-    if (isLargeFile && isMediaFile) {
+    // Add the prompt first
+    contentParts.push({ text: AI_CLASSIFICATION_PROMPT });
+
+    if (isTextBased) {
+      // For text-based files (code, etc.), send the content as text
+      const textContent = fileBuffer.toString("utf-8");
+      const truncatedContent = textContent.length > 100000 ? textContent.substring(0, 100000) + "\n\n[... contenu tronqué ...]" : textContent;
+      console.log("[AI Analysis] Sending as text content, length:", truncatedContent.length);
+      contentParts.push({
+        text: `\n\n=== CONTENU DU FICHIER "${fileName}" ===\n\`\`\`\n${truncatedContent}\n\`\`\``,
+      });
+    } else if (isLargeFile && isMediaFile) {
       // Use File API for large media files (video/audio > 20MB)
       console.log("[AI Analysis] Using File API for large media file...");
       try {
         const fileUri = await uploadToGeminiFileAPI(fileBuffer, fileName, geminiMimeType, apiKey);
-        filePart = {
+        contentParts.push({
           file_data: {
             mime_type: geminiMimeType,
             file_uri: fileUri,
           },
-        };
+        });
         console.log("[AI Analysis] File uploaded successfully, URI:", fileUri);
       } catch (uploadError) {
         console.error("[AI Analysis] File API upload failed, falling back to filename classification:", uploadError);
         return classifyMediaByFilename(fileName, mimeType);
       }
     } else {
-      // Use inline base64 for small files
+      // Use inline base64 for small binary files
       const base64Data = fileBuffer.toString("base64");
       console.log("[AI Analysis] Using inline base64, length:", base64Data.length);
-      filePart = {
+      contentParts.push({
         inline_data: {
           mime_type: geminiMimeType,
           data: base64Data,
         },
-      };
+      });
     }
 
     console.log("[AI Analysis] Calling Gemini API with ULTRA prompt...");
@@ -1065,10 +1233,7 @@ export async function analyzeDocumentWithAI(
         body: JSON.stringify({
           contents: [
             {
-              parts: [
-                { text: AI_CLASSIFICATION_PROMPT },
-                filePart,
-              ],
+              parts: contentParts,
             },
           ],
           generationConfig: {

@@ -6,11 +6,14 @@ import { headers } from "next/headers";
 
 // Types MIME autorisés avec leurs signatures (magic bytes)
 export const ALLOWED_FILE_TYPES = {
+  // === PDF ===
   "application/pdf": {
     extensions: [".pdf"],
     magicBytes: [0x25, 0x50, 0x44, 0x46], // %PDF
     maxSize: 100 * 1024 * 1024, // 100MB
   },
+
+  // === Images ===
   "image/jpeg": {
     extensions: [".jpg", ".jpeg"],
     magicBytes: [0xff, 0xd8, 0xff],
@@ -31,7 +34,31 @@ export const ALLOWED_FILE_TYPES = {
     magicBytes: [0x52, 0x49, 0x46, 0x46], // RIFF (WebP starts with RIFF)
     maxSize: 100 * 1024 * 1024, // 100MB
   },
-  // Audio formats
+  "image/svg+xml": {
+    extensions: [".svg"],
+    magicBytes: [0x3c], // < (XML start)
+    maxSize: 10 * 1024 * 1024, // 10MB
+    skipMagicValidation: true,
+  },
+  "image/bmp": {
+    extensions: [".bmp"],
+    magicBytes: [0x42, 0x4d], // BM
+    maxSize: 100 * 1024 * 1024, // 100MB
+  },
+  "image/tiff": {
+    extensions: [".tiff", ".tif"],
+    magicBytes: [0x49, 0x49], // II (little-endian) or MM (big-endian)
+    maxSize: 100 * 1024 * 1024, // 100MB
+    skipMagicValidation: true,
+  },
+  "image/heic": {
+    extensions: [".heic", ".heif"],
+    magicBytes: [0x00, 0x00, 0x00],
+    maxSize: 100 * 1024 * 1024, // 100MB
+    skipMagicValidation: true,
+  },
+
+  // === Audio formats ===
   "audio/mpeg": {
     extensions: [".mp3"],
     magicBytes: [0xff, 0xfb], // MP3 frame sync (or 0x49, 0x44, 0x33 for ID3)
@@ -48,23 +75,268 @@ export const ALLOWED_FILE_TYPES = {
     magicBytes: [0x52, 0x49, 0x46, 0x46], // RIFF
     maxSize: 100 * 1024 * 1024, // 100MB
   },
-  // Video formats
+  "audio/ogg": {
+    extensions: [".ogg", ".oga"],
+    magicBytes: [0x4f, 0x67, 0x67, 0x53], // OggS
+    maxSize: 100 * 1024 * 1024, // 100MB
+  },
+  "audio/flac": {
+    extensions: [".flac"],
+    magicBytes: [0x66, 0x4c, 0x61, 0x43], // fLaC
+    maxSize: 100 * 1024 * 1024, // 100MB
+  },
+  "audio/aac": {
+    extensions: [".aac", ".m4a"],
+    magicBytes: [0x00, 0x00, 0x00],
+    maxSize: 100 * 1024 * 1024, // 100MB
+    skipMagicValidation: true,
+  },
+
+  // === Video formats ===
   "video/mp4": {
     extensions: [".mp4", ".m4v"],
     magicBytes: [0x00, 0x00, 0x00], // MP4 starts with size bytes, then ftyp
-    maxSize: 100 * 1024 * 1024, // 100MB
+    maxSize: 1024 * 1024 * 1024, // 1GB
     skipMagicValidation: true, // MP4 has variable header, skip magic byte check
   },
   "video/quicktime": {
     extensions: [".mov"],
     magicBytes: [0x00, 0x00, 0x00],
-    maxSize: 100 * 1024 * 1024, // 100MB
+    maxSize: 1024 * 1024 * 1024, // 1GB
     skipMagicValidation: true,
   },
   "video/webm": {
     extensions: [".webm"],
     magicBytes: [0x1a, 0x45, 0xdf, 0xa3], // EBML header
+    maxSize: 1024 * 1024 * 1024, // 1GB
+  },
+  "video/x-msvideo": {
+    extensions: [".avi"],
+    magicBytes: [0x52, 0x49, 0x46, 0x46], // RIFF
+    maxSize: 1024 * 1024 * 1024, // 1GB
+  },
+  "video/x-matroska": {
+    extensions: [".mkv"],
+    magicBytes: [0x1a, 0x45, 0xdf, 0xa3], // EBML header
+    maxSize: 1024 * 1024 * 1024, // 1GB
+  },
+
+  // === Microsoft Office Documents ===
+  "application/msword": {
+    extensions: [".doc"],
+    magicBytes: [0xd0, 0xcf, 0x11, 0xe0], // OLE compound document
     maxSize: 100 * 1024 * 1024, // 100MB
+  },
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
+    extensions: [".docx"],
+    magicBytes: [0x50, 0x4b, 0x03, 0x04], // ZIP (OOXML)
+    maxSize: 100 * 1024 * 1024, // 100MB
+  },
+  "application/vnd.ms-excel": {
+    extensions: [".xls"],
+    magicBytes: [0xd0, 0xcf, 0x11, 0xe0], // OLE compound document
+    maxSize: 100 * 1024 * 1024, // 100MB
+  },
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+    extensions: [".xlsx"],
+    magicBytes: [0x50, 0x4b, 0x03, 0x04], // ZIP (OOXML)
+    maxSize: 100 * 1024 * 1024, // 100MB
+  },
+  "application/vnd.ms-powerpoint": {
+    extensions: [".ppt"],
+    magicBytes: [0xd0, 0xcf, 0x11, 0xe0], // OLE compound document
+    maxSize: 100 * 1024 * 1024, // 100MB
+  },
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": {
+    extensions: [".pptx"],
+    magicBytes: [0x50, 0x4b, 0x03, 0x04], // ZIP (OOXML)
+    maxSize: 100 * 1024 * 1024, // 100MB
+  },
+
+  // === Apple iWork Documents ===
+  "application/vnd.apple.pages": {
+    extensions: [".pages"],
+    magicBytes: [0x50, 0x4b, 0x03, 0x04], // ZIP
+    maxSize: 100 * 1024 * 1024, // 100MB
+  },
+  "application/vnd.apple.numbers": {
+    extensions: [".numbers"],
+    magicBytes: [0x50, 0x4b, 0x03, 0x04], // ZIP
+    maxSize: 100 * 1024 * 1024, // 100MB
+  },
+  "application/vnd.apple.keynote": {
+    extensions: [".key"],
+    magicBytes: [0x50, 0x4b, 0x03, 0x04], // ZIP
+    maxSize: 100 * 1024 * 1024, // 100MB
+  },
+
+  // === Text and Document formats ===
+  "text/plain": {
+    extensions: [".txt", ".text", ".log"],
+    magicBytes: [],
+    maxSize: 50 * 1024 * 1024, // 50MB
+    skipMagicValidation: true,
+  },
+  "text/csv": {
+    extensions: [".csv"],
+    magicBytes: [],
+    maxSize: 50 * 1024 * 1024, // 50MB
+    skipMagicValidation: true,
+  },
+  "application/rtf": {
+    extensions: [".rtf"],
+    magicBytes: [0x7b, 0x5c, 0x72, 0x74, 0x66], // {\rtf
+    maxSize: 50 * 1024 * 1024, // 50MB
+  },
+  "text/markdown": {
+    extensions: [".md", ".markdown"],
+    magicBytes: [],
+    maxSize: 50 * 1024 * 1024, // 50MB
+    skipMagicValidation: true,
+  },
+
+  // === Code files ===
+  "text/x-python": {
+    extensions: [".py", ".pyw"],
+    magicBytes: [],
+    maxSize: 50 * 1024 * 1024, // 50MB
+    skipMagicValidation: true,
+  },
+  "text/x-c": {
+    extensions: [".c", ".h"],
+    magicBytes: [],
+    maxSize: 50 * 1024 * 1024, // 50MB
+    skipMagicValidation: true,
+  },
+  "text/x-c++": {
+    extensions: [".cpp", ".hpp", ".cc", ".cxx"],
+    magicBytes: [],
+    maxSize: 50 * 1024 * 1024, // 50MB
+    skipMagicValidation: true,
+  },
+  "text/javascript": {
+    extensions: [".js", ".mjs"],
+    magicBytes: [],
+    maxSize: 50 * 1024 * 1024, // 50MB
+    skipMagicValidation: true,
+  },
+  "text/typescript": {
+    extensions: [".ts", ".tsx"],
+    magicBytes: [],
+    maxSize: 50 * 1024 * 1024, // 50MB
+    skipMagicValidation: true,
+  },
+  "text/x-java": {
+    extensions: [".java"],
+    magicBytes: [],
+    maxSize: 50 * 1024 * 1024, // 50MB
+    skipMagicValidation: true,
+  },
+  "text/x-csharp": {
+    extensions: [".cs"],
+    magicBytes: [],
+    maxSize: 50 * 1024 * 1024, // 50MB
+    skipMagicValidation: true,
+  },
+  "text/x-go": {
+    extensions: [".go"],
+    magicBytes: [],
+    maxSize: 50 * 1024 * 1024, // 50MB
+    skipMagicValidation: true,
+  },
+  "text/x-rust": {
+    extensions: [".rs"],
+    magicBytes: [],
+    maxSize: 50 * 1024 * 1024, // 50MB
+    skipMagicValidation: true,
+  },
+  "text/x-ruby": {
+    extensions: [".rb"],
+    magicBytes: [],
+    maxSize: 50 * 1024 * 1024, // 50MB
+    skipMagicValidation: true,
+  },
+  "text/x-php": {
+    extensions: [".php"],
+    magicBytes: [],
+    maxSize: 50 * 1024 * 1024, // 50MB
+    skipMagicValidation: true,
+  },
+  "text/x-swift": {
+    extensions: [".swift"],
+    magicBytes: [],
+    maxSize: 50 * 1024 * 1024, // 50MB
+    skipMagicValidation: true,
+  },
+  "text/x-kotlin": {
+    extensions: [".kt", ".kts"],
+    magicBytes: [],
+    maxSize: 50 * 1024 * 1024, // 50MB
+    skipMagicValidation: true,
+  },
+  "text/html": {
+    extensions: [".html", ".htm"],
+    magicBytes: [],
+    maxSize: 50 * 1024 * 1024, // 50MB
+    skipMagicValidation: true,
+  },
+  "text/css": {
+    extensions: [".css", ".scss", ".sass", ".less"],
+    magicBytes: [],
+    maxSize: 50 * 1024 * 1024, // 50MB
+    skipMagicValidation: true,
+  },
+  "application/json": {
+    extensions: [".json"],
+    magicBytes: [],
+    maxSize: 50 * 1024 * 1024, // 50MB
+    skipMagicValidation: true,
+  },
+  "application/xml": {
+    extensions: [".xml"],
+    magicBytes: [],
+    maxSize: 50 * 1024 * 1024, // 50MB
+    skipMagicValidation: true,
+  },
+  "text/x-yaml": {
+    extensions: [".yaml", ".yml"],
+    magicBytes: [],
+    maxSize: 50 * 1024 * 1024, // 50MB
+    skipMagicValidation: true,
+  },
+  "application/x-sh": {
+    extensions: [".sh", ".bash"],
+    magicBytes: [],
+    maxSize: 50 * 1024 * 1024, // 50MB
+    skipMagicValidation: true,
+  },
+  "text/x-sql": {
+    extensions: [".sql"],
+    magicBytes: [],
+    maxSize: 50 * 1024 * 1024, // 50MB
+    skipMagicValidation: true,
+  },
+
+  // === Archives (for reference, not extraction) ===
+  "application/zip": {
+    extensions: [".zip"],
+    magicBytes: [0x50, 0x4b, 0x03, 0x04], // PK
+    maxSize: 500 * 1024 * 1024, // 500MB
+  },
+  "application/x-rar-compressed": {
+    extensions: [".rar"],
+    magicBytes: [0x52, 0x61, 0x72, 0x21], // Rar!
+    maxSize: 500 * 1024 * 1024, // 500MB
+  },
+  "application/x-7z-compressed": {
+    extensions: [".7z"],
+    magicBytes: [0x37, 0x7a, 0xbc, 0xaf], // 7z
+    maxSize: 500 * 1024 * 1024, // 500MB
+  },
+  "application/gzip": {
+    extensions: [".gz", ".gzip"],
+    magicBytes: [0x1f, 0x8b],
+    maxSize: 500 * 1024 * 1024, // 500MB
   },
 } as const;
 
@@ -552,6 +824,19 @@ export function validatePin(pin: string): { valid: boolean; error?: string } {
 // ============================================
 
 /**
+ * Get MIME type from file extension
+ */
+function getMimeTypeFromExtension(filename: string): string | null {
+  const ext = filename.toLowerCase().slice(filename.lastIndexOf("."));
+  for (const [mimeType, config] of Object.entries(ALLOWED_FILE_TYPES)) {
+    if ((config.extensions as readonly string[]).includes(ext)) {
+      return mimeType;
+    }
+  }
+  return null;
+}
+
+/**
  * Valide un fichier de manière complète
  */
 export async function validateFile(
@@ -564,29 +849,61 @@ export async function validateFile(
 }> {
   const errors: string[] = [];
 
+  // Determine the effective MIME type (browser might not detect it correctly)
+  let effectiveMimeType = file.type;
+
+  // If browser didn't detect the type, try to determine from extension
+  if (!effectiveMimeType || effectiveMimeType === "application/octet-stream") {
+    const detectedMimeType = getMimeTypeFromExtension(file.name);
+    if (detectedMimeType) {
+      effectiveMimeType = detectedMimeType;
+    }
+  }
+
   // 1. Vérifier que le type MIME est autorisé
-  if (!(file.type in ALLOWED_FILE_TYPES)) {
-    errors.push(
-      `Type de fichier non autorisé: ${file.type}. Types acceptés: PDF, Images (JPG, PNG, GIF, WebP), Audio (MP3, WAV), Vidéo (MP4, MOV, WebM)`
-    );
+  if (!(effectiveMimeType in ALLOWED_FILE_TYPES)) {
+    // Check if extension is known even if MIME isn't
+    const extensionMime = getMimeTypeFromExtension(file.name);
+    if (extensionMime && extensionMime in ALLOWED_FILE_TYPES) {
+      effectiveMimeType = extensionMime;
+    } else {
+      errors.push(
+        `Type de fichier non autorisé: ${file.type || "inconnu"}. Types acceptés: PDF, Images, Documents Office/Pages, Audio, Vidéo, Fichiers de code, Archives`
+      );
+    }
+  }
+
+  // Skip further validation if type is not allowed
+  if (errors.length > 0) {
+    const sanitizedName = sanitizeFilename(file.name);
+    return { valid: false, sanitizedName, errors };
   }
 
   // 2. Valider l'extension
-  const extValidation = validateFileExtension(file.name, file.type);
+  const extValidation = validateFileExtension(file.name, effectiveMimeType);
   if (!extValidation.valid && extValidation.error) {
     errors.push(extValidation.error);
   }
 
   // 3. Valider la taille
-  const sizeValidation = validateFileSize(file.size, file.type);
+  const sizeValidation = validateFileSize(file.size, effectiveMimeType);
   if (!sizeValidation.valid && sizeValidation.error) {
     errors.push(sizeValidation.error);
   }
 
-  // 4. Valider les magic bytes (contenu réel)
-  const magicValidation = validateFileMagicBytes(buffer, file.type);
-  if (!magicValidation.valid && magicValidation.error) {
-    errors.push(magicValidation.error);
+  // 4. Valider les magic bytes (contenu réel) - only for types that require it
+  const fileConfig = ALLOWED_FILE_TYPES[effectiveMimeType as keyof typeof ALLOWED_FILE_TYPES];
+  if (fileConfig && !("skipMagicValidation" in fileConfig && fileConfig.skipMagicValidation)) {
+    const magicValidation = validateFileMagicBytes(buffer, effectiveMimeType);
+    if (!magicValidation.valid && magicValidation.error) {
+      // For text-based files, be more lenient
+      const isTextBased = effectiveMimeType.startsWith("text/") ||
+        effectiveMimeType === "application/json" ||
+        effectiveMimeType === "application/xml";
+      if (!isTextBased) {
+        errors.push(magicValidation.error);
+      }
+    }
   }
 
   // 5. Sanitize le nom du fichier

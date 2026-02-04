@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, X, FileText, File, Image as ImageIcon, FileCheck, Cloud, Sparkles, Wand2, FolderOpen, Loader2, Music, Video, FolderUp, Folder } from "lucide-react";
+import { Upload, X, FileText, File, Image as ImageIcon, FileCheck, Cloud, Sparkles, Wand2, FolderOpen, Loader2, Music, Video, FolderUp, Folder, FileCode, FileSpreadsheet, Presentation, Archive } from "lucide-react";
 
 type AIStatus = {
   allowed: boolean;
@@ -61,14 +61,12 @@ export default function UploadPage() {
     setIsDragging(false);
 
     const droppedFiles = Array.from(e.dataTransfer.files);
+    // Accept most files - let the backend validate
     const validFiles = droppedFiles.filter(file => {
-      const validTypes = [
-        'application/pdf',
-        'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
-        'audio/mpeg', 'audio/wav', 'audio/x-wav',
-        'video/mp4', 'video/quicktime', 'video/webm'
-      ];
-      return validTypes.includes(file.type);
+      // Block only executable files
+      const blockedExtensions = ['.exe', '.bat', '.cmd', '.msi', '.dll', '.scr', '.com'];
+      const ext = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
+      return !blockedExtensions.includes(ext);
     });
 
     setFiles(prev => [...prev, ...validFiles]);
@@ -92,21 +90,18 @@ export default function UploadPage() {
       const firstPath = (fileList[0] as any).webkitRelativePath || "";
       const rootFolderName = firstPath.split("/")[0] || "Dossier importé";
 
-      // Filter and map files with their relative paths
-      const validTypes = [
-        'application/pdf',
-        'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
-        'audio/mpeg', 'audio/wav', 'audio/x-wav',
-        'video/mp4', 'video/quicktime', 'video/webm'
-      ];
+      // Block only executable files
+      const blockedExtensions = ['.exe', '.bat', '.cmd', '.msi', '.dll', '.scr', '.com'];
 
       const filesWithPaths: FileWithPath[] = fileList
         .filter(file => {
           // Skip hidden files and directories
           const path = (file as any).webkitRelativePath || file.name;
           if (path.includes("/.") || path.startsWith(".")) return false;
-          // Check file type (allow all if type is empty - browser may not detect some types)
-          return file.type === "" || validTypes.includes(file.type);
+          // Skip blocked executable types
+          const ext = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
+          if (blockedExtensions.includes(ext)) return false;
+          return true;
         })
         .map(file => ({
           file,
@@ -287,10 +282,35 @@ export default function UploadPage() {
   };
 
   const getFileIcon = (file: File) => {
-    if (file.type.startsWith("image/")) return ImageIcon;
-    if (file.type === "application/pdf") return FileText;
-    if (file.type.startsWith("audio/")) return Music;
-    if (file.type.startsWith("video/")) return Video;
+    const ext = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
+
+    // Images
+    if (file.type.startsWith("image/") || ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.tiff', '.heic'].includes(ext)) {
+      return ImageIcon;
+    }
+    // PDF
+    if (file.type === "application/pdf" || ext === '.pdf') return FileText;
+    // Audio
+    if (file.type.startsWith("audio/") || ['.mp3', '.wav', '.ogg', '.flac', '.aac', '.m4a'].includes(ext)) {
+      return Music;
+    }
+    // Video
+    if (file.type.startsWith("video/") || ['.mp4', '.mov', '.webm', '.avi', '.mkv'].includes(ext)) {
+      return Video;
+    }
+    // Spreadsheets
+    if (['.xls', '.xlsx', '.numbers', '.csv'].includes(ext)) return FileSpreadsheet;
+    // Presentations
+    if (['.ppt', '.pptx', '.key'].includes(ext)) return Presentation;
+    // Code files
+    if (['.py', '.js', '.ts', '.tsx', '.c', '.cpp', '.h', '.java', '.cs', '.go', '.rs', '.rb', '.php', '.swift', '.kt', '.html', '.css', '.scss', '.json', '.xml', '.yaml', '.yml', '.sh', '.sql', '.md'].includes(ext)) {
+      return FileCode;
+    }
+    // Archives
+    if (['.zip', '.rar', '.7z', '.gz', '.tar'].includes(ext)) return Archive;
+    // Documents (Word, Pages, etc.)
+    if (['.doc', '.docx', '.pages', '.rtf', '.txt'].includes(ext)) return FileText;
+
     return File;
   };
 
@@ -351,7 +371,7 @@ export default function UploadPage() {
           <input
             type="file"
             multiple
-            accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.mp3,.wav,.wave,.mp4,.m4v,.mov,.webm"
+            accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.svg,.bmp,.tiff,.tif,.heic,.heif,.mp3,.wav,.wave,.ogg,.flac,.aac,.m4a,.mp4,.m4v,.mov,.webm,.avi,.mkv,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.pages,.numbers,.key,.txt,.csv,.rtf,.md,.markdown,.py,.c,.h,.cpp,.hpp,.js,.ts,.tsx,.java,.cs,.go,.rs,.rb,.php,.swift,.kt,.html,.htm,.css,.scss,.json,.xml,.yaml,.yml,.sh,.sql,.zip,.rar,.7z,.gz"
             onChange={handleFileSelect}
             className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
           />
@@ -371,11 +391,11 @@ export default function UploadPage() {
             </div>
 
             <div className="flex flex-wrap justify-center gap-1.5">
-              <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-[10px] font-medium text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">PDF</span>
-              <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-[10px] font-medium text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">JPG</span>
-              <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-[10px] font-medium text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">PNG</span>
-              <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-[10px] font-medium text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">MP3</span>
-              <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-[10px] font-medium text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">MP4</span>
+              <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-[10px] font-medium text-red-600 dark:bg-red-500/20 dark:text-red-400">PDF</span>
+              <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-[10px] font-medium text-green-600 dark:bg-green-500/20 dark:text-green-400">Images</span>
+              <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-[10px] font-medium text-blue-600 dark:bg-blue-500/20 dark:text-blue-400">Office</span>
+              <span className="rounded-full bg-purple-100 px-2.5 py-0.5 text-[10px] font-medium text-purple-600 dark:bg-purple-500/20 dark:text-purple-400">Code</span>
+              <span className="rounded-full bg-orange-100 px-2.5 py-0.5 text-[10px] font-medium text-orange-600 dark:bg-orange-500/20 dark:text-orange-400">Audio/Vidéo</span>
             </div>
           </div>
         </div>
