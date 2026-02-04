@@ -11,7 +11,7 @@ export default async function MyFilesPage() {
     redirect("/login");
   }
 
-  // Récupérer tous les dossiers avec le nombre de documents
+  // Récupérer tous les dossiers avec le nombre de documents et sous-dossiers
   const folders = await db.folder.findMany({
     where: {
       userId: session.user.id,
@@ -20,6 +20,7 @@ export default async function MyFilesPage() {
       _count: {
         select: {
           documents: true,
+          children: true,
         },
       },
     },
@@ -57,6 +58,8 @@ export default async function MyFilesPage() {
       icon: folder.icon || "folder",
       isDefault: false,
       documentCount: Number(folder._count.documents),
+      childrenCount: Number(folder._count.children),
+      parentId: folder.parentId,
       createdAt: folder.createdAt.toISOString(),
       hasPin: !!folder.pin,
     }));

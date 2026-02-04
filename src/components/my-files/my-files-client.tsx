@@ -15,6 +15,7 @@ import {
   X,
   Lock,
   ChevronLeft,
+  ChevronRight,
   Music,
   Video,
   Share2,
@@ -23,6 +24,8 @@ import {
   Download,
   Loader2,
   CheckCheck,
+  Home,
+  Plus,
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { PinModal } from "@/components/folders/pin-modal";
@@ -37,6 +40,8 @@ type FolderType = {
   icon: string;
   isDefault: boolean;
   documentCount: number;
+  childrenCount?: number;
+  parentId: string | null;
   createdAt: string;
   hasPin?: boolean;
 };
@@ -95,6 +100,11 @@ export function MyFilesClient({
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [isBulkDownloading, setIsBulkDownloading] = useState(false);
 
+  // Subfolder navigation state
+  const [currentParentId, setCurrentParentId] = useState<string | null>(null);
+  const [folderPath, setFolderPath] = useState<FolderType[]>([]);
+  const [creatingInParent, setCreatingInParent] = useState<string | null>(null);
+
   useEffect(() => {
     if (searchParams.get("create") === "true") {
       setIsCreatingFolder(true);
@@ -117,6 +127,7 @@ export function MyFilesClient({
           name: newFolderName.trim(),
           color: newFolderColor,
           pin: enablePin ? newFolderPin : undefined,
+          parentId: creatingInParent || currentParentId,
         }),
       });
 
@@ -126,6 +137,7 @@ export function MyFilesClient({
         setNewFolderColor("#3B82F6");
         setNewFolderPin("");
         setEnablePin(false);
+        setCreatingInParent(null);
         router.refresh();
       } else {
         alert(t("errorCreatingFolder"));
@@ -222,7 +234,40 @@ export function MyFilesClient({
     setNewFolderColor("#3B82F6");
     setNewFolderPin("");
     setEnablePin(false);
+    setCreatingInParent(null);
   };
+
+  // Navigate into a subfolder
+  const navigateIntoFolder = (folder: FolderType) => {
+    setFolderPath([...folderPath, folder]);
+    setCurrentParentId(folder.id);
+  };
+
+  // Navigate back to parent
+  const navigateBack = () => {
+    if (folderPath.length === 0) return;
+    const newPath = [...folderPath];
+    newPath.pop();
+    setFolderPath(newPath);
+    setCurrentParentId(newPath.length > 0 ? newPath[newPath.length - 1].id : null);
+  };
+
+  // Navigate to a specific level in the path
+  const navigateToLevel = (index: number) => {
+    if (index < 0) {
+      setFolderPath([]);
+      setCurrentParentId(null);
+    } else {
+      const newPath = folderPath.slice(0, index + 1);
+      setFolderPath(newPath);
+      setCurrentParentId(newPath[newPath.length - 1].id);
+    }
+  };
+
+  // Get folders at current level (filtered by parentId)
+  const foldersAtCurrentLevel = folders.filter(
+    f => f.parentId === currentParentId
+  );
 
   const filteredDocuments = selectedFolder
     ? documents.filter((doc) => doc.folderId === selectedFolder)
@@ -558,31 +603,71 @@ export function MyFilesClient({
         {/* Folders List */}
         <div className={`lg:col-span-4 ${isMobileDocumentsView ? 'hidden lg:block' : ''}`}>
           <div className="rounded-2xl lg:rounded-3xl bg-white p-4 lg:p-5 shadow-lg shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
-            {/* Uncategorized */}
-            <button
-              onClick={() => handleFolderClick(null)}
-              className={`mb-3 flex w-full items-center gap-3 rounded-xl p-3 transition-all ${
-                selectedFolder === null && showDocuments
-                  ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
-                  : "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-white/5"
-              }`}
-            >
-              <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-                selectedFolder === null && showDocuments
-                  ? "bg-blue-100 dark:bg-blue-500/20"
-                  : "bg-neutral-100 dark:bg-neutral-700/50"
-              }`}>
-                <FolderOpen className="h-5 w-5" />
+            {/* Breadcrumb Navigation */}
+            {folderPath.length > 0 && (
+              <div className="mb-3 flex items-center gap-1 text-sm overflow-x-auto pb-2">
+                <button
+                  onClick={() => navigateToLevel(-1)}
+                  className="flex items-center gap-1 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 flex-shrink-0"
+                >
+                  <Home className="h-4 w-4" />
+                </button>
+                {folderPath.map((folder, index) => (
+                  <div key={folder.id} className="flex items-center gap-1 flex-shrink-0">
+                    <ChevronRight className="h-4 w-4 text-neutral-400" />
+                    <button
+                      onClick={() => navigateToLevel(index)}
+                      className={`truncate max-w-[100px] ${
+                        index === folderPath.length - 1
+                          ? "font-medium text-violet-600 dark:text-violet-400"
+                          : "text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
+                      }`}
+                    >
+                      {folder.name}
+                    </button>
+                  </div>
+                ))}
               </div>
-              <span className="flex-1 text-left font-medium truncate">{t("uncategorized")}</span>
-              <span className="text-sm text-neutral-400 flex-shrink-0">
-                {documents.filter((d) => !d.folderId).length}
-              </span>
-            </button>
+            )}
 
-            {/* User Folders */}
+            {/* Back button when in subfolder */}
+            {currentParentId && (
+              <button
+                onClick={navigateBack}
+                className="mb-3 flex w-full items-center gap-2 rounded-xl p-2 text-sm text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-white/5"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span>Retour</span>
+              </button>
+            )}
+
+            {/* Uncategorized - only show at root level */}
+            {!currentParentId && (
+              <button
+                onClick={() => handleFolderClick(null)}
+                className={`mb-3 flex w-full items-center gap-3 rounded-xl p-3 transition-all ${
+                  selectedFolder === null && showDocuments
+                    ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
+                    : "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-white/5"
+                }`}
+              >
+                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+                  selectedFolder === null && showDocuments
+                    ? "bg-blue-100 dark:bg-blue-500/20"
+                    : "bg-neutral-100 dark:bg-neutral-700/50"
+                }`}>
+                  <FolderOpen className="h-5 w-5" />
+                </div>
+                <span className="flex-1 text-left font-medium truncate">{t("uncategorized")}</span>
+                <span className="text-sm text-neutral-400 flex-shrink-0">
+                  {documents.filter((d) => !d.folderId).length}
+                </span>
+              </button>
+            )}
+
+            {/* User Folders at current level */}
             <div className="space-y-2">
-              {folders.map((folder) => (
+              {foldersAtCurrentLevel.map((folder) => (
                 <div
                   key={folder.id}
                   className={`group flex items-center gap-3 rounded-xl p-3 transition-all ${
@@ -591,16 +676,29 @@ export function MyFilesClient({
                       : "hover:bg-neutral-100 dark:hover:bg-white/5"
                   }`}
                 >
-                  <button
-                    onClick={() => handleFolderClick(folder)}
-                    className="flex flex-1 items-center gap-3 text-left min-w-0"
-                  >
+                  {/* Navigate into folder (if has children) */}
+                  {(folder.childrenCount ?? 0) > 0 ? (
+                    <button
+                      onClick={() => navigateIntoFolder(folder)}
+                      className="flex h-10 w-10 items-center justify-center rounded-xl flex-shrink-0 hover:ring-2 hover:ring-violet-500/30"
+                      style={{ backgroundColor: folder.color + "20" }}
+                      title="Ouvrir le dossier"
+                    >
+                      <Folder className="h-5 w-5" style={{ color: folder.color }} />
+                    </button>
+                  ) : (
                     <div
                       className="flex h-10 w-10 items-center justify-center rounded-xl flex-shrink-0"
                       style={{ backgroundColor: folder.color + "20" }}
                     >
                       <Folder className="h-5 w-5" style={{ color: folder.color }} />
                     </div>
+                  )}
+
+                  <button
+                    onClick={() => handleFolderClick(folder)}
+                    className="flex flex-1 items-center gap-2 text-left min-w-0"
+                  >
                     <div className="flex-1 min-w-0">
                       <span className={`block truncate font-medium ${
                         selectedFolder === folder.id
@@ -609,18 +707,37 @@ export function MyFilesClient({
                       }`}>
                         {folder.name}
                       </span>
-                      {folder.hasPin && (
-                        <span className="text-xs text-neutral-400 flex items-center gap-1">
-                          <Lock className="h-3 w-3" />
-                          {t("protected")}
-                        </span>
-                      )}
+                      <div className="flex items-center gap-2 text-xs text-neutral-400">
+                        {folder.hasPin && (
+                          <span className="flex items-center gap-1">
+                            <Lock className="h-3 w-3" />
+                            {t("protected")}
+                          </span>
+                        )}
+                        {(folder.childrenCount ?? 0) > 0 && (
+                          <span className="flex items-center gap-1">
+                            <Folder className="h-3 w-3" />
+                            {folder.childrenCount} sous-dossier{(folder.childrenCount ?? 0) > 1 ? 's' : ''}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </button>
 
                   <span className="text-sm text-neutral-400 flex-shrink-0">{folder.documentCount}</span>
 
                   <div className="flex gap-1">
+                    {/* Add subfolder button */}
+                    <button
+                      onClick={() => {
+                        setCreatingInParent(folder.id);
+                        setIsCreatingFolder(true);
+                      }}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-violet-100 hover:text-violet-600 dark:hover:bg-violet-500/20 dark:hover:text-violet-400"
+                      title="Créer un sous-dossier"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
                     <button
                       onClick={() => startEditFolder(folder)}
                       className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-200 hover:text-neutral-600 dark:hover:bg-neutral-600 dark:hover:text-neutral-300"
@@ -638,12 +755,30 @@ export function MyFilesClient({
               ))}
             </div>
 
-            {folders.length === 0 && (
+            {foldersAtCurrentLevel.length === 0 && !currentParentId && (
               <div className="mt-4 rounded-xl border-2 border-dashed border-neutral-200 p-6 text-center dark:border-neutral-700">
                 <Folder className="mx-auto h-8 w-8 text-neutral-300 dark:text-neutral-600" />
                 <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
                   {t("noFoldersYet")}
                 </p>
+              </div>
+            )}
+
+            {foldersAtCurrentLevel.length === 0 && currentParentId && (
+              <div className="mt-4 rounded-xl border-2 border-dashed border-neutral-200 p-6 text-center dark:border-neutral-700">
+                <Folder className="mx-auto h-8 w-8 text-neutral-300 dark:text-neutral-600" />
+                <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
+                  Aucun sous-dossier
+                </p>
+                <button
+                  onClick={() => {
+                    setCreatingInParent(currentParentId);
+                    setIsCreatingFolder(true);
+                  }}
+                  className="mt-3 text-sm text-violet-500 hover:text-violet-600 dark:text-violet-400 dark:hover:text-violet-300"
+                >
+                  Créer un sous-dossier
+                </button>
               </div>
             )}
           </div>

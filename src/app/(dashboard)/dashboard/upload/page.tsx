@@ -16,6 +16,11 @@ type FileWithPath = {
   file: File;
   relativePath: string;
   folderName: string | null;
+  subfolderPath: string | null; // The full path from root to parent folder (e.g., "root/sub1/sub2")
+};
+
+type FolderStructure = {
+  [folderPath: string]: string; // Maps folder path to folder ID
 };
 
 export default function UploadPage() {
@@ -103,11 +108,20 @@ export default function UploadPage() {
           if (blockedExtensions.includes(ext)) return false;
           return true;
         })
-        .map(file => ({
-          file,
-          relativePath: (file as any).webkitRelativePath || file.name,
-          folderName: rootFolderName,
-        }));
+        .map(file => {
+          const relativePath = (file as any).webkitRelativePath || file.name;
+          const pathParts = relativePath.split("/");
+          // Remove the filename to get the folder path
+          pathParts.pop();
+          const subfolderPath = pathParts.length > 0 ? pathParts.join("/") : null;
+
+          return {
+            file,
+            relativePath,
+            folderName: rootFolderName,
+            subfolderPath, // e.g., "rootFolder/subfolder1/subfolder2"
+          };
+        });
 
       if (filesWithPaths.length > 0) {
         setFolderFiles(filesWithPaths);
@@ -140,6 +154,44 @@ export default function UploadPage() {
     }
   };
 
+  // Helper function to create or get a folder
+  const createOrGetFolder = async (
+    name: string,
+    parentId: string | null = null
+  ): Promise<string | null> => {
+    try {
+      const folderResponse = await fetch("/api/folders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          color: "#3B82F6",
+          icon: "folder",
+          parentId,
+        }),
+      });
+
+      if (folderResponse.ok) {
+        const folderData = await folderResponse.json();
+        return folderData.id;
+      } else {
+        // Folder might already exist, try to find it
+        const queryParam = parentId ? `?parentId=${parentId}` : "?parentId=root";
+        const listResponse = await fetch(`/api/folders${queryParam}`);
+        if (listResponse.ok) {
+          const folders = await listResponse.json();
+          const existingFolder = folders.find((f: any) => f.name === name);
+          if (existingFolder) {
+            return existingFolder.id;
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error creating folder:", err);
+    }
+    return null;
+  };
+
   const handleUpload = async () => {
     const hasFiles = files.length > 0;
     const hasFolderFiles = folderFiles.length > 0;
@@ -152,50 +204,62 @@ export default function UploadPage() {
     setAiResults({});
 
     let hasError = false;
-    let targetFolderId: string | null = null;
+    const folderIdMap: FolderStructure = {}; // Maps folder path -> folder ID
 
-    // If uploading a folder, create it first
+    // If uploading a folder with subfolders, create the entire folder structure first
     if (hasFolderFiles && folderName) {
-      try {
-        const folderResponse = await fetch("/api/folders", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: folderName,
-            color: "#3B82F6",
-            icon: "folder",
-          }),
-        });
-
-        if (folderResponse.ok) {
-          const folderData = await folderResponse.json();
-          targetFolderId = folderData.id;
-        } else {
-          // Folder might already exist, try to find it
-          const listResponse = await fetch("/api/folders");
-          if (listResponse.ok) {
-            const folders = await listResponse.json();
-            const existingFolder = folders.find((f: any) => f.name === folderName);
-            if (existingFolder) {
-              targetFolderId = existingFolder.id;
-            }
-          }
+      // Get all unique folder paths and sort them by depth (parents first)
+      const allFolderPaths = new Set<string>();
+      folderFiles.forEach(f => {
+        if (f.subfolderPath) {
+          // Add all parent paths too
+          const parts = f.subfolderPath.split("/");
+          let currentPath = "";
+          parts.forEach(part => {
+            currentPath = currentPath ? `${currentPath}/${part}` : part;
+            allFolderPaths.add(currentPath);
+          });
         }
-      } catch (err) {
-        console.error("Error creating folder:", err);
+      });
+
+      // Sort by depth (fewer slashes = created first)
+      const sortedPaths = Array.from(allFolderPaths).sort((a, b) => {
+        return a.split("/").length - b.split("/").length;
+      });
+
+      console.log("[Upload] Creating folder structure:", sortedPaths);
+
+      // Create each folder in order
+      for (const folderPath of sortedPaths) {
+        const parts = folderPath.split("/");
+        const currentFolderName = parts[parts.length - 1];
+        const parentPath = parts.slice(0, -1).join("/") || null;
+        const parentId = parentPath ? folderIdMap[parentPath] : null;
+
+        console.log(`[Upload] Creating folder: "${currentFolderName}" with parent: "${parentPath}" (parentId: ${parentId})`);
+
+        const folderId = await createOrGetFolder(currentFolderName, parentId);
+        if (folderId) {
+          folderIdMap[folderPath] = folderId;
+          console.log(`[Upload] Folder created: ${folderPath} -> ${folderId}`);
+        }
       }
     }
 
     // Upload files (either individual or from folder)
     const filesToUpload = hasFolderFiles
-      ? folderFiles.map(f => ({ file: f.file, name: f.file.name }))
-      : files.map(f => ({ file: f, name: f.name }));
+      ? folderFiles.map(f => ({
+          file: f.file,
+          name: f.file.name,
+          folderId: f.subfolderPath ? folderIdMap[f.subfolderPath] : null,
+        }))
+      : files.map(f => ({ file: f, name: f.name, folderId: null }));
 
-    for (const { file, name } of filesToUpload) {
+    for (const { file, name, folderId } of filesToUpload) {
       const formData = new FormData();
       formData.append("file", file);
-      if (targetFolderId) {
-        formData.append("folderId", targetFolderId);
+      if (folderId) {
+        formData.append("folderId", folderId);
       }
 
       try {
@@ -207,10 +271,10 @@ export default function UploadPage() {
 
         if (response.ok) {
           const uploadData = await response.json();
-          setUploadProgress(prev => ({ ...prev, [name]: aiSortingEnabled && !targetFolderId ? 50 : 100 }));
+          setUploadProgress(prev => ({ ...prev, [name]: aiSortingEnabled && !folderId ? 50 : 100 }));
 
           // Step 2: If AI sorting is enabled and NOT uploading to a specific folder, analyze and sort
-          if (aiSortingEnabled && !targetFolderId && uploadData.document?.id) {
+          if (aiSortingEnabled && !folderId && uploadData.document?.id) {
             try {
               console.log("[Upload] Starting AI analysis for:", name, "type:", file.type);
               const analyzeResponse = await fetch("/api/documents/analyze", {
@@ -440,32 +504,45 @@ export default function UploadPage() {
       </div>
 
       {/* Selected Folder Info */}
-      {folderName && folderFiles.length > 0 && (
-        <div className="rounded-3xl bg-gradient-to-r from-violet-50 to-purple-50 p-5 dark:from-violet-500/10 dark:to-purple-500/10 border border-violet-200 dark:border-violet-500/20">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-500/20">
-                <Folder className="h-6 w-6 text-violet-600 dark:text-violet-400" />
+      {folderName && folderFiles.length > 0 && (() => {
+        // Count unique subfolders
+        const uniqueFolders = new Set(
+          folderFiles
+            .filter(f => f.subfolderPath)
+            .map(f => f.subfolderPath)
+        );
+        const subfolderCount = uniqueFolders.size - 1; // Exclude root folder
+
+        return (
+          <div className="rounded-3xl bg-gradient-to-r from-violet-50 to-purple-50 p-5 dark:from-violet-500/10 dark:to-purple-500/10 border border-violet-200 dark:border-violet-500/20">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-500/20">
+                  <Folder className="h-6 w-6 text-violet-600 dark:text-violet-400" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-neutral-900 dark:text-white">
+                    {folderName}
+                  </h3>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                    {folderFiles.length} fichier{folderFiles.length > 1 ? "s" : ""}
+                    {subfolderCount > 0 && (
+                      <span> • {subfolderCount} sous-dossier{subfolderCount > 1 ? "s" : ""}</span>
+                    )}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-semibold text-neutral-900 dark:text-white">
-                  {folderName}
-                </h3>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                  {folderFiles.length} fichier{folderFiles.length > 1 ? "s" : ""} à importer
-                </p>
-              </div>
+              <button
+                onClick={clearFolder}
+                disabled={isUploading}
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-violet-600 transition-colors hover:bg-violet-100 dark:text-violet-400 dark:hover:bg-violet-500/20"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
-            <button
-              onClick={clearFolder}
-              disabled={isUploading}
-              className="flex h-9 w-9 items-center justify-center rounded-xl text-violet-600 transition-colors hover:bg-violet-100 dark:text-violet-400 dark:hover:bg-violet-500/20"
-            >
-              <X className="h-5 w-5" />
-            </button>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* AI Sorting Toggle */}
       {files.length > 0 && aiStatus && (
@@ -665,9 +742,17 @@ export default function UploadPage() {
                     <p className="truncate font-medium text-neutral-900 dark:text-white">
                       {fileData.file.name}
                     </p>
-                    <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                      {formatFileSize(fileData.file.size)}
-                    </p>
+                    <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
+                      <span>{formatFileSize(fileData.file.size)}</span>
+                      {fileData.subfolderPath && fileData.subfolderPath !== folderName && (
+                        <>
+                          <span>•</span>
+                          <span className="truncate text-violet-500 dark:text-violet-400">
+                            📁 {fileData.subfolderPath}
+                          </span>
+                        </>
+                      )}
+                    </div>
 
                     {fileError && (
                       <p className="mt-1 text-sm text-red-600 dark:text-red-400">

@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 import { createNotification } from "@/lib/notifications";
 
 // GET - List all folders for the current user
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -14,14 +14,25 @@ export async function GET() {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
+    // Check for parentId query param
+    const { searchParams } = new URL(req.url);
+    const parentId = searchParams.get("parentId");
+
     const folders = await db.folder.findMany({
       where: {
         userId: session.user.id,
+        // If parentId is specified, filter by it; if "root" get only root folders
+        ...(parentId === "root"
+          ? { parentId: null }
+          : parentId
+          ? { parentId }
+          : {}),
       },
       include: {
         _count: {
           select: {
             documents: true,
+            children: true,
           },
         },
       },
@@ -35,6 +46,7 @@ export async function GET() {
       ...folder,
       isDefault: folder.isDefault === 1,
       documentCount: Number(folder._count.documents),
+      childrenCount: Number(folder._count.children),
       hasPin: !!folder.pin,
       pin: undefined, // Don't send PIN hash to client
       _count: undefined,
@@ -59,13 +71,29 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
-    const { name, color, icon, pin } = await req.json();
+    const { name, color, icon, pin, parentId } = await req.json();
 
     if (!name || name.trim().length === 0) {
       return NextResponse.json(
         { error: "Folder name is required" },
         { status: 400 }
       );
+    }
+
+    // Verify parent folder belongs to user if provided
+    if (parentId) {
+      const parentFolder = await db.folder.findFirst({
+        where: {
+          id: parentId,
+          userId: session.user.id,
+        },
+      });
+      if (!parentFolder) {
+        return NextResponse.json(
+          { error: "Dossier parent non trouvé" },
+          { status: 404 }
+        );
+      }
     }
 
     // Hash PIN if provided
@@ -86,12 +114,14 @@ export async function POST(req: Request) {
         color: color || "#3B82F6",
         icon: icon || "folder",
         userId: session.user.id,
+        parentId: parentId || null,
         pin: hashedPin,
       },
       include: {
         _count: {
           select: {
             documents: true,
+            children: true,
           },
         },
       },
@@ -101,6 +131,7 @@ export async function POST(req: Request) {
       ...folder,
       isDefault: folder.isDefault === 1,
       documentCount: Number(folder._count.documents),
+      childrenCount: Number(folder._count.children),
       hasPin: !!folder.pin,
       pin: undefined, // Don't send PIN hash to client
       _count: undefined,
