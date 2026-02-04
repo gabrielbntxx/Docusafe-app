@@ -26,6 +26,7 @@ import {
   Home,
   Plus,
   GripVertical,
+  Star,
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { PinModal } from "@/components/folders/pin-modal";
@@ -87,6 +88,35 @@ export function MyFilesClient({
   const [localFolders, setLocalFolders] = useState<FolderType[]>(initialFolders);
   const [localDocuments, setLocalDocuments] = useState<DocumentType[]>(initialDocuments);
 
+  // Favorites stored in localStorage
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+
+  // Load favorites from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem("folderFavorites");
+    if (stored) {
+      try {
+        setFavorites(new Set(JSON.parse(stored)));
+      } catch {
+        setFavorites(new Set());
+      }
+    }
+  }, []);
+
+  // Toggle favorite status
+  const toggleFavorite = (folderId: string) => {
+    setFavorites(prev => {
+      const newFavorites = new Set(prev);
+      if (newFavorites.has(folderId)) {
+        newFavorites.delete(folderId);
+      } else {
+        newFavorites.add(folderId);
+      }
+      localStorage.setItem("folderFavorites", JSON.stringify([...newFavorites]));
+      return newFavorites;
+    });
+  };
+
   // Sync with props when they change
   useEffect(() => {
     setLocalFolders(initialFolders);
@@ -127,10 +157,22 @@ export function MyFilesClient({
     }
   }, [searchParams]);
 
-  // Get subfolders of currently selected folder
+  // Sort folders with favorites first
+  const sortFoldersWithFavorites = useCallback((folders: FolderType[]) => {
+    return [...folders].sort((a, b) => {
+      const aFav = favorites.has(a.id);
+      const bFav = favorites.has(b.id);
+      if (aFav && !bFav) return -1;
+      if (!aFav && bFav) return 1;
+      return 0;
+    });
+  }, [favorites]);
+
+  // Get subfolders of currently selected folder (sorted with favorites first)
   const getSubfolders = useCallback((parentId: string | null) => {
-    return localFolders.filter(f => f.parentId === parentId);
-  }, [localFolders]);
+    const subfolders = localFolders.filter(f => f.parentId === parentId);
+    return sortFoldersWithFavorites(subfolders);
+  }, [localFolders, sortFoldersWithFavorites]);
 
   // Get documents in currently selected folder
   const getDocumentsInFolder = useCallback((folderId: string | null) => {
@@ -140,8 +182,8 @@ export function MyFilesClient({
     return localDocuments.filter(doc => doc.folderId === folderId);
   }, [localDocuments]);
 
-  // Root level folders (no parent)
-  const rootFolders = localFolders.filter(f => f.parentId === null);
+  // Root level folders (no parent, sorted with favorites first)
+  const rootFolders = sortFoldersWithFavorites(localFolders.filter(f => f.parentId === null));
 
   // Content of selected folder (subfolders + documents)
   const currentSubfolders = selectedFolder ? getSubfolders(selectedFolder) : [];
@@ -839,6 +881,22 @@ export function MyFilesClient({
                     </div>
                   </button>
 
+                  {/* Favorite star - always visible if favorited */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleFavorite(folder.id);
+                    }}
+                    className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all ${
+                      favorites.has(folder.id)
+                        ? "text-yellow-500"
+                        : "text-neutral-300 opacity-0 group-hover:opacity-100 hover:text-yellow-500 dark:text-neutral-600"
+                    }`}
+                    title={favorites.has(folder.id) ? "Retirer des favoris" : "Ajouter aux favoris"}
+                  >
+                    <Star className={`h-4 w-4 ${favorites.has(folder.id) ? "fill-current" : ""}`} />
+                  </button>
+
                   <span className="text-sm text-neutral-400 flex-shrink-0">{folder.documentCount}</span>
 
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1020,35 +1078,91 @@ export function MyFilesClient({
             {currentSubfolders.length > 0 && (
               <div className="mb-4">
                 <h3 className="text-xs font-medium uppercase tracking-wide text-neutral-400 mb-2">Sous-dossiers</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <div className="space-y-2">
                   {currentSubfolders.map((subfolder) => (
                     <div
                       key={subfolder.id}
                       onDragOver={(e) => handleDragOver(e, subfolder.id)}
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, subfolder.id)}
-                      onClick={() => openFolder(subfolder)}
-                      className={`group flex items-center gap-3 rounded-xl p-3 cursor-pointer transition-all ${
+                      className={`group flex items-center gap-3 rounded-xl p-3 transition-all ${
                         dropTargetFolder === subfolder.id && draggedDocument
                           ? "bg-violet-100 ring-2 ring-violet-500 dark:bg-violet-500/20"
                           : "bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700/50"
                       }`}
                     >
-                      <div
-                        className="flex h-10 w-10 items-center justify-center rounded-xl flex-shrink-0"
+                      <button
+                        onClick={() => openFolder(subfolder)}
+                        className="flex h-10 w-10 items-center justify-center rounded-xl flex-shrink-0 hover:ring-2 hover:ring-violet-500/30"
                         style={{ backgroundColor: subfolder.color + "20" }}
                       >
                         <Folder className="h-5 w-5" style={{ color: subfolder.color }} />
-                      </div>
-                      <div className="flex-1 min-w-0">
+                      </button>
+                      <button
+                        onClick={() => openFolder(subfolder)}
+                        className="flex-1 min-w-0 text-left"
+                      >
                         <span className="block truncate text-sm font-medium text-neutral-700 dark:text-neutral-300">
                           {subfolder.name}
                         </span>
                         <span className="text-xs text-neutral-400">
                           {subfolder.documentCount} doc{subfolder.documentCount !== 1 ? 's' : ''}
+                          {(subfolder.childrenCount ?? 0) > 0 && ` · ${subfolder.childrenCount} sous-dossier${(subfolder.childrenCount ?? 0) > 1 ? 's' : ''}`}
                         </span>
-                      </div>
+                      </button>
+
+                      {/* Favorite star */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite(subfolder.id);
+                        }}
+                        className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all ${
+                          favorites.has(subfolder.id)
+                            ? "text-yellow-500"
+                            : "text-neutral-300 opacity-0 group-hover:opacity-100 hover:text-yellow-500 dark:text-neutral-600"
+                        }`}
+                        title={favorites.has(subfolder.id) ? "Retirer des favoris" : "Ajouter aux favoris"}
+                      >
+                        <Star className={`h-4 w-4 ${favorites.has(subfolder.id) ? "fill-current" : ""}`} />
+                      </button>
+
                       {subfolder.hasPin && <Lock className="h-4 w-4 text-neutral-400 flex-shrink-0" />}
+
+                      {/* Action buttons */}
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCreatingInParent(subfolder.id);
+                            setIsCreatingFolder(true);
+                          }}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-violet-100 hover:text-violet-600 dark:hover:bg-violet-500/20 dark:hover:text-violet-400"
+                          title="Créer un sous-dossier"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            startEditFolder(subfolder);
+                          }}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-200 hover:text-neutral-600 dark:hover:bg-neutral-600 dark:hover:text-neutral-300"
+                          title="Modifier"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteFolder(subfolder.id, subfolder.name);
+                          }}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-500/20 dark:hover:text-red-400"
+                          title="Supprimer"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
