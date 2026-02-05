@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { X, Loader2, FileText, File, Image as ImageIcon, Music, Video, Check } from "lucide-react";
 
 // SVG Icons for cloud providers
@@ -107,7 +107,12 @@ export function CloudPicker({ isOpen, onClose, onFilesSelected }: CloudPickerPro
   // Open Google Drive Picker
   const openGoogleDrivePicker = async () => {
     if (!GOOGLE_CLIENT_ID || !GOOGLE_API_KEY) {
-      setError("Google Drive n'est pas configuré. Veuillez contacter l'administrateur.");
+      console.error("Missing Google config:", {
+        clientId: !!GOOGLE_CLIENT_ID,
+        apiKey: !!GOOGLE_API_KEY,
+        appId: !!GOOGLE_APP_ID
+      });
+      setError("Google Drive n'est pas configuré. Ajoutez NEXT_PUBLIC_GOOGLE_CLIENT_ID et NEXT_PUBLIC_GOOGLE_API_KEY.");
       return;
     }
 
@@ -115,48 +120,85 @@ export function CloudPicker({ isOpen, onClose, onFilesSelected }: CloudPickerPro
     setError(null);
 
     try {
+      console.log("[Google Drive] Loading scripts...");
       await loadGoogleScript();
+      console.log("[Google Drive] Scripts loaded successfully");
 
       // Initialize GAPI
-      await new Promise<void>((resolve) => {
-        window.gapi.load("picker", resolve);
+      await new Promise<void>((resolve, reject) => {
+        if (!window.gapi) {
+          reject(new Error("GAPI not loaded"));
+          return;
+        }
+        window.gapi.load("picker", { callback: resolve, onerror: reject });
       });
+      console.log("[Google Drive] Picker API loaded");
+
+      // Check if Google Identity Services is available
+      if (!window.google?.accounts?.oauth2) {
+        throw new Error("Google Identity Services not loaded");
+      }
 
       // Get OAuth token
       const tokenClient = window.google.accounts.oauth2.initTokenClient({
         client_id: GOOGLE_CLIENT_ID,
         scope: "https://www.googleapis.com/auth/drive.readonly",
         callback: (response: any) => {
+          console.log("[Google Drive] Token response:", response.error || "success");
+          if (response.error) {
+            setError(`Erreur d'authentification: ${response.error}`);
+            setIsLoadingGoogle(false);
+            return;
+          }
           if (response.access_token) {
             showGooglePicker(response.access_token);
           }
         },
+        error_callback: (error: any) => {
+          console.error("[Google Drive] Token error:", error);
+          setError("Erreur lors de l'authentification Google");
+          setIsLoadingGoogle(false);
+        },
       });
 
+      console.log("[Google Drive] Requesting access token...");
       tokenClient.requestAccessToken({ prompt: "consent" });
-    } catch (err) {
-      console.error("Google Drive error:", err);
-      setError("Impossible de se connecter à Google Drive");
-    } finally {
+    } catch (err: any) {
+      console.error("[Google Drive] Error:", err);
+      setError(`Impossible de se connecter à Google Drive: ${err.message || "erreur inconnue"}`);
       setIsLoadingGoogle(false);
     }
   };
 
   const showGooglePicker = (accessToken: string) => {
-    const view = new window.google.picker.DocsView()
-      .setIncludeFolders(false)
-      .setSelectFolderEnabled(false);
+    try {
+      const view = new window.google.picker.DocsView()
+        .setIncludeFolders(false)
+        .setSelectFolderEnabled(false);
 
-    const picker = new window.google.picker.PickerBuilder()
-      .addView(view)
-      .setOAuthToken(accessToken)
-      .setDeveloperKey(GOOGLE_API_KEY)
-      .setAppId(GOOGLE_APP_ID)
-      .setCallback((data: any) => handleGooglePickerCallback(data, accessToken))
-      .enableFeature(window.google.picker.Feature.MULTISELECT_ENABLED)
-      .build();
+      const picker = new window.google.picker.PickerBuilder()
+        .addView(view)
+        .setOAuthToken(accessToken)
+        .setDeveloperKey(GOOGLE_API_KEY)
+        .setAppId(GOOGLE_APP_ID)
+        .setCallback((data: any) => {
+          handleGooglePickerCallback(data, accessToken);
+          // Close loading when picker is dismissed
+          if (data.action === window.google.picker.Action.CANCEL ||
+              data.action === window.google.picker.Action.PICKED) {
+            setIsLoadingGoogle(false);
+          }
+        })
+        .enableFeature(window.google.picker.Feature.MULTISELECT_ENABLED)
+        .build();
 
-    picker.setVisible(true);
+      picker.setVisible(true);
+      console.log("[Google Drive] Picker opened");
+    } catch (err: any) {
+      console.error("[Google Drive] Picker error:", err);
+      setError(`Erreur lors de l'ouverture du sélecteur: ${err.message}`);
+      setIsLoadingGoogle(false);
+    }
   };
 
   const handleGooglePickerCallback = async (data: any, accessToken: string) => {
