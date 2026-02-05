@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, X, FileText, File, Image as ImageIcon, FileCheck, Cloud, Sparkles, Wand2, FolderOpen, Loader2, Music, Video, FolderUp, Folder, FileCode, FileSpreadsheet, Presentation, Archive } from "lucide-react";
+import { Upload, X, FileText, File, Image as ImageIcon, FileCheck, Cloud, Sparkles, Wand2, FolderOpen, Loader2, Music, Video, FolderUp, Folder, FileCode, FileSpreadsheet, Presentation, Archive, CloudCog } from "lucide-react";
+import { CloudPicker } from "@/components/cloud-picker/cloud-picker";
 
 type AIStatus = {
   allowed: boolean;
@@ -39,6 +40,9 @@ export default function UploadPage() {
   const [aiSortingEnabled, setAiSortingEnabled] = useState(false);
   const [aiStatus, setAiStatus] = useState<AIStatus | null>(null);
   const [aiResults, setAiResults] = useState<{ [key: string]: { category: string; type: string } }>({});
+
+  // Cloud picker state
+  const [isCloudPickerOpen, setIsCloudPickerOpen] = useState(false);
 
   // Fetch AI status on mount
   useEffect(() => {
@@ -152,6 +156,14 @@ export default function UploadPage() {
     if (folderInputRef.current) {
       folderInputRef.current.value = "";
     }
+  };
+
+  // Handle files from cloud picker
+  const handleCloudFilesSelected = (cloudFiles: File[]) => {
+    setFiles(prev => [...prev, ...cloudFiles]);
+    // Clear folder selection when adding cloud files
+    setFolderFiles([]);
+    setFolderName(null);
   };
 
   // Helper function to create or get a folder
@@ -420,7 +432,7 @@ export default function UploadPage() {
       )}
 
       {/* Upload Options Grid */}
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {/* Drop Zone - Files */}
         <div
           onDragOver={handleDragOver}
@@ -501,6 +513,36 @@ export default function UploadPage() {
             </div>
           </div>
         </div>
+
+        {/* Cloud Import Button */}
+        <button
+          onClick={() => setIsCloudPickerOpen(true)}
+          className="relative overflow-hidden rounded-3xl border-2 border-dashed p-8 text-center transition-all border-emerald-300 bg-white hover:border-emerald-400 hover:bg-emerald-50/50 dark:border-emerald-500/30 dark:bg-neutral-800/50 dark:hover:border-emerald-500/50 dark:hover:bg-emerald-500/5"
+        >
+          <div className="space-y-3">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-xl shadow-emerald-500/25">
+              <CloudCog className="h-8 w-8 text-white" />
+            </div>
+
+            <div>
+              <p className="text-lg font-semibold text-neutral-900 dark:text-white">
+                Depuis le cloud
+              </p>
+              <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                Google Drive, OneDrive
+              </p>
+            </div>
+
+            <div className="flex justify-center gap-2">
+              <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
+                Google Drive
+              </span>
+              <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-[10px] font-medium text-blue-600 dark:bg-blue-500/20 dark:text-blue-400">
+                OneDrive
+              </span>
+            </div>
+          </div>
+        </button>
       </div>
 
       {/* Selected Folder Info */}
@@ -835,6 +877,13 @@ export default function UploadPage() {
           </div>
         </div>
       )}
+
+      {/* Cloud Picker Modal */}
+      <CloudPicker
+        isOpen={isCloudPickerOpen}
+        onClose={() => setIsCloudPickerOpen(false)}
+        onFilesSelected={handleCloudFilesSelected}
+      />
     </div>
   );
 }
