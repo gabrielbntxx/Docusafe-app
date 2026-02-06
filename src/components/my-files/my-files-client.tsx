@@ -154,6 +154,7 @@ export function MyFilesClient({
 
   // Mobile move menu
   const [movingDocumentId, setMovingDocumentId] = useState<string | null>(null);
+  const [folderMenuId, setFolderMenuId] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
   // Detect mobile on mount
@@ -917,51 +918,75 @@ export function MyFilesClient({
 
                   <span className="text-xs lg:text-sm text-neutral-400 flex-shrink-0">{folder.documentCount}</span>
 
-                  {/* Action buttons - desktop only */}
-                  <div className="hidden lg:flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {/* Folder action menu */}
+                  <div className="relative flex-shrink-0">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setCreatingInParent(folder.id);
-                        setIsCreatingFolder(true);
+                        setFolderMenuId(folderMenuId === folder.id ? null : folder.id);
                       }}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-violet-100 hover:text-violet-600 dark:hover:bg-violet-500/20 dark:hover:text-violet-400"
-                      title="Créer un sous-dossier"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 lg:opacity-0 lg:group-hover:opacity-100 transition-all"
                     >
-                      <Plus className="h-4 w-4" />
+                      <MoreVertical className="h-4 w-4" />
                     </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setRulesFolder(folder);
-                      }}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-blue-500/20 dark:hover:text-blue-400"
-                      title={t("folderRules")}
-                    >
-                      <Settings2 className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        startEditFolder(folder);
-                      }}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-200 hover:text-neutral-600 dark:hover:bg-neutral-600 dark:hover:text-neutral-300"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteFolder(folder.id, folder.name);
-                      }}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-500/20 dark:hover:text-red-400"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
 
-                  {/* Mobile: chevron to indicate clickable */}
-                  <ChevronRight className="h-4 w-4 text-neutral-400 flex-shrink-0 lg:hidden" />
+                    {folderMenuId === folder.id && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setFolderMenuId(null)}
+                        />
+                        <div className="absolute right-0 top-full z-50 mt-1 w-52 rounded-xl border border-neutral-200 bg-white p-1.5 shadow-2xl dark:border-neutral-700 dark:bg-neutral-800">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCreatingInParent(folder.id);
+                              setIsCreatingFolder(true);
+                              setFolderMenuId(null);
+                            }}
+                            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                          >
+                            <Plus className="h-4 w-4 text-violet-500" />
+                            Sous-dossier
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRulesFolder(folder);
+                              setFolderMenuId(null);
+                            }}
+                            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                          >
+                            <Settings2 className="h-4 w-4 text-blue-500" />
+                            {t("folderRules")}
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startEditFolder(folder);
+                              setFolderMenuId(null);
+                            }}
+                            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                          >
+                            <Edit2 className="h-4 w-4 text-neutral-500" />
+                            {t("editFolder")}
+                          </button>
+                          <div className="my-1 border-t border-neutral-100 dark:border-neutral-700" />
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteFolder(folder.id, folder.name);
+                              setFolderMenuId(null);
+                            }}
+                            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            {t("delete")}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -1161,53 +1186,75 @@ export function MyFilesClient({
 
                       {subfolder.hasPin && <Lock className="h-4 w-4 text-neutral-400 flex-shrink-0" />}
 
-                      {/* Action buttons - desktop only */}
-                      <div className="hidden lg:flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {/* Subfolder action menu */}
+                      <div className="relative flex-shrink-0">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setCreatingInParent(subfolder.id);
-                            setIsCreatingFolder(true);
+                            setFolderMenuId(folderMenuId === subfolder.id ? null : subfolder.id);
                           }}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-violet-100 hover:text-violet-600 dark:hover:bg-violet-500/20 dark:hover:text-violet-400"
-                          title="Créer un sous-dossier"
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 lg:opacity-0 lg:group-hover:opacity-100 transition-all"
                         >
-                          <Plus className="h-4 w-4" />
+                          <MoreVertical className="h-4 w-4" />
                         </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setRulesFolder(subfolder);
-                          }}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-blue-500/20 dark:hover:text-blue-400"
-                          title={t("folderRules")}
-                        >
-                          <Settings2 className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            startEditFolder(subfolder);
-                          }}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-200 hover:text-neutral-600 dark:hover:bg-neutral-600 dark:hover:text-neutral-300"
-                          title="Modifier"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteFolder(subfolder.id, subfolder.name);
-                          }}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-500/20 dark:hover:text-red-400"
-                          title="Supprimer"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
 
-                      {/* Mobile: chevron to indicate clickable */}
-                      <ChevronRight className="h-4 w-4 text-neutral-400 flex-shrink-0 lg:hidden" />
+                        {folderMenuId === subfolder.id && (
+                          <>
+                            <div
+                              className="fixed inset-0 z-40"
+                              onClick={() => setFolderMenuId(null)}
+                            />
+                            <div className="absolute right-0 top-full z-50 mt-1 w-52 rounded-xl border border-neutral-200 bg-white p-1.5 shadow-2xl dark:border-neutral-700 dark:bg-neutral-800">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setCreatingInParent(subfolder.id);
+                                  setIsCreatingFolder(true);
+                                  setFolderMenuId(null);
+                                }}
+                                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                              >
+                                <Plus className="h-4 w-4 text-violet-500" />
+                                Sous-dossier
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setRulesFolder(subfolder);
+                                  setFolderMenuId(null);
+                                }}
+                                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                              >
+                                <Settings2 className="h-4 w-4 text-blue-500" />
+                                {t("folderRules")}
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  startEditFolder(subfolder);
+                                  setFolderMenuId(null);
+                                }}
+                                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                              >
+                                <Edit2 className="h-4 w-4 text-neutral-500" />
+                                {t("editFolder")}
+                              </button>
+                              <div className="my-1 border-t border-neutral-100 dark:border-neutral-700" />
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteFolder(subfolder.id, subfolder.name);
+                                  setFolderMenuId(null);
+                                }}
+                                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                {t("delete")}
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
