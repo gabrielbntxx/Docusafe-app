@@ -131,7 +131,7 @@ export async function POST(req: Request) {
     // Hash password if provided
     let hashedPassword = null;
     if (password) {
-      hashedPassword = await bcrypt.hash(password, 10);
+      hashedPassword = await bcrypt.hash(password, 12);
     }
 
     // Calculate expiration date

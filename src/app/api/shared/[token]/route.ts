@@ -32,10 +32,9 @@ export async function GET(
       );
     }
 
-    // Return basic info (without content if password protected)
+    // Return basic info without revealing password status
     return NextResponse.json({
       name: share.name,
-      hasPassword: !!share.password,
       expiresAt: share.expiresAt.toISOString(),
       itemCount: share.items.length,
     });

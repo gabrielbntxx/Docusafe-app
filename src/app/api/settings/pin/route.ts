@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     }
 
     // Hash the PIN
-    const hashedPin = await bcrypt.hash(pin, 10);
+    const hashedPin = await bcrypt.hash(pin, 12);
 
     // Update user with hashed PIN
     await db.user.update({

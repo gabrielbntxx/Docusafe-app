@@ -92,7 +92,7 @@ export async function POST(req: Request) {
     // Hash password if provided
     let hashedPassword = null;
     if (password && password.trim()) {
-      hashedPassword = await bcrypt.hash(password.trim(), 10);
+      hashedPassword = await bcrypt.hash(password.trim(), 12);
     }
 
     // Generate unique token

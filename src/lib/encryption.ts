@@ -8,10 +8,12 @@ const SALT_LENGTH = 32; // 256 bits
 const KEY_LENGTH = 32; // 256 bits pour AES-256
 
 // Clé maître depuis les variables d'environnement
-const MASTER_KEY = process.env.ENCRYPTION_MASTER_KEY;
-
-if (!MASTER_KEY && process.env.NODE_ENV === "production") {
-  throw new Error("ENCRYPTION_MASTER_KEY must be set in production");
+function getMasterKey(): string {
+  const key = process.env.ENCRYPTION_MASTER_KEY;
+  if (!key) {
+    throw new Error("ENCRYPTION_MASTER_KEY environment variable is required");
+  }
+  return key;
 }
 
 /**
@@ -27,7 +29,7 @@ export function generateUserEncryptionKey(): string {
  * Utilise PBKDF2 pour la dérivation de clé
  */
 function deriveKey(salt: Buffer): Buffer {
-  const masterKeyBuffer = Buffer.from(MASTER_KEY || "dev-master-key-not-secure", "utf-8");
+  const masterKeyBuffer = Buffer.from(getMasterKey(), "utf-8");
   return crypto.pbkdf2Sync(masterKeyBuffer, salt, 100000, KEY_LENGTH, "sha256");
 }
 

@@ -105,7 +105,7 @@ export async function POST(req: Request) {
           { status: 400 }
         );
       }
-      hashedPin = await bcrypt.hash(pin, 10);
+      hashedPin = await bcrypt.hash(pin, 12);
     }
 
     const folder = await db.folder.create({

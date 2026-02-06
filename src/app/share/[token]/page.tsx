@@ -63,28 +63,9 @@ export default function SharePage() {
   }, [token]);
 
   const checkShare = async () => {
-    try {
-      const response = await fetch(`/api/shared/${token}`);
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || "Partage non trouvé");
-        setIsLoading(false);
-        return;
-      }
-
-      if (data.hasPassword) {
-        setRequiresPassword(true);
-        setIsLoading(false);
-      } else {
-        // No password, fetch content directly
-        await fetchShareContent();
-      }
-    } catch (err) {
-      console.error("Check share error:", err);
-      setError("Erreur de connexion");
-      setIsLoading(false);
-    }
+    // Try to access content directly via POST (no password)
+    // If password is required, API will return 401 with requiresPassword flag
+    await fetchShareContent();
   };
 
   const fetchShareContent = async (pwd?: string) => {
@@ -101,8 +82,13 @@ export default function SharePage() {
       const data = await response.json();
 
       if (!response.ok) {
-        if (response.status === 401) {
-          setPasswordError(true);
+        if (response.status === 401 && data.requiresPassword) {
+          // Password is required - show password form
+          if (pwd) {
+            // User already entered a password but it was wrong
+            setPasswordError(true);
+          }
+          setRequiresPassword(true);
           setIsLoading(false);
           return;
         }
