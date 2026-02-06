@@ -244,12 +244,12 @@ export default function Home() {
             © 2024 DocuSafe. Tous droits réservés.
           </p>
           <div className="flex items-center gap-6">
-            <a href="#" className="text-gray-500 hover:text-gray-900 text-sm transition-colors">
+            <Link href="/privacy" className="text-gray-500 hover:text-gray-900 text-sm transition-colors">
               Confidentialité
-            </a>
-            <a href="#" className="text-gray-500 hover:text-gray-900 text-sm transition-colors">
+            </Link>
+            <Link href="/terms" className="text-gray-500 hover:text-gray-900 text-sm transition-colors">
               Conditions
-            </a>
+            </Link>
           </div>
         </div>
       </footer>
