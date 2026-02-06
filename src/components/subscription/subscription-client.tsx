@@ -52,18 +52,20 @@ export function SubscriptionClient({
 
   const getMaxStorage = (plan: PlanType) => {
     switch (plan) {
-      case "FREE": return 1024;
       case "STUDENT": return 100 * 1024;
       case "PRO": return 200 * 1024;
       case "BUSINESS": return 500 * 1024;
-      default: return 1024;
+      default: return 1024; // 1 GB
     }
   };
 
   const getMaxDocs = (plan: PlanType) => {
     switch (plan) {
-      case "FREE": return 15;
-      default: return Infinity;
+      case "STUDENT":
+      case "PRO":
+      case "BUSINESS":
+        return Infinity;
+      default: return 15;
     }
   };
 
@@ -73,23 +75,6 @@ export function SubscriptionClient({
   const storagePercentage = (storageUsedBytes / (1024 * 1024)) / maxStorage * 100;
 
   const plans = [
-    {
-      id: "FREE" as PlanType,
-      name: "Free",
-      price: "0",
-      period: "/mois",
-      description: "Pour commencer gratuitement",
-      features: [
-        { icon: HardDrive, text: "1 Go de stockage", included: true },
-        { icon: FileText, text: "15 fichiers / jour", included: true },
-        { icon: Zap, text: "Tri automatique", included: true },
-        { icon: Shield, text: "Sécurité de base", included: true },
-        { icon: Bot, text: "DocuBot", included: false },
-        { icon: Cloud, text: "Import Drive/OneDrive", included: false },
-      ],
-      stripeLink: null,
-      badge: null,
-    },
     {
       id: "STUDENT" as PlanType,
       name: "Étudiant",
@@ -159,17 +144,6 @@ export function SubscriptionClient({
   // Helper to get styles based on plan
   const getPlanStyles = (planId: PlanType, isCurrentPlan: boolean) => {
     switch (planId) {
-      case "FREE":
-        return {
-          card: isCurrentPlan
-            ? "bg-white ring-2 ring-blue-500 shadow-xl shadow-blue-500/10 dark:bg-neutral-800 dark:ring-blue-400"
-            : "bg-white shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none",
-          badge: isCurrentPlan ? "bg-blue-500 text-white" : "bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400",
-          featureIcon: "bg-blue-100 dark:bg-blue-500/20",
-          featureIconColor: "text-blue-600 dark:text-blue-400",
-          button: "bg-blue-500 text-white shadow-lg shadow-blue-500/25 hover:bg-blue-600",
-          isGradient: false,
-        };
       case "STUDENT":
         return {
           card: isCurrentPlan
@@ -286,7 +260,7 @@ export function SubscriptionClient({
 
       {/* Pricing Cards - Horizontal Scroll on Mobile */}
       <div className="-mx-4 sm:mx-0">
-        <div className="flex gap-3 sm:gap-4 overflow-x-auto px-4 pb-4 sm:px-0 sm:pb-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible snap-x snap-mandatory sm:snap-none scrollbar-hide">
+        <div className="flex gap-3 sm:gap-4 overflow-x-auto px-4 pb-4 sm:px-0 sm:pb-0 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:overflow-visible snap-x snap-mandatory sm:snap-none scrollbar-hide">
           {plans.map((plan) => {
             const isCurrentPlan = currentPlan === plan.id;
             const canUpgradeToPlan = canUpgrade(plan.id);

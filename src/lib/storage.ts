@@ -7,22 +7,25 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 // Storage limits by plan (in bytes)
-export const STORAGE_LIMITS = {
-  FREE: 1 * 1024 * 1024 * 1024, // 1 GB
-  PRO: 100 * 1024 * 1024 * 1024, // 100 GB
+export const STORAGE_LIMITS: Record<string, number> = {
+  STUDENT: 100 * 1024 * 1024 * 1024, // 100 GB
+  PRO: 200 * 1024 * 1024 * 1024, // 200 GB
+  BUSINESS: 500 * 1024 * 1024 * 1024, // 500 GB
 } as const;
+
+const DEFAULT_STORAGE_LIMIT = 1 * 1024 * 1024 * 1024; // 1 GB for non-subscribed users
 
 // File size limits per upload (in bytes)
-export const FILE_SIZE_LIMITS = {
-  FREE: 100 * 1024 * 1024, // 100 MB per file
-  PRO: 100 * 1024 * 1024, // 100 MB per file
-} as const;
+const FILE_SIZE_LIMIT = 100 * 1024 * 1024; // 100 MB per file
 
 // Document count limits
-export const DOCUMENT_LIMITS = {
-  FREE: 15,
+export const DOCUMENT_LIMITS: Record<string, number> = {
+  STUDENT: Infinity,
   PRO: Infinity,
+  BUSINESS: Infinity,
 } as const;
+
+const DEFAULT_DOCUMENT_LIMIT = 15;
 
 // Initialize R2 client
 const R2 = new S3Client({
@@ -123,17 +126,16 @@ export function checkStorageLimit(
   currentStorageBytes: number,
   newFileSizeBytes: number
 ): { allowed: boolean; reason?: string; limit: number; used: number } {
-  const plan = planType === "PRO" ? "PRO" : "FREE";
-  const limit = STORAGE_LIMITS[plan];
+  const limit = STORAGE_LIMITS[planType] || DEFAULT_STORAGE_LIMIT;
   const used = currentStorageBytes;
   const afterUpload = used + newFileSizeBytes;
 
   if (afterUpload > limit) {
-    const limitMB = (limit / 1024 / 1024).toFixed(0);
-    const usedMB = (used / 1024 / 1024).toFixed(2);
+    const limitGB = (limit / (1024 * 1024 * 1024)).toFixed(0);
+    const usedMB = (used / (1024 * 1024)).toFixed(2);
     return {
       allowed: false,
-      reason: `Limite de stockage atteinte (${usedMB}MB / ${limitMB}MB). Passez au plan Pro pour plus d'espace.`,
+      reason: `Limite de stockage atteinte (${usedMB}MB / ${limitGB}GB). Passez à un plan supérieur pour plus d'espace.`,
       limit,
       used,
     };
@@ -149,14 +151,11 @@ export function checkFileSizeLimit(
   planType: string,
   fileSizeBytes: number
 ): { allowed: boolean; reason?: string } {
-  const plan = planType === "PRO" ? "PRO" : "FREE";
-  const limit = FILE_SIZE_LIMITS[plan];
-
-  if (fileSizeBytes > limit) {
-    const limitMB = (limit / 1024 / 1024).toFixed(0);
+  if (fileSizeBytes > FILE_SIZE_LIMIT) {
+    const limitMB = (FILE_SIZE_LIMIT / (1024 * 1024)).toFixed(0);
     return {
       allowed: false,
-      reason: `Fichier trop volumineux. Limite: ${limitMB}MB par fichier pour le plan ${plan}.`,
+      reason: `Fichier trop volumineux. Limite: ${limitMB}MB par fichier.`,
     };
   }
 
@@ -170,13 +169,12 @@ export function checkDocumentLimit(
   planType: string,
   currentDocumentCount: number
 ): { allowed: boolean; reason?: string } {
-  const plan = planType === "PRO" ? "PRO" : "FREE";
-  const limit = DOCUMENT_LIMITS[plan];
+  const limit = DOCUMENT_LIMITS[planType] || DEFAULT_DOCUMENT_LIMIT;
 
   if (currentDocumentCount >= limit) {
     return {
       allowed: false,
-      reason: `Limite de ${limit} documents atteinte pour le plan ${plan}. Passez au plan Pro pour des documents illimités.`,
+      reason: `Limite de ${limit} documents atteinte. Passez à un plan supérieur pour des documents illimités.`,
     };
   }
 
