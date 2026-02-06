@@ -22,6 +22,7 @@ import {
   encryptUserKey,
   decryptUserKey,
 } from "@/lib/encryption";
+import { applyFolderRules } from "@/lib/folder-rules";
 
 export async function POST(req: Request) {
   try {
@@ -136,9 +137,23 @@ export async function POST(req: Request) {
       );
     }
 
+    // Appliquer les règles du dossier (ex: conversion en PDF)
+    const processedFile = await applyFolderRules(
+      folderId,
+      buffer,
+      fileValidation.sanitizedName,
+      file.type
+    );
+
+    // Utiliser le fichier traité pour le reste de l'upload
+    const finalFileBuffer = processedFile.buffer;
+    const finalFileName = processedFile.fileName;
+    const finalMimeType = processedFile.mimeType;
+    const finalFileSize = finalFileBuffer.length;
+
     // Générer un nom de fichier sécurisé pour le stockage
     const secureFilename = generateSecureFilename(
-      fileValidation.sanitizedName,
+      finalFileName,
       session.user.id
     );
 
@@ -160,43 +175,49 @@ export async function POST(req: Request) {
       });
     }
 
-    // Chiffrer le document
-    const encryptedBuffer = encryptDocument(buffer, userEncryptionKey);
-    const finalBuffer = addEncryptionMarker(encryptedBuffer);
+    // Chiffrer le document (utiliser le fichier traité)
+    const encryptedBuffer = encryptDocument(finalFileBuffer, userEncryptionKey);
+    const encryptedFinalBuffer = addEncryptionMarker(encryptedBuffer);
 
     // Upload vers R2 (données chiffrées)
-    await uploadToR2(storageKey, finalBuffer, "application/octet-stream");
+    await uploadToR2(storageKey, encryptedFinalBuffer, "application/octet-stream");
 
-    // Déterminer le type de fichier
+    // Déterminer le type de fichier (utiliser le type final après règles)
     let fileType = "other";
-    if (file.type === "application/pdf") fileType = "pdf";
-    else if (file.type.startsWith("image/")) fileType = "image";
-    else if (file.type.startsWith("audio/")) fileType = "audio";
-    else if (file.type.startsWith("video/")) fileType = "video";
+    if (finalMimeType === "application/pdf") fileType = "pdf";
+    else if (finalMimeType.startsWith("image/")) fileType = "image";
+    else if (finalMimeType.startsWith("audio/")) fileType = "audio";
+    else if (finalMimeType.startsWith("video/")) fileType = "video";
 
-    // Créer l'entrée dans la DB avec le nom sanitisé
+    // Créer l'entrée dans la DB avec le nom final (après règles)
     const document = await db.document.create({
       data: {
         userId: session.user.id,
         folderId: folderId || null, // Associate with folder if provided
-        originalName: fileValidation.sanitizedName, // Nom sanitisé
-        displayName: fileValidation.sanitizedName,
+        originalName: processedFile.wasConverted
+          ? processedFile.originalFileName || fileValidation.sanitizedName
+          : fileValidation.sanitizedName,
+        displayName: finalFileName,
         fileType,
-        mimeType: file.type,
-        sizeBytes: BigInt(file.size),
+        mimeType: finalMimeType,
+        sizeBytes: BigInt(finalFileSize),
         storageKey,
         storageUrl: `r2://${storageKey}`,
         aiAnalyzed: 0, // Not analyzed yet
         isEncrypted: 1, // Document chiffré
+        // Store conversion info in description if converted
+        description: processedFile.wasConverted
+          ? `Converti depuis ${processedFile.originalMimeType}`
+          : null,
       },
     });
 
-    // Mettre à jour les statistiques utilisateur
+    // Mettre à jour les statistiques utilisateur (avec taille finale)
     await db.user.update({
       where: { id: session.user.id },
       data: {
         documentsCount: { increment: 1 },
-        storageUsedBytes: { increment: file.size },
+        storageUsedBytes: { increment: finalFileSize },
       },
     });
 
@@ -204,7 +225,7 @@ export async function POST(req: Request) {
     await createNotification(
       session.user.id,
       "document_uploaded",
-      fileValidation.sanitizedName
+      finalFileName
     );
 
     return NextResponse.json(
@@ -212,8 +233,9 @@ export async function POST(req: Request) {
         document: {
           id: document.id,
           name: document.displayName,
-          size: file.size,
+          size: finalFileSize,
           type: fileType,
+          wasConverted: processedFile.wasConverted,
         },
       },
       {

@@ -355,6 +355,14 @@ export const translations = {
     guidedTourDescription: "Interactive walkthrough of the main features",
     restartTutorial: "Start Tutorial",
     completed: "Completed",
+
+    // Folder Rules
+    folderRules: "Folder Rules",
+    convertToPdf: "Convert to PDF",
+    convertToPdfDescription: "Images uploaded to this folder will be automatically converted to PDF.",
+    moreRulesSoon: "More rules coming soon",
+    errorLoadingRules: "Error loading rules",
+    errorSavingRules: "Error saving rules",
   },
 
   fr: {
@@ -713,6 +721,14 @@ export const translations = {
     guidedTourDescription: "Découverte interactive des fonctionnalités principales",
     restartTutorial: "Lancer le tutoriel",
     completed: "Terminé",
+
+    // Folder Rules
+    folderRules: "Règles du dossier",
+    convertToPdf: "Convertir en PDF",
+    convertToPdfDescription: "Les images téléversées dans ce dossier seront automatiquement converties en PDF.",
+    moreRulesSoon: "Plus de règles bientôt disponibles",
+    errorLoadingRules: "Erreur lors du chargement des règles",
+    errorSavingRules: "Erreur lors de l'enregistrement des règles",
   },
 } as const;
 

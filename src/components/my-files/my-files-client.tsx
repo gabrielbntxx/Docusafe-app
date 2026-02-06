@@ -28,9 +28,11 @@ import {
   GripVertical,
   Star,
   MoreVertical,
+  Settings2,
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { PinModal } from "@/components/folders/pin-modal";
+import { FolderRulesModal } from "@/components/folders/folder-rules-modal";
 import { DocuBotWidget } from "@/components/docubot/docubot-widget";
 import { DocumentPreviewModal } from "@/components/documents/document-preview-modal";
 import { ShareModal } from "@/components/share/share-modal";
@@ -139,6 +141,7 @@ export function MyFilesClient({
   const [showDocuments, setShowDocuments] = useState(false);
   const [previewDocument, setPreviewDocument] = useState<DocumentType | null>(null);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [rulesFolder, setRulesFolder] = useState<FolderType | null>(null);
   const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(new Set());
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
@@ -930,6 +933,16 @@ export function MyFilesClient({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
+                        setRulesFolder(folder);
+                      }}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-blue-500/20 dark:hover:text-blue-400"
+                      title={t("folderRules")}
+                    >
+                      <Settings2 className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
                         startEditFolder(folder);
                       }}
                       className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-200 hover:text-neutral-600 dark:hover:bg-neutral-600 dark:hover:text-neutral-300"
@@ -1164,6 +1177,16 @@ export function MyFilesClient({
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
+                            setRulesFolder(subfolder);
+                          }}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-blue-500/20 dark:hover:text-blue-400"
+                          title={t("folderRules")}
+                        >
+                          <Settings2 className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
                             startEditFolder(subfolder);
                           }}
                           className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-200 hover:text-neutral-600 dark:hover:bg-neutral-600 dark:hover:text-neutral-300"
@@ -1387,6 +1410,17 @@ export function MyFilesClient({
         }))}
         onShareCreated={() => router.refresh()}
       />
+
+      {/* Folder Rules Modal */}
+      {rulesFolder && (
+        <FolderRulesModal
+          folderId={rulesFolder.id}
+          folderName={rulesFolder.name}
+          isOpen={!!rulesFolder}
+          onClose={() => setRulesFolder(null)}
+          onSave={() => router.refresh()}
+        />
+      )}
     </div>
   );
 }

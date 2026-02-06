@@ -94,6 +94,7 @@ model Folder {
   userId      String
   parentId    String?
   pin         String?  // Optional 4-digit PIN for this folder (hashed)
+  rules       String?  @default("{}") // JSON string for folder rules (e.g., convertToPdf)
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
