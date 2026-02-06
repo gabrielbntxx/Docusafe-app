@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { X, FileType, Check, Settings2, Loader2 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { FolderRules, DEFAULT_CONVERT_TO_PDF_RULE } from "@/types/folder-rules";
@@ -25,33 +25,45 @@ export function FolderRulesModal({
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasLoaded, setHasLoaded] = useState(false);
 
-  // Load current folder rules
+  // Load current folder rules - only once when modal opens
   useEffect(() => {
-    if (isOpen && folderId) {
+    if (isOpen && folderId && !hasLoaded) {
       setIsLoading(true);
       setError(null);
 
       fetch(`/api/folders/${folderId}`)
-        .then((res) => res.json())
+        .then((res) => {
+          if (!res.ok) throw new Error("Failed to fetch");
+          return res.json();
+        })
         .then((data) => {
           if (data.rules?.convertToPdf?.enabled) {
             setConvertToPdfEnabled(true);
           } else {
             setConvertToPdfEnabled(false);
           }
+          setHasLoaded(true);
         })
         .catch((err) => {
           console.error("Error loading folder rules:", err);
-          setError(t("errorLoadingRules"));
+          setError("Erreur lors du chargement des règles");
         })
         .finally(() => {
           setIsLoading(false);
         });
     }
-  }, [isOpen, folderId, t]);
+  }, [isOpen, folderId, hasLoaded]);
 
-  const handleSave = async () => {
+  // Reset hasLoaded when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setHasLoaded(false);
+    }
+  }, [isOpen]);
+
+  const handleSave = useCallback(async () => {
     setIsSaving(true);
     setError(null);
 
@@ -72,6 +84,8 @@ export function FolderRulesModal({
       });
 
       if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Save failed:", errorData);
         throw new Error("Failed to save rules");
       }
 
@@ -79,11 +93,11 @@ export function FolderRulesModal({
       onClose();
     } catch (err) {
       console.error("Error saving rules:", err);
-      setError(t("errorSavingRules"));
+      setError("Erreur lors de l'enregistrement des règles");
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [convertToPdfEnabled, folderId, onClose, onSave]);
 
   if (!isOpen) return null;
 
