@@ -363,6 +363,20 @@ export const translations = {
     moreRulesSoon: "More rules coming soon",
     errorLoadingRules: "Error loading rules",
     errorSavingRules: "Error saving rules",
+
+    // Account Deletion
+    dangerZone: "Danger Zone",
+    dangerZoneDescription: "Irreversible actions on your account",
+    deleteAccount: "Delete Account",
+    deleteAccountDescription: "Permanently delete your account and all associated data.",
+    deleteAccountWarning: "This action is irreversible!",
+    deleteWarningDocuments: "All your documents will be permanently deleted",
+    deleteWarningFolders: "All your folders and rules will be deleted",
+    deleteWarningShares: "All your shares and requests will be deleted",
+    deleteWarningSubscription: "Your subscription will be canceled",
+    deleteConfirmLabel: "Type SUPPRIMER to confirm:",
+    deleteAccountConfirm: "Delete my account",
+    deleting: "Deleting...",
   },
 
   fr: {
@@ -729,6 +743,20 @@ export const translations = {
     moreRulesSoon: "Plus de règles bientôt disponibles",
     errorLoadingRules: "Erreur lors du chargement des règles",
     errorSavingRules: "Erreur lors de l'enregistrement des règles",
+
+    // Account Deletion
+    dangerZone: "Zone de danger",
+    dangerZoneDescription: "Actions irréversibles sur votre compte",
+    deleteAccount: "Supprimer le compte",
+    deleteAccountDescription: "Supprime définitivement votre compte et toutes les données associées.",
+    deleteAccountWarning: "Cette action est irréversible !",
+    deleteWarningDocuments: "Tous vos documents seront supprimés définitivement",
+    deleteWarningFolders: "Tous vos dossiers et règles seront supprimés",
+    deleteWarningShares: "Tous vos partages et demandes seront supprimés",
+    deleteWarningSubscription: "Votre abonnement sera annulé",
+    deleteConfirmLabel: "Tapez SUPPRIMER pour confirmer :",
+    deleteAccountConfirm: "Supprimer mon compte",
+    deleting: "Suppression...",
   },
 } as const;
 

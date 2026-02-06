@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useTheme } from "@/components/providers/theme-provider";
 import { useTutorial } from "@/contexts/TutorialContext";
+import { signOut } from "next-auth/react";
 import {
   Globe,
   Bell,
@@ -18,6 +19,9 @@ import {
   ChevronRight,
   Play,
   GraduationCap,
+  Trash2,
+  AlertTriangle,
+  Loader2,
 } from "lucide-react";
 
 type UserSettings = {
@@ -48,6 +52,10 @@ export function SettingsClient({ user }: { user: UserSettings }) {
   const [emailCopied, setEmailCopied] = useState(false);
   const [importEmail, setImportEmail] = useState<string | null>(null);
   const [isLoadingEmail, setIsLoadingEmail] = useState(true);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Fetch import email from API on mount
   useEffect(() => {
@@ -527,6 +535,158 @@ export function SettingsClient({ user }: { user: UserSettings }) {
           </div>
         </div>
       </div>
+
+      {/* Danger Zone - Delete Account */}
+      <div className="mt-3 sm:mt-4 lg:mt-6">
+        <div className="overflow-hidden rounded-2xl border-2 border-red-200 bg-white shadow-sm dark:border-red-500/30 dark:bg-neutral-800/50 sm:rounded-3xl">
+          <div className="flex items-center gap-3 border-b border-red-100 p-4 dark:border-red-500/20 sm:p-5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-red-500 to-rose-600 shadow-md shadow-red-500/20 sm:h-11 sm:w-11">
+              <AlertTriangle className="h-5 w-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-[15px] font-semibold text-red-700 dark:text-red-400 sm:text-base">
+                {t("dangerZone")}
+              </h2>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                {t("dangerZoneDescription")}
+              </p>
+            </div>
+          </div>
+
+          <div className="p-3 sm:p-4">
+            <div className="flex items-center justify-between rounded-xl bg-red-50 p-4 dark:bg-red-500/10">
+              <div className="flex-1 mr-4">
+                <p className="text-sm font-semibold text-neutral-900 dark:text-white">
+                  {t("deleteAccount")}
+                </p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                  {t("deleteAccountDescription")}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="flex-shrink-0 rounded-xl bg-red-500 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-red-600 active:scale-[0.98]"
+              >
+                {t("delete")}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Delete Account Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center sm:p-4">
+          <div className="w-full max-h-[90vh] overflow-y-auto rounded-t-[28px] bg-white p-5 shadow-2xl dark:bg-neutral-900 sm:max-w-md sm:rounded-[28px]">
+            <div className="mb-5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-red-500 to-rose-600">
+                  <Trash2 className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-neutral-900 dark:text-white">
+                    {t("deleteAccount")}
+                  </h3>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteConfirmText("");
+                  setDeleteError(null);
+                }}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 transition-all hover:bg-neutral-200 active:scale-95 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="mb-4 rounded-xl bg-red-50 p-4 dark:bg-red-500/10">
+              <div className="flex gap-3">
+                <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-red-700 dark:text-red-300">
+                  <p className="font-semibold mb-1">{t("deleteAccountWarning")}</p>
+                  <ul className="list-disc list-inside space-y-1 text-xs">
+                    <li>{t("deleteWarningDocuments")}</li>
+                    <li>{t("deleteWarningFolders")}</li>
+                    <li>{t("deleteWarningShares")}</li>
+                    <li>{t("deleteWarningSubscription")}</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="mb-2 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                {t("deleteConfirmLabel")}
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="SUPPRIMER"
+                className="w-full rounded-xl border-0 bg-neutral-100 px-4 py-3 text-neutral-900 placeholder-neutral-400 outline-none transition-all focus:ring-2 focus:ring-red-500/20 dark:bg-neutral-800 dark:text-white dark:placeholder-neutral-500"
+              />
+            </div>
+
+            {deleteError && (
+              <div className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">
+                {deleteError}
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteConfirmText("");
+                  setDeleteError(null);
+                }}
+                className="flex-1 rounded-2xl border border-neutral-200 bg-white py-3 text-sm font-semibold text-neutral-700 transition-all hover:bg-neutral-50 active:scale-[0.98] dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
+              >
+                {t("cancel")}
+              </button>
+              <button
+                onClick={async () => {
+                  if (deleteConfirmText !== "SUPPRIMER") return;
+                  setIsDeleting(true);
+                  setDeleteError(null);
+                  try {
+                    const response = await fetch("/api/account/delete", {
+                      method: "POST",
+                    });
+                    if (!response.ok) {
+                      const data = await response.json();
+                      throw new Error(data.error || "Erreur");
+                    }
+                    await signOut({ callbackUrl: "/" });
+                  } catch (err) {
+                    console.error("Delete account error:", err);
+                    setDeleteError(
+                      err instanceof Error ? err.message : "Erreur lors de la suppression"
+                    );
+                    setIsDeleting(false);
+                  }
+                }}
+                disabled={deleteConfirmText !== "SUPPRIMER" || isDeleting}
+                className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-red-500 py-3 text-sm font-semibold text-white transition-all hover:bg-red-600 active:scale-[0.98] disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {t("deleting")}
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4" />
+                    {t("deleteAccountConfirm")}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Auto-save status indicator */}
       {saveStatus !== "idle" && (
