@@ -19,7 +19,9 @@ import { createNotification } from "@/lib/notifications";
 import { simpleParser } from "mailparser";
 
 // Domain for import emails (Resend inbound)
-export const IMPORT_EMAIL_DOMAIN = "import.docusafe.online";
+// Use RESEND_INBOUND_DOMAIN env var (e.g. "cool-hedgehog.resend.app" for free plan)
+export const IMPORT_EMAIL_DOMAIN =
+  process.env.RESEND_INBOUND_DOMAIN || "import.docusafe.online";
 
 // Allowed file types for email import
 export const ALLOWED_MIME_TYPES = [
@@ -36,7 +38,7 @@ export const MAX_EMAIL_ATTACHMENT_SIZE = 10 * 1024 * 1024;
 
 /**
  * Extract importEmailId from a full email address
- * e.g., "gabriel-abc123@import.docusafe.app" → "gabriel-abc123"
+ * e.g., "gabriel-abc123@your-domain.resend.app" → "gabriel-abc123"
  */
 export function parseImportEmailAddress(email: string): string | null {
   if (!email) return null;
