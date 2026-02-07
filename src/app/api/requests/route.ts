@@ -126,7 +126,7 @@ export async function POST(req: Request) {
     }
 
     // Generate unique token
-    const token = randomBytes(16).toString("hex");
+    const token = randomBytes(32).toString("hex");
 
     // Hash password if provided
     let hashedPassword = null;

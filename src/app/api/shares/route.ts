@@ -7,7 +7,7 @@ import bcrypt from "bcryptjs";
 
 // Generate a secure random token
 function generateShareToken(): string {
-  return crypto.randomBytes(16).toString("hex");
+  return crypto.randomBytes(32).toString("hex");
 }
 
 // POST - Create a new share link

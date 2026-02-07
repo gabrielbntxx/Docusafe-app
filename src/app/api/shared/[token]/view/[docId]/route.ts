@@ -90,13 +90,19 @@ export async function GET(
       fileBuffer = decryptDocument(encryptedData, userKey);
     }
 
-    // Return the file for inline viewing
+    // Types dangereux pouvant exécuter du JS (SVG, HTML)
+    const dangerousTypes = ["image/svg+xml", "text/html", "text/xml", "application/xhtml+xml"];
+    const isDangerous = dangerousTypes.includes(document.mimeType);
+    const contentType = isDangerous ? "application/octet-stream" : document.mimeType;
+    const disposition = isDangerous ? "attachment" : "inline";
+
     return new NextResponse(new Uint8Array(fileBuffer), {
       headers: {
-        "Content-Type": document.mimeType,
-        "Content-Disposition": `inline; filename="${encodeURIComponent(document.displayName)}"`,
+        "Content-Type": contentType,
+        "Content-Disposition": `${disposition}; filename="${encodeURIComponent(document.displayName)}"`,
         "Content-Length": String(fileBuffer.length),
         "Cache-Control": "private, max-age=3600",
+        "X-Content-Type-Options": "nosniff",
       },
     });
   } catch (error) {

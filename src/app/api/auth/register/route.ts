@@ -8,6 +8,7 @@ import {
   validatePassword,
   validateName,
 } from "@/lib/security";
+import { generateUserEncryptionKey, encryptUserKey } from "@/lib/encryption";
 
 export async function POST(req: Request) {
   try {
@@ -74,12 +75,17 @@ export async function POST(req: Request) {
     // Hash password avec un coût plus élevé
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Create user
+    // Générer et chiffrer la clé de chiffrement utilisateur
+    const userKey = generateUserEncryptionKey();
+    const encryptedKey = encryptUserKey(userKey);
+
+    // Create user with encryption key
     const user = await db.user.create({
       data: {
         name: name.trim(),
         email: normalizedEmail,
         password: hashedPassword,
+        encryptionKey: encryptedKey,
       },
     });
 

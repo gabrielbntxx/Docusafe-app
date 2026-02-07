@@ -116,21 +116,24 @@ export function middleware(request: NextRequest) {
     response.headers.set("X-Frame-Options", "DENY");
   }
 
-  // Content Security Policy (ajuster selon vos besoins)
+  // Content Security Policy
   if (!pathname.startsWith("/api/")) {
+    const isDev = process.env.NODE_ENV === "development";
     response.headers.set(
       "Content-Security-Policy",
       [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Next.js a besoin de unsafe-eval en dev
+        `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
         "style-src 'self' 'unsafe-inline'",
         "img-src 'self' data: blob: https:",
         "font-src 'self' data:",
         "connect-src 'self' https:",
-        "frame-src 'self' blob:", // Permettre les iframes avec blob URLs pour la visualisation des documents
-        "object-src 'self' blob:", // Permettre les objets PDF avec blob URLs
-        "media-src 'self' blob:", // Permettre les médias audio/vidéo avec blob URLs
-        "frame-ancestors 'self'", // Permettre les iframes depuis le même domaine
+        "frame-src 'self' blob:",
+        "object-src 'self' blob:",
+        "media-src 'self' blob:",
+        "frame-ancestors 'self'",
+        "base-uri 'self'",
+        "form-action 'self'",
       ].join("; ")
     );
   }

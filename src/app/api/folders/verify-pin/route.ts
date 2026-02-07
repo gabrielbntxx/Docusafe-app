@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
+import { checkRateLimit, getClientIdentifier, resetRateLimit } from "@/lib/security";
 
 export async function POST(req: Request) {
   try {
@@ -10,6 +11,17 @@ export async function POST(req: Request) {
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    }
+
+    // Rate limiting sur la vérification PIN
+    const clientId = await getClientIdentifier(session.user.id);
+    const rateLimit = checkRateLimit(clientId, "pinVerify");
+
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: rateLimit.error },
+        { status: 429, headers: { "Retry-After": String(rateLimit.resetIn) } }
+      );
     }
 
     const { folderId, pin } = await req.json();
@@ -53,8 +65,14 @@ export async function POST(req: Request) {
     const isValid = await bcrypt.compare(pin, folder.pin);
 
     if (!isValid) {
-      return NextResponse.json({ valid: false }, { status: 200 });
+      return NextResponse.json(
+        { valid: false, remaining: rateLimit.remaining },
+        { status: 200 }
+      );
     }
+
+    // Réinitialiser le rate limit après succès
+    resetRateLimit(clientId, "pinVerify");
 
     return NextResponse.json({ valid: true }, { status: 200 });
   } catch (error) {

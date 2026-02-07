@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { randomBytes, createHash } from "crypto";
 import bcrypt from "bcryptjs";
+import { validateFile } from "@/lib/security";
 
 const s3Client = new S3Client({
   region: "auto",
@@ -98,17 +99,26 @@ export async function POST(
       );
     }
 
-    // Get file details
-    const originalName = file.name;
+    // Read file buffer for validation
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
+
+    // Validate file type, extension, magic bytes
+    const validation = await validateFile(file, fileBuffer);
+    if (!validation.valid) {
+      return NextResponse.json(
+        { error: validation.errors.join(". ") },
+        { status: 400 }
+      );
+    }
+
+    // Get file details using sanitized name
+    const originalName = validation.sanitizedName;
     const fileType = originalName.split(".").pop()?.toLowerCase() || "unknown";
     const mimeType = file.type || "application/octet-stream";
 
     // Generate storage key
-    const uniqueId = randomBytes(16).toString("hex");
+    const uniqueId = randomBytes(32).toString("hex");
     const storageKey = `requests/${request.id}/${uniqueId}.${fileType}`;
-
-    // Upload to R2
-    const fileBuffer = Buffer.from(await file.arrayBuffer());
 
     await s3Client.send(
       new PutObjectCommand({
