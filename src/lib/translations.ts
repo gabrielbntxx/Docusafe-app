@@ -239,6 +239,18 @@ export const translations = {
     gotIt: "Got it!",
     emailImportNotConfigured: "Email import not configured",
 
+    // Email Sending
+    sendByEmail: "Send by email",
+    recipientEmail: "Recipient email",
+    emailMessage: "Message (optional)",
+    emailMessagePlaceholder: "Add a message for the recipient...",
+    sendDocument: "Send",
+    sending: "Sending...",
+    emailSent: "Email sent!",
+    emailSentTo: "Document sent to",
+    emailSendError: "Error sending email. Please try again.",
+    invalidEmail: "Invalid email address",
+
     // Help & Support
     help: "Help",
     support: "Support",
@@ -618,6 +630,18 @@ export const translations = {
     emailGuideNote: "Formats supportés : PDF, images (JPG, PNG). Taille max : 10 Mo",
     gotIt: "Compris !",
     emailImportNotConfigured: "Import par email non configuré",
+
+    // Email Sending
+    sendByEmail: "Envoyer par email",
+    recipientEmail: "Email du destinataire",
+    emailMessage: "Message (optionnel)",
+    emailMessagePlaceholder: "Ajouter un message pour le destinataire...",
+    sendDocument: "Envoyer",
+    sending: "Envoi en cours...",
+    emailSent: "Email envoyé !",
+    emailSentTo: "Document envoyé à",
+    emailSendError: "Erreur lors de l'envoi. Réessayez plus tard.",
+    invalidEmail: "Adresse email invalide",
 
     // Help & Support
     help: "Aide",

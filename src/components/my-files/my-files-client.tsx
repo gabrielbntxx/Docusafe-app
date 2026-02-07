@@ -29,6 +29,9 @@ import {
   Star,
   MoreVertical,
   Settings2,
+  Send,
+  Mail,
+  AlertCircle,
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { PinModal } from "@/components/folders/pin-modal";
@@ -147,6 +150,15 @@ export function MyFilesClient({
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [isBulkDownloading, setIsBulkDownloading] = useState(false);
   const [creatingInParent, setCreatingInParent] = useState<string | null>(null);
+
+  // Email send state
+  const [emailDocId, setEmailDocId] = useState<string | null>(null);
+  const [emailDocName, setEmailDocName] = useState("");
+  const [emailTo, setEmailTo] = useState("");
+  const [emailMessage, setEmailMessage] = useState("");
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   // Drag and drop state
   const [draggedDocument, setDraggedDocument] = useState<string | null>(null);
@@ -1361,7 +1373,7 @@ export function MyFilesClient({
                               <MoreVertical className="h-4 w-4" />
                             </button>
 
-                            {/* Move dropdown menu */}
+                            {/* Document actions dropdown menu */}
                             {isMoving && (
                               <>
                                 <div
@@ -1369,6 +1381,21 @@ export function MyFilesClient({
                                   onClick={() => setMovingDocumentId(null)}
                                 />
                                 <div className="absolute right-0 bottom-full z-50 mb-2 w-48 max-h-64 overflow-y-auto rounded-xl border border-neutral-200 bg-white p-2 shadow-2xl dark:border-neutral-700 dark:bg-neutral-800">
+                                  {/* Send by email */}
+                                  <button
+                                    onClick={() => {
+                                      setEmailDocId(doc.id);
+                                      setEmailDocName(doc.displayName);
+                                      setMovingDocumentId(null);
+                                    }}
+                                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-blue-50 dark:text-neutral-300 dark:hover:bg-blue-500/10"
+                                  >
+                                    <Send className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                                    <span className="truncate">{t("sendByEmail")}</span>
+                                  </button>
+
+                                  <div className="my-1.5 border-t border-neutral-100 dark:border-neutral-700" />
+
                                   <div className="mb-2 px-3 py-1.5 text-xs font-medium uppercase tracking-wide text-neutral-400">
                                     {t("moveTo")}
                                   </div>
@@ -1467,6 +1494,161 @@ export function MyFilesClient({
           onClose={() => setRulesFolder(null)}
           onSave={() => router.refresh()}
         />
+      )}
+
+      {/* Send by Email Modal */}
+      {emailDocId && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center sm:p-4">
+          <div className="w-full max-h-[90vh] overflow-y-auto rounded-t-[28px] bg-white p-5 shadow-2xl dark:bg-neutral-900 sm:max-w-md sm:rounded-[28px]">
+            <div className="mb-5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-violet-500">
+                  <Mail className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-neutral-900 dark:text-white">
+                    {t("sendByEmail")}
+                  </h3>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate max-w-[200px]">
+                    {emailDocName}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setEmailDocId(null);
+                  setEmailTo("");
+                  setEmailMessage("");
+                  setEmailError(null);
+                  setEmailSent(false);
+                }}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 transition-all hover:bg-neutral-200 active:scale-95 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {emailSent ? (
+              <div className="text-center py-6">
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-500/20">
+                  <CheckCheck className="h-8 w-8 text-emerald-500" />
+                </div>
+                <h4 className="text-lg font-semibold text-neutral-900 dark:text-white mb-1">
+                  {t("emailSent")}
+                </h4>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                  {t("emailSentTo")} {emailTo}
+                </p>
+                <button
+                  onClick={() => {
+                    setEmailDocId(null);
+                    setEmailTo("");
+                    setEmailMessage("");
+                    setEmailError(null);
+                    setEmailSent(false);
+                  }}
+                  className="mt-6 w-full rounded-2xl bg-gradient-to-r from-blue-500 to-violet-500 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl active:scale-[0.98]"
+                >
+                  {t("close")}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    {t("recipientEmail")} *
+                  </label>
+                  <input
+                    type="email"
+                    value={emailTo}
+                    onChange={(e) => {
+                      setEmailTo(e.target.value);
+                      setEmailError(null);
+                    }}
+                    placeholder="exemple@email.com"
+                    className="w-full rounded-xl border-0 bg-neutral-100 px-4 py-3 text-neutral-900 placeholder-neutral-400 outline-none transition-all focus:ring-2 focus:ring-blue-500/20 dark:bg-neutral-800 dark:text-white dark:placeholder-neutral-500"
+                    autoFocus
+                  />
+                  {emailTo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTo) && (
+                    <p className="mt-1.5 flex items-center gap-1 text-xs text-red-500">
+                      <AlertCircle className="h-3 w-3" />
+                      {t("invalidEmail")}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    {t("emailMessage")}
+                  </label>
+                  <textarea
+                    value={emailMessage}
+                    onChange={(e) => setEmailMessage(e.target.value)}
+                    placeholder={t("emailMessagePlaceholder")}
+                    rows={3}
+                    maxLength={1000}
+                    className="w-full rounded-xl border-0 bg-neutral-100 px-4 py-3 text-neutral-900 placeholder-neutral-400 outline-none transition-all focus:ring-2 focus:ring-blue-500/20 dark:bg-neutral-800 dark:text-white dark:placeholder-neutral-500 resize-none"
+                  />
+                  <p className="mt-1 text-right text-xs text-neutral-400">
+                    {emailMessage.length}/1000
+                  </p>
+                </div>
+
+                {emailError && (
+                  <div className="rounded-xl bg-red-50 p-3 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400 flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                    {emailError}
+                  </div>
+                )}
+
+                <button
+                  onClick={async () => {
+                    if (!emailTo || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTo)) {
+                      setEmailError(t("invalidEmail"));
+                      return;
+                    }
+                    setEmailSending(true);
+                    setEmailError(null);
+                    try {
+                      const response = await fetch(`/api/documents/${emailDocId}/send-email`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          to: emailTo,
+                          message: emailMessage || undefined,
+                        }),
+                      });
+                      const data = await response.json();
+                      if (!response.ok) {
+                        setEmailError(data.error || t("emailSendError"));
+                      } else {
+                        setEmailSent(true);
+                      }
+                    } catch {
+                      setEmailError(t("emailSendError"));
+                    } finally {
+                      setEmailSending(false);
+                    }
+                  }}
+                  disabled={emailSending || !emailTo || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTo)}
+                  className="w-full rounded-2xl bg-gradient-to-r from-blue-500 to-violet-500 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {emailSending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      {t("sending")}
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4" />
+                      {t("sendDocument")}
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

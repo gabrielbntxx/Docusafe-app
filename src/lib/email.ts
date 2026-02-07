@@ -5,7 +5,7 @@ const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
 
-const FROM_EMAIL = process.env.FROM_EMAIL || "DocuSafe <noreply@docusafe.app>";
+const FROM_EMAIL = process.env.FROM_EMAIL || "DocuSafe <noreply@docusafe.online>";
 
 /**
  * Send welcome email when user upgrades to Pro
@@ -316,6 +316,166 @@ function getPasswordResetEmailHtml(name: string, resetUrl: string): string {
 /**
  * Cancellation email HTML template
  */
+/**
+ * Send document sharing email
+ */
+export async function sendDocumentEmail(
+  to: string,
+  senderName: string,
+  documentName: string,
+  downloadUrl: string,
+  message?: string
+): Promise<{ success: boolean; error?: unknown }> {
+  if (!resend) {
+    return { success: false, error: "Service email non configuré" };
+  }
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to,
+      subject: `${senderName} vous a envoyé un document - DocuSafe`,
+      html: getDocumentShareEmailHtml(senderName, documentName, downloadUrl, message),
+    });
+
+    if (error) {
+      console.error("[Email] Error sending document email:", error);
+      return { success: false, error };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("[Email] Failed to send document email:", error);
+    return { success: false, error };
+  }
+}
+
+/**
+ * Document sharing email HTML template
+ */
+function getDocumentShareEmailHtml(
+  senderName: string,
+  documentName: string,
+  downloadUrl: string,
+  message?: string
+): string {
+  const messageBlock = message
+    ? `
+          <tr>
+            <td style="padding: 0 40px 20px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; border-radius: 12px;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <p style="margin: 0 0 6px; color: #71717a; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Message</p>
+                    <p style="margin: 0; color: #3f3f46; font-size: 15px; line-height: 1.6; white-space: pre-wrap;">${message.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>`
+    : "";
+
+  return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document partagé</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); padding: 40px 40px 30px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">
+                DocuSafe
+              </h1>
+              <p style="margin: 10px 0 0; color: rgba(255, 255, 255, 0.9); font-size: 16px;">
+                Document partagé avec vous
+              </p>
+            </td>
+          </tr>
+
+          <!-- Main content -->
+          <tr>
+            <td style="padding: 40px 40px 20px;">
+              <p style="margin: 0 0 20px; color: #52525b; font-size: 16px; line-height: 1.6;">
+                <strong style="color: #18181b;">${senderName.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</strong> vous a envoyé un document via DocuSafe.
+              </p>
+
+              <!-- Document card -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; margin: 0 0 20px;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <table cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="vertical-align: middle; padding-right: 14px;">
+                          <div style="width: 44px; height: 44px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius: 10px; text-align: center; line-height: 44px; font-size: 20px; color: white;">
+                            📄
+                          </div>
+                        </td>
+                        <td style="vertical-align: middle;">
+                          <p style="margin: 0; color: #1e40af; font-size: 16px; font-weight: 600;">
+                            ${documentName.replace(/</g, "&lt;").replace(/>/g, "&gt;")}
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Optional message -->
+          ${messageBlock}
+
+          <!-- CTA Button -->
+          <tr>
+            <td style="padding: 10px 40px 40px;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center">
+                    <a href="${downloadUrl}"
+                       style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 12px; font-size: 16px; font-weight: 600;">
+                      Télécharger le document
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 20px 0 0; text-align: center; color: #71717a; font-size: 13px;">
+                Ce lien expire dans 48 heures.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f4f4f5; padding: 24px 40px; text-align: center;">
+              <p style="margin: 0 0 8px; color: #71717a; font-size: 13px;">
+                Envoyé via <strong>DocuSafe</strong> — Vos documents en toute sécurité.
+              </p>
+              <p style="margin: 0; color: #a1a1aa; font-size: 12px;">
+                © ${new Date().getFullYear()} DocuSafe. Tous droits réservés.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+}
+
 function getCancellationEmailHtml(name: string): string {
   return `
 <!DOCTYPE html>
