@@ -4,9 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import crypto from "crypto";
 
-// Use RESEND_INBOUND_DOMAIN env var (e.g. "cool-hedgehog.resend.app" for free plan)
 const IMPORT_EMAIL_DOMAIN =
-  process.env.RESEND_INBOUND_DOMAIN || "import.docusafe.online";
+  process.env.RESEND_INBOUND_DOMAIN || "docusafe.online";
 
 /**
  * Generate a unique, URL-safe import email ID

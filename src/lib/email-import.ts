@@ -19,9 +19,8 @@ import { createNotification } from "@/lib/notifications";
 import { simpleParser } from "mailparser";
 
 // Domain for import emails (Resend inbound)
-// Use RESEND_INBOUND_DOMAIN env var (e.g. "cool-hedgehog.resend.app" for free plan)
 export const IMPORT_EMAIL_DOMAIN =
-  process.env.RESEND_INBOUND_DOMAIN || "import.docusafe.online";
+  process.env.RESEND_INBOUND_DOMAIN || "docusafe.online";
 
 // Allowed file types for email import
 export const ALLOWED_MIME_TYPES = [
