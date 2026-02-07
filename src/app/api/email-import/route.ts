@@ -2,154 +2,138 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   parseImportEmailAddress,
   processEmailImport,
-  validateSendGridSignature,
-  ALLOWED_MIME_TYPES,
-  MAX_EMAIL_ATTACHMENT_SIZE,
+  verifyResendWebhook,
+  fetchResendEmailAttachments,
 } from "@/lib/email-import";
 
 /**
- * SendGrid Inbound Parse Webhook Handler
+ * Resend Inbound Webhook Handler
  *
- * This endpoint receives emails sent to *@import.docusafe.app
- * and imports the attachments as documents for the corresponding user.
+ * This endpoint receives webhook events from Resend when emails
+ * are sent to *@import.docusafe.online.
  *
- * SendGrid sends the email as multipart/form-data with these fields:
- * - envelope: JSON string containing "to" and "from" addresses
- * - from: Sender email
- * - to: Recipient email (our import address)
- * - subject: Email subject
- * - text: Plain text body
- * - html: HTML body
- * - attachments: Number of attachments
- * - attachment1, attachment2, ...: File attachments
+ * Resend sends a JSON payload with type "email.received" containing:
+ * - data.email_id: Unique email identifier
+ * - data.from: Sender email
+ * - data.to: Array of recipient emails
+ * - data.subject: Email subject
+ * - data.attachments: Array of attachment metadata
+ *
+ * We then fetch the full email content via Resend API
+ * and parse the raw MIME to extract attachment data.
  */
 export async function POST(request: NextRequest) {
-  console.log("[Email Import Webhook] Received request");
+  console.log("[Email Import Webhook] Received Resend webhook");
 
   try {
-    // 1. Validate content type
-    const contentType = request.headers.get("content-type") || "";
-    if (!contentType.includes("multipart/form-data")) {
-      console.error("[Email Import Webhook] Invalid content type:", contentType);
-      // Return 200 to avoid SendGrid retries
-      return NextResponse.json({ error: "Invalid content type" }, { status: 200 });
-    }
+    // 1. Read the raw body for signature verification
+    const rawBody = await request.text();
 
-    // 2. Parse the form data
-    const formData = await request.formData();
+    // 2. Verify Resend webhook signature (svix-based)
+    const svixId = request.headers.get("svix-id") || "";
+    const svixTimestamp = request.headers.get("svix-timestamp") || "";
+    const svixSignature = request.headers.get("svix-signature") || "";
 
-    // 3. Validate SendGrid signature (in production)
-    const signature = request.headers.get("x-twilio-email-event-webhook-signature") || "";
-    const timestamp = request.headers.get("x-twilio-email-event-webhook-timestamp") || "";
+    if (process.env.NODE_ENV === "production") {
+      const isValid = verifyResendWebhook(
+        rawBody,
+        svixId,
+        svixTimestamp,
+        svixSignature
+      );
 
-    if (process.env.NODE_ENV === "production" && process.env.SENDGRID_INBOUND_PARSE_WEBHOOK_SECRET) {
-      // For production, we need to validate the signature
-      // Note: SendGrid Inbound Parse uses a different signing mechanism than Event Webhook
-      // For Inbound Parse, you may need to set up IP whitelisting instead
-      // or use the basic auth option in SendGrid
-      console.log("[Email Import Webhook] Signature validation in production mode");
-    }
-
-    // 4. Extract envelope (contains to/from addresses)
-    let toAddress = "";
-    let fromAddress = "";
-
-    const envelope = formData.get("envelope");
-    if (envelope && typeof envelope === "string") {
-      try {
-        const envelopeData = JSON.parse(envelope);
-        toAddress = envelopeData.to?.[0] || "";
-        fromAddress = envelopeData.from || "";
-        console.log("[Email Import Webhook] Envelope parsed - to:", toAddress, "from:", fromAddress);
-      } catch {
-        console.error("[Email Import Webhook] Failed to parse envelope");
+      if (!isValid) {
+        console.error("[Email Import Webhook] Invalid webhook signature");
+        return NextResponse.json(
+          { error: "Invalid signature" },
+          { status: 401 }
+        );
       }
     }
 
-    // Fallback to form fields if envelope parsing fails
-    if (!toAddress) {
-      toAddress = (formData.get("to") as string) || "";
-    }
-    if (!fromAddress) {
-      fromAddress = (formData.get("from") as string) || "";
+    // 3. Parse the JSON payload
+    let payload;
+    try {
+      payload = JSON.parse(rawBody);
+    } catch {
+      console.error("[Email Import Webhook] Invalid JSON payload");
+      return NextResponse.json(
+        { error: "Invalid JSON" },
+        { status: 400 }
+      );
     }
 
-    console.log("[Email Import Webhook] Email to:", toAddress, "from:", fromAddress);
+    // 4. Only handle email.received events
+    if (payload.type !== "email.received") {
+      console.log(`[Email Import Webhook] Ignoring event type: ${payload.type}`);
+      return NextResponse.json({ message: "Event type ignored" });
+    }
 
-    // 5. Extract importEmailId from the recipient address
-    const importEmailId = parseImportEmailAddress(toAddress);
+    const emailData = payload.data;
+    if (!emailData?.email_id) {
+      console.error("[Email Import Webhook] Missing email_id in payload");
+      return NextResponse.json({ error: "Missing email_id" }, { status: 400 });
+    }
+
+    console.log(
+      `[Email Import Webhook] Email received - id: ${emailData.email_id}, from: ${emailData.from}, to: ${JSON.stringify(emailData.to)}`
+    );
+
+    // 5. Check if there are attachments in the metadata
+    if (!emailData.attachments || emailData.attachments.length === 0) {
+      console.log("[Email Import Webhook] No attachments in email");
+      return NextResponse.json({ message: "No attachments" });
+    }
+
+    // 6. Find the import email address from recipients
+    const toAddresses: string[] = Array.isArray(emailData.to)
+      ? emailData.to
+      : [emailData.to];
+
+    let importEmailId: string | null = null;
+    for (const addr of toAddresses) {
+      importEmailId = parseImportEmailAddress(addr);
+      if (importEmailId) break;
+    }
 
     if (!importEmailId) {
-      console.log("[Email Import Webhook] Invalid import address:", toAddress);
-      // Return 200 to avoid retries - silently fail
-      return NextResponse.json({ message: "Invalid import address" }, { status: 200 });
+      console.log(
+        `[Email Import Webhook] No valid import address found in: ${toAddresses.join(", ")}`
+      );
+      return NextResponse.json({ message: "Invalid import address" });
     }
 
-    console.log("[Email Import Webhook] Import email ID:", importEmailId);
+    console.log(`[Email Import Webhook] Import email ID: ${importEmailId}`);
 
-    // 6. Get number of attachments
-    const attachmentCount = parseInt(formData.get("attachments") as string) || 0;
-    console.log("[Email Import Webhook] Attachment count:", attachmentCount);
+    // 7. Fetch full email content from Resend API (including attachment data)
+    const emailContent = await fetchResendEmailAttachments(emailData.email_id);
 
-    if (attachmentCount === 0) {
-      console.log("[Email Import Webhook] No attachments in email");
-      return NextResponse.json({ message: "No attachments" }, { status: 200 });
+    if (!emailContent) {
+      console.error("[Email Import Webhook] Failed to fetch email content from Resend API");
+      return NextResponse.json(
+        { error: "Failed to fetch email content" },
+        { status: 500 }
+      );
     }
 
-    // 7. Extract attachments
-    const attachments: Array<{
-      filename: string;
-      content: Buffer;
-      contentType: string;
-    }> = [];
-
-    for (let i = 1; i <= attachmentCount; i++) {
-      const attachment = formData.get(`attachment${i}`);
-
-      if (attachment && attachment instanceof Blob) {
-        const filename =
-          (attachment as File).name || `attachment${i}`;
-        const contentType = attachment.type || "application/octet-stream";
-
-        // Check if file type is supported before processing
-        if (!ALLOWED_MIME_TYPES.includes(contentType.toLowerCase())) {
-          console.log(`[Email Import Webhook] Skipping unsupported attachment ${i}: ${contentType}`);
-          continue;
-        }
-
-        // Check file size
-        if (attachment.size > MAX_EMAIL_ATTACHMENT_SIZE) {
-          console.log(`[Email Import Webhook] Skipping oversized attachment ${i}: ${attachment.size} bytes`);
-          continue;
-        }
-
-        try {
-          const arrayBuffer = await attachment.arrayBuffer();
-          const content = Buffer.from(arrayBuffer);
-
-          attachments.push({
-            filename,
-            content,
-            contentType,
-          });
-
-          console.log(
-            `[Email Import Webhook] Attachment ${i}: ${filename} (${contentType}, ${content.length} bytes)`
-          );
-        } catch (error) {
-          console.error(`[Email Import Webhook] Failed to read attachment ${i}:`, error);
-        }
-      }
+    if (emailContent.attachments.length === 0) {
+      console.log("[Email Import Webhook] No valid attachments in parsed email");
+      return NextResponse.json({ message: "No valid attachments" });
     }
 
-    console.log(`[Email Import Webhook] Valid attachments to process: ${attachments.length}`);
+    console.log(
+      `[Email Import Webhook] Fetched ${emailContent.attachments.length} attachments from Resend`
+    );
 
     // 8. Process the import
-    const result = await processEmailImport(importEmailId, attachments, fromAddress);
+    const result = await processEmailImport(
+      importEmailId,
+      emailContent.attachments,
+      emailData.from || emailContent.from || "unknown"
+    );
 
     console.log("[Email Import Webhook] Import result:", result);
 
-    // Always return 200 to SendGrid to acknowledge receipt
     return NextResponse.json({
       message: "Email processed",
       imported: result.imported,
@@ -159,16 +143,21 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("[Email Import Webhook] Error:", error);
 
-    // Return 200 even on error to prevent SendGrid from retrying
-    // (we don't want to process the same email multiple times)
+    // Return 200 to prevent Resend from retrying
     return NextResponse.json(
-      { error: "Internal error", message: error instanceof Error ? error.message : "Unknown" },
+      {
+        error: "Internal error",
+        message: error instanceof Error ? error.message : "Unknown",
+      },
       { status: 200 }
     );
   }
 }
 
-// SendGrid may also send GET requests for webhook verification
+// Health check endpoint
 export async function GET() {
-  return NextResponse.json({ status: "ok", message: "Email import webhook is active" });
+  return NextResponse.json({
+    status: "ok",
+    message: "Resend inbound email webhook is active",
+  });
 }

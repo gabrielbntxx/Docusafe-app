@@ -16,9 +16,10 @@ import {
 } from "@/lib/encryption";
 import { analyzeDocument, getOrCreateCategoryFolder } from "@/lib/ai-analysis";
 import { createNotification } from "@/lib/notifications";
+import { simpleParser } from "mailparser";
 
-// Domain for import emails
-export const IMPORT_EMAIL_DOMAIN = "import.docusafe.app";
+// Domain for import emails (Resend inbound)
+export const IMPORT_EMAIL_DOMAIN = "import.docusafe.online";
 
 // Allowed file types for email import
 export const ALLOWED_MIME_TYPES = [
@@ -88,19 +89,19 @@ export async function findUserByImportEmailId(
 }
 
 /**
- * Validate SendGrid webhook signature
- * SendGrid uses HMAC SHA256 for webhook verification
+ * Verify Resend webhook signature (svix-based)
+ * Resend uses svix for webhook delivery with HMAC SHA256
  */
-export function validateSendGridSignature(
+export function verifyResendWebhook(
   payload: string,
-  signature: string,
-  timestamp: string
+  svixId: string,
+  svixTimestamp: string,
+  svixSignature: string
 ): boolean {
-  const webhookSecret = process.env.SENDGRID_INBOUND_PARSE_WEBHOOK_SECRET;
+  const webhookSecret = process.env.RESEND_WEBHOOK_SECRET;
 
   if (!webhookSecret) {
-    console.warn("[Email Import] SENDGRID_INBOUND_PARSE_WEBHOOK_SECRET not set");
-    // In development, allow requests without signature validation
+    console.warn("[Email Import] RESEND_WEBHOOK_SECRET not set");
     if (process.env.NODE_ENV !== "production") {
       return true;
     }
@@ -108,21 +109,129 @@ export function validateSendGridSignature(
   }
 
   try {
-    // SendGrid signature format: timestamp + payload
-    const signedPayload = timestamp + payload;
+    // Resend/Svix signature: base64-encoded HMAC SHA256 of "msg_id.timestamp.body"
+    // The secret is base64-encoded with "whsec_" prefix
+    const secretBytes = Buffer.from(
+      webhookSecret.startsWith("whsec_")
+        ? webhookSecret.slice(6)
+        : webhookSecret,
+      "base64"
+    );
+
+    const signedContent = `${svixId}.${svixTimestamp}.${payload}`;
     const expectedSignature = crypto
-      .createHmac("sha256", webhookSecret)
-      .update(signedPayload)
+      .createHmac("sha256", secretBytes)
+      .update(signedContent)
       .digest("base64");
 
-    // Constant-time comparison to prevent timing attacks
-    return crypto.timingSafeEqual(
-      Buffer.from(signature),
-      Buffer.from(expectedSignature)
-    );
-  } catch (error) {
-    console.error("[Email Import] Signature validation error:", error);
+    // svix-signature can contain multiple signatures separated by spaces (v1,xxx)
+    const signatures = svixSignature.split(" ");
+    for (const sig of signatures) {
+      const sigValue = sig.startsWith("v1,") ? sig.slice(3) : sig;
+      try {
+        if (
+          crypto.timingSafeEqual(
+            Buffer.from(expectedSignature),
+            Buffer.from(sigValue)
+          )
+        ) {
+          return true;
+        }
+      } catch {
+        // Length mismatch, try next signature
+        continue;
+      }
+    }
+
     return false;
+  } catch (error) {
+    console.error("[Email Import] Webhook signature verification error:", error);
+    return false;
+  }
+}
+
+/**
+ * Fetch full email content from Resend receiving API
+ * Returns parsed attachments from the raw email
+ */
+export async function fetchResendEmailAttachments(
+  emailId: string
+): Promise<{
+  from: string;
+  to: string[];
+  attachments: Array<{
+    filename: string;
+    content: Buffer;
+    contentType: string;
+  }>;
+} | null> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.error("[Email Import] RESEND_API_KEY not set");
+    return null;
+  }
+
+  try {
+    // Fetch email details from Resend API
+    const response = await fetch(
+      `https://api.resend.com/emails/receiving/${emailId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      console.error(
+        `[Email Import] Resend API error: ${response.status} ${response.statusText}`
+      );
+      return null;
+    }
+
+    const emailData = await response.json();
+
+    // Download the raw email from the signed URL
+    if (!emailData.raw) {
+      console.error("[Email Import] No raw email URL in Resend response");
+      return null;
+    }
+
+    const rawResponse = await fetch(emailData.raw);
+    if (!rawResponse.ok) {
+      console.error("[Email Import] Failed to download raw email");
+      return null;
+    }
+
+    const rawBuffer = Buffer.from(await rawResponse.arrayBuffer());
+
+    // Parse the raw MIME email with mailparser
+    const parsed = await simpleParser(rawBuffer);
+
+    const attachments: Array<{
+      filename: string;
+      content: Buffer;
+      contentType: string;
+    }> = [];
+
+    if (parsed.attachments) {
+      for (const att of parsed.attachments) {
+        attachments.push({
+          filename: att.filename || `attachment_${attachments.length + 1}`,
+          content: att.content,
+          contentType: att.contentType || "application/octet-stream",
+        });
+      }
+    }
+
+    return {
+      from: typeof parsed.from?.text === "string" ? parsed.from.text : emailData.from || "",
+      to: Array.isArray(emailData.to) ? emailData.to : [emailData.to || ""],
+      attachments,
+    };
+  } catch (error) {
+    console.error("[Email Import] Error fetching email from Resend:", error);
+    return null;
   }
 }
 

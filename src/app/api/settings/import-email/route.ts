@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import crypto from "crypto";
 
-const IMPORT_EMAIL_DOMAIN = "import.docusafe.app";
+const IMPORT_EMAIL_DOMAIN = "import.docusafe.online";
 
 /**
  * Generate a unique, URL-safe import email ID
