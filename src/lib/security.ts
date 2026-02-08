@@ -367,6 +367,16 @@ const RATE_LIMIT_CONFIG = {
     windowMs: 15 * 60 * 1000, // 15 minutes
     blockDurationMs: 60 * 60 * 1000, // 1 hour block
   },
+  emailVerify: {
+    maxAttempts: 5,
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    blockDurationMs: 60 * 60 * 1000, // 1 hour block
+  },
+  resendCode: {
+    maxAttempts: 3,
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    blockDurationMs: 30 * 60 * 1000, // 30 minutes block
+  },
 };
 
 // In-memory rate limit store (pour production, utiliser Redis)
@@ -814,6 +824,29 @@ export function validatePin(pin: string): { valid: boolean; error?: string } {
   const simplePins = ["0000", "1111", "2222", "3333", "4444", "5555", "6666", "7777", "8888", "9999", "1234", "4321"];
   if (simplePins.includes(pin)) {
     return { valid: false, error: "Ce PIN est trop simple" };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Valide un numéro de téléphone (format international)
+ */
+export function validatePhone(phone: string): { valid: boolean; error?: string } {
+  if (!phone || typeof phone !== "string") {
+    return { valid: false, error: "Numéro de téléphone requis" };
+  }
+
+  const trimmed = phone.trim();
+
+  // Format international: +{country_code}{number}, 7-15 digits total
+  const phoneRegex = /^\+[1-9]\d{6,14}$/;
+
+  if (!phoneRegex.test(trimmed)) {
+    return {
+      valid: false,
+      error: "Format invalide. Utilisez le format international (ex: +33612345678)",
+    };
   }
 
   return { valid: true };

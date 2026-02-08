@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import {
@@ -7,8 +8,10 @@ import {
   validateEmail,
   validatePassword,
   validateName,
+  validatePhone,
 } from "@/lib/security";
 import { generateUserEncryptionKey, encryptUserKey } from "@/lib/encryption";
+import { sendVerificationCodeEmail } from "@/lib/email";
 
 export async function POST(req: Request) {
   try {
@@ -28,7 +31,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { name, email, password } = await req.json();
+    const { name, email, password, phone } = await req.json();
 
     // Validation du nom
     const nameValidation = validateName(name);
@@ -55,6 +58,17 @@ export async function POST(req: Request) {
         { error: passwordValidation.error },
         { status: 400 }
       );
+    }
+
+    // Validation du téléphone (optionnel)
+    if (phone) {
+      const phoneValidation = validatePhone(phone);
+      if (!phoneValidation.valid) {
+        return NextResponse.json(
+          { error: phoneValidation.error },
+          { status: 400 }
+        );
+      }
     }
 
     // Normaliser l'email
@@ -85,9 +99,34 @@ export async function POST(req: Request) {
         name: name.trim(),
         email: normalizedEmail,
         password: hashedPassword,
+        phone: phone?.trim() || null,
         encryptionKey: encryptedKey,
       },
     });
+
+    // Generate 6-digit verification code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashedCode = crypto.createHash("sha256").update(code).digest("hex");
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Delete any existing tokens for this email
+    await db.emailVerificationToken.deleteMany({
+      where: { email: normalizedEmail },
+    });
+
+    // Store hashed code
+    await db.emailVerificationToken.create({
+      data: {
+        email: normalizedEmail,
+        token: hashedCode,
+        expiresAt,
+      },
+    });
+
+    // Send verification email (non-blocking)
+    sendVerificationCodeEmail(normalizedEmail, code, name.trim()).catch(
+      (err) => console.error("[Register] Failed to send verification email:", err)
+    );
 
     return NextResponse.json(
       {
@@ -96,6 +135,7 @@ export async function POST(req: Request) {
           name: user.name,
           email: user.email,
         },
+        requiresVerification: true,
       },
       { status: 201 }
     );

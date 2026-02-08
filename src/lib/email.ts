@@ -314,8 +314,105 @@ function getPasswordResetEmailHtml(name: string, resetUrl: string): string {
 }
 
 /**
- * Cancellation email HTML template
+ * Send email verification code
  */
+export async function sendVerificationCodeEmail(
+  userEmail: string,
+  code: string,
+  userName?: string
+) {
+  if (!resend) {
+    console.warn("[Email] Resend not configured, skipping verification email");
+    return { success: false, error: "Email service not configured" };
+  }
+
+  const name = userName || "cher utilisateur";
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: userEmail,
+      subject: "Votre code de vérification - DocuSafe",
+      html: getVerificationCodeEmailHtml(name, code),
+    });
+
+    if (error) {
+      console.error("[Email] Error sending verification email:", error);
+      return { success: false, error };
+    }
+
+    console.log("[Email] Verification code email sent to:", userEmail);
+    return { success: true, data };
+  } catch (error) {
+    console.error("[Email] Failed to send verification email:", error);
+    return { success: false, error };
+  }
+}
+
+/**
+ * Verification code email HTML template
+ */
+function getVerificationCodeEmailHtml(name: string, code: string): string {
+  return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Code de vérification</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+          <tr>
+            <td style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); padding: 40px 40px 30px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">DocuSafe</h1>
+              <p style="margin: 10px 0 0; color: rgba(255, 255, 255, 0.9); font-size: 16px;">Vérification de votre email</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 40px;">
+              <h2 style="margin: 0 0 20px; color: #18181b; font-size: 24px;">Bonjour ${name},</h2>
+              <p style="margin: 0 0 20px; color: #52525b; font-size: 16px; line-height: 1.6;">
+                Voici votre code de vérification pour activer votre compte DocuSafe :
+              </p>
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+                <tr>
+                  <td align="center">
+                    <div style="display: inline-block; background-color: #f4f4f5; border: 2px solid #e4e4e7; border-radius: 12px; padding: 20px 40px;">
+                      <span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #18181b;">${code}</span>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #fef3c7; border-radius: 12px; margin: 30px 0;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <p style="margin: 0; color: #92400e; font-size: 14px;">
+                      <strong>Ce code expire dans 10 minutes.</strong><br>
+                      Si vous n'avez pas créé de compte sur DocuSafe, ignorez cet email.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color: #f4f4f5; padding: 24px 40px; text-align: center;">
+              <p style="margin: 0; color: #a1a1aa; font-size: 12px;">&copy; ${new Date().getFullYear()} DocuSafe. Tous droits réservés.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+}
+
 /**
  * Send document sharing email
  */

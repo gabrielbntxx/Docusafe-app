@@ -68,6 +68,23 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    async signIn({ user, account }) {
+      // Auto-verify email for OAuth users (Google/Apple)
+      if (account?.provider && account.provider !== "credentials") {
+        if (user.email) {
+          const existingUser = await db.user.findUnique({
+            where: { email: user.email },
+          });
+          if (existingUser && !existingUser.emailVerified) {
+            await db.user.update({
+              where: { id: existingUser.id },
+              data: { emailVerified: new Date() },
+            });
+          }
+        }
+      }
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
@@ -88,6 +105,7 @@ export const authOptions: NextAuthOptions = {
             language: true,
             theme: true,
             image: true,
+            emailVerified: true,
           },
         });
 
@@ -97,6 +115,7 @@ export const authOptions: NextAuthOptions = {
           session.user.language = dbUser.language;
           session.user.theme = dbUser.theme;
           session.user.image = dbUser.image;
+          session.user.emailVerified = dbUser.emailVerified;
           // Convert BigInt to Number for JSON serialization
           session.user.storageUsedBytes = Number(dbUser.storageUsedBytes);
         }

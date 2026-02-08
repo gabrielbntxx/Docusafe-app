@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Mail, Lock, Loader2 } from "lucide-react";
+import { Mail, Lock, Loader2, CheckCircle } from "lucide-react";
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const verified = searchParams.get("verified") === "true";
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
@@ -64,6 +66,13 @@ export function LoginForm() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
+          {verified && !error && (
+            <div className="p-4 rounded-2xl bg-green-50 border border-green-200 text-green-600 text-sm text-center flex items-center justify-center gap-2">
+              <CheckCircle className="w-4 h-4" />
+              Email vérifié avec succès ! Connectez-vous maintenant.
+            </div>
+          )}
+
           {error && (
             <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-600 text-sm text-center">
               {error}

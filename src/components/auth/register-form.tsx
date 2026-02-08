@@ -4,7 +4,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { User, Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
+import { User, Mail, Lock, Eye, EyeOff, Loader2, Phone } from "lucide-react";
 
 export function RegisterForm() {
   const router = useRouter();
@@ -15,6 +15,7 @@ export function RegisterForm() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    phone: "",
     password: "",
     confirmPassword: "",
   });
@@ -66,6 +67,7 @@ export function RegisterForm() {
           name: formData.name,
           email: formData.email,
           password: formData.password,
+          phone: formData.phone || undefined,
         }),
       });
 
@@ -77,19 +79,8 @@ export function RegisterForm() {
         return;
       }
 
-      // Auto login after registration
-      const result = await signIn("credentials", {
-        email: formData.email,
-        password: formData.password,
-        redirect: false,
-      });
-
-      if (result?.error) {
-        setError(result.error);
-      } else {
-        router.push("/dashboard");
-        router.refresh();
-      }
+      // Redirect to email verification page
+      router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
     } catch (error) {
       setError("Une erreur est survenue. Veuillez réessayer.");
     } finally {
@@ -153,6 +144,21 @@ export function RegisterForm() {
                 setFormData({ ...formData, email: e.target.value })
               }
               required
+              disabled={isLoading}
+              className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-300 rounded-2xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 disabled:opacity-50"
+            />
+          </div>
+
+          {/* Phone Input (Optional) */}
+          <div className="relative">
+            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="tel"
+              placeholder="+33 6 12 34 56 78 (optionnel)"
+              value={formData.phone}
+              onChange={(e) =>
+                setFormData({ ...formData, phone: e.target.value })
+              }
               disabled={isLoading}
               className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-300 rounded-2xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 disabled:opacity-50"
             />

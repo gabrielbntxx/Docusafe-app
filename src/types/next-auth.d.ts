@@ -14,6 +14,7 @@ declare module "next-auth" {
       storageUsedBytes?: number;
       language?: string;
       theme?: string;
+      emailVerified?: Date | null;
     };
   }
 

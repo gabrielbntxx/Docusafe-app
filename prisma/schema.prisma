@@ -17,6 +17,7 @@ model User {
   name          String?
   image         String?
   password      String?   // Hashed, nullable for OAuth users
+  phone         String?   // International format (e.g. +33612345678), stored only
 
   // Subscription
   planType      String    @default("FREE")
@@ -221,6 +222,18 @@ model PasswordResetToken {
   id        String   @id @default(cuid())
   email     String
   token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([token])
+}
+
+// Email verification tokens
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique // SHA-256 hash of 6-digit code
   expiresAt DateTime
   createdAt DateTime @default(now())
 

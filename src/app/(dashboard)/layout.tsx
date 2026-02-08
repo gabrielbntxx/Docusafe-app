@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { db } from "@/lib/db";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { MobileNav } from "@/components/dashboard/mobile-nav";
 import { BottomNav } from "@/components/dashboard/bottom-nav";
@@ -18,6 +19,16 @@ export default async function DashboardLayout({
 
   if (!session) {
     redirect("/login");
+  }
+
+  // Check email verification (credentials users only)
+  const user = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { emailVerified: true, email: true },
+  });
+
+  if (user && !user.emailVerified) {
+    redirect(`/verify-email?email=${encodeURIComponent(user.email)}`);
   }
 
   return (
