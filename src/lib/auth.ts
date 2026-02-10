@@ -6,6 +6,9 @@ import AppleProvider from "next-auth/providers/apple";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
 
+// Determine cookie security based on NEXTAUTH_URL
+const useSecureCookies = process.env.NEXTAUTH_URL?.startsWith("https://") ?? process.env.NODE_ENV === "production";
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db),
   session: {
@@ -15,6 +18,64 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
     signOut: "/",
     error: "/login",
+  },
+  // Explicit cookie config for production behind proxy (Railway)
+  cookies: {
+    sessionToken: {
+      name: `${useSecureCookies ? "__Secure-" : ""}next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
+      },
+    },
+    callbackUrl: {
+      name: `${useSecureCookies ? "__Secure-" : ""}next-auth.callback-url`,
+      options: {
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
+      },
+    },
+    csrfToken: {
+      name: `${useSecureCookies ? "__Host-" : ""}next-auth.csrf-token`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
+      },
+    },
+    pkceCodeVerifier: {
+      name: `${useSecureCookies ? "__Secure-" : ""}next-auth.pkce.code_verifier`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
+        maxAge: 900,
+      },
+    },
+    state: {
+      name: `${useSecureCookies ? "__Secure-" : ""}next-auth.state`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
+        maxAge: 900,
+      },
+    },
+    nonce: {
+      name: `${useSecureCookies ? "__Secure-" : ""}next-auth.nonce`,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
+      },
+    },
   },
   providers: [
     GoogleProvider({

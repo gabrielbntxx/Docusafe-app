@@ -34,6 +34,15 @@ function cleanupStore(): void {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Skip all custom processing for NextAuth OAuth routes to prevent
+  // interference with state/PKCE cookies during OAuth flow
+  if (
+    pathname.startsWith("/api/auth/") &&
+    pathname !== "/api/auth/callback/credentials"
+  ) {
+    return NextResponse.next();
+  }
+
   // Rate limiting uniquement pour les tentatives de login
   if (
     pathname === "/api/auth/callback/credentials" &&

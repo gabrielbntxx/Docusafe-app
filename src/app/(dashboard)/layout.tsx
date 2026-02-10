@@ -11,37 +11,34 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import { TutorialProvider } from "@/components/providers/tutorial-provider";
 import { SubscriptionProvider } from "@/components/providers/subscription-provider";
 
-export default async function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+async function getRedirectOrUser() {
   const session = await getServerSession(authOptions);
+  if (!session) return "/login";
 
-  if (!session) {
-    redirect("/login");
-  }
-
-  // Fetch user data for verification and subscription checks
   const user = await db.user.findUnique({
     where: { id: session.user.id },
     select: { emailVerified: true, email: true, planType: true, onboardingCompleted: true },
   });
 
-  if (!user) {
-    redirect("/login");
+  if (!user) return "/login";
+  if (!user.emailVerified) return `/verify-email?email=${encodeURIComponent(user.email)}`;
+  if (user.planType === "FREE" && !user.onboardingCompleted) return "/onboarding";
+
+  return user;
+}
+
+export default async function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const result = await getRedirectOrUser();
+
+  if (typeof result === "string") {
+    redirect(result);
   }
 
-  // Check email verification
-  if (!user.emailVerified) {
-    redirect(`/verify-email?email=${encodeURIComponent(user.email)}`);
-  }
-
-  // Check onboarding for FREE users
-  if (user.planType === "FREE" && !user.onboardingCompleted) {
-    redirect("/onboarding");
-  }
-
+  const user = result;
   const isRestricted = user.planType === "FREE";
 
   return (

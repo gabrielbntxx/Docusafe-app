@@ -89,7 +89,7 @@ export function SubscriptionClient({
         { icon: Bot, text: "DocuBot (10 msg/jour)", included: true },
         { icon: Shield, text: "Sécurité avancée", included: true },
       ],
-      stripeLink: "https://buy.stripe.com/student-plan",
+      stripeLink: "https://buy.stripe.com/eVq9AUaaE2DB3HtbFrgYU00",
       badge: "Populaire",
     },
     {
@@ -108,7 +108,7 @@ export function SubscriptionClient({
         { icon: Lock, text: "Partage sécurisé", included: true },
         { icon: Share2, text: "Liens avec expiration", included: true },
       ],
-      stripeLink: "https://buy.stripe.com/eVq9AUaaE2DB3HtbFrgYU00",
+      stripeLink: "https://buy.stripe.com/bJe28s5UoemjcdZ24RgYU06",
       badge: "Recommandé",
     },
     {

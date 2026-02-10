@@ -47,7 +47,7 @@ const PLANS = {
     gradient: "from-emerald-500 to-teal-600",
     shadow: "shadow-emerald-500/25",
     badgeBg: "bg-emerald-100 text-emerald-700",
-    stripeLink: "https://buy.stripe.com/student-plan",
+    stripeLink: "https://buy.stripe.com/eVq9AUaaE2DB3HtbFrgYU00",
     features: [
       { icon: HardDrive, text: "100 Go de stockage" },
       { icon: Zap, text: "Analyses IA illimitées" },
@@ -67,7 +67,7 @@ const PLANS = {
     gradient: "from-violet-500 to-purple-600",
     shadow: "shadow-violet-500/25",
     badgeBg: "bg-violet-100 text-violet-700",
-    stripeLink: "https://buy.stripe.com/eVq9AUaaE2DB3HtbFrgYU00",
+    stripeLink: "https://buy.stripe.com/bJe28s5UoemjcdZ24RgYU06",
     features: [
       { icon: HardDrive, text: "200 Go (extensible)" },
       { icon: Zap, text: "IA illimitée" },
