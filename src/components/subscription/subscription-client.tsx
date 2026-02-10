@@ -367,7 +367,7 @@ export function SubscriptionClient({
                     </button>
                   ) : canUpgradeToPlan && plan.stripeLink ? (
                     <a
-                      href={`${plan.stripeLink}?prefilled_email=${encodeURIComponent(userEmail)}`}
+                      href={`${plan.stripeLink}?client_reference_id=${plan.id}&prefilled_email=${encodeURIComponent(userEmail)}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className={`flex w-full items-center justify-center gap-1.5 sm:gap-2 rounded-lg sm:rounded-xl py-2.5 sm:py-3 text-[10px] sm:text-sm font-semibold transition-all active:scale-[0.98] hover:shadow-xl ${styles.button}`}

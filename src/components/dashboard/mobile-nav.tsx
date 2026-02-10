@@ -17,9 +17,11 @@ import {
   Bot,
   MessageCircle,
   FileUp,
+  Lock,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useSubscription } from "@/components/providers/subscription-provider";
 import type { TranslationKey } from "@/lib/translations";
 
 const menuItems: Array<{ nameKey: TranslationKey; href: string; icon: React.ElementType; description: string }> = [
@@ -37,6 +39,7 @@ export function MobileNav() {
   const pathname = usePathname();
   const { t } = useTranslation();
   const { data: session } = useSession();
+  const { isRestricted } = useSubscription();
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -220,29 +223,39 @@ export function MobileNav() {
             <div className="space-y-1">
               {menuItems.map((item) => {
                 const isActive = pathname === item.href;
+                const isLocked = isRestricted && (item.nameKey === "docubot" || item.nameKey === "settings");
+                const href = isLocked ? "/dashboard/subscription" : item.href;
                 return (
                   <Link
                     key={item.nameKey}
-                    href={item.href}
+                    href={href}
                     onClick={closeMenu}
                     className={`flex items-center gap-3 rounded-xl px-3 py-3 transition-all ${
-                      isActive
+                      isLocked
+                        ? "text-neutral-400 dark:text-neutral-600"
+                        : isActive
                         ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
                         : "text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-white/5"
                     }`}
                   >
                     <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                      isActive
+                      isLocked
+                        ? "bg-neutral-100 dark:bg-white/5"
+                        : isActive
                         ? "bg-blue-100 dark:bg-blue-500/20"
                         : "bg-neutral-100 dark:bg-white/5"
                     }`}>
-                      <item.icon className={`h-4 w-4 ${isActive ? "text-blue-600 dark:text-blue-400" : "text-neutral-500 dark:text-neutral-400"}`} />
+                      <item.icon className={`h-4 w-4 ${isLocked ? "text-neutral-400 dark:text-neutral-600" : isActive ? "text-blue-600 dark:text-blue-400" : "text-neutral-500 dark:text-neutral-400"}`} />
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium">{t(item.nameKey)}</p>
                       <p className="text-xs text-neutral-500 dark:text-neutral-400">{item.description}</p>
                     </div>
-                    <ChevronRight className="h-4 w-4 text-neutral-300 dark:text-neutral-600" />
+                    {isLocked ? (
+                      <Lock className="h-3.5 w-3.5 text-neutral-400 dark:text-neutral-600" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 text-neutral-300 dark:text-neutral-600" />
+                    )}
                   </Link>
                 );
               })}

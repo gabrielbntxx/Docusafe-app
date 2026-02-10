@@ -35,6 +35,18 @@ export async function POST(req: Request) {
       );
     }
 
+    // Check subscription - FREE users cannot upload
+    const currentUser = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { planType: true },
+    });
+    if (!currentUser || currentUser.planType === "FREE") {
+      return NextResponse.json(
+        { error: "Abonnement requis pour importer des documents" },
+        { status: 403 }
+      );
+    }
+
     // Rate limiting pour les uploads
     const clientId = await getClientIdentifier(session.user.id);
     const rateLimit = checkRateLimit(clientId, "upload");

@@ -102,18 +102,24 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return;
   }
 
-  // Update user to PRO
+  // Detect plan type from client_reference_id or default to PRO
+  const planFromRef = session.client_reference_id;
+  const validPlans = ["STUDENT", "PRO", "BUSINESS"];
+  const planType = planFromRef && validPlans.includes(planFromRef) ? planFromRef : "PRO";
+
+  // Update user plan
   await db.user.update({
     where: { id: user.id },
     data: {
-      planType: "PRO",
+      planType,
       stripeCustomerId: customerId,
       stripeSubscriptionId: subscriptionId,
       subscriptionStatus: "active",
+      onboardingCompleted: true,
     },
   });
 
-  console.log("[Stripe Webhook] User upgraded to PRO:", user.email);
+  console.log(`[Stripe Webhook] User upgraded to ${planType}:`, user.email);
 
   // Send welcome email
   await sendWelcomeProEmail(user.email, user.name || undefined);

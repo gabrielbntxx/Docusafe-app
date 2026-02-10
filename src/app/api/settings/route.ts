@@ -12,6 +12,18 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Check subscription - FREE users cannot modify settings
+    const currentUser = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { planType: true },
+    });
+    if (!currentUser || currentUser.planType === "FREE") {
+      return NextResponse.json(
+        { error: "Abonnement requis pour modifier les paramètres" },
+        { status: 403 }
+      );
+    }
+
     const { language, theme, notifications } = await req.json();
 
     const updatedUser = await db.user.update({

@@ -1101,6 +1101,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
+    // Check subscription - FREE users cannot use DocuBot
+    const currentUser = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { planType: true },
+    });
+    if (!currentUser || currentUser.planType === "FREE") {
+      return NextResponse.json(
+        { error: "Abonnement requis pour utiliser DocuBot" },
+        { status: 403 }
+      );
+    }
+
     const { message, history } = await request.json();
 
     if (!message || typeof message !== "string") {

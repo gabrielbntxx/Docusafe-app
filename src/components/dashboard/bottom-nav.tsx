@@ -8,13 +8,16 @@ import {
   Folder,
   Search,
   Plus,
+  Lock,
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useSubscription } from "@/components/providers/subscription-provider";
 
 export function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useTranslation();
+  const { isRestricted } = useSubscription();
 
   const navItems = [
     { key: "dashboard", label: "Accueil", href: "/dashboard", icon: LayoutDashboard, tutorialId: "mobile-dashboard" },
@@ -42,11 +45,19 @@ export function BottomNav() {
               return (
                 <button
                   key={item.key}
-                  onClick={() => handleNavigation(item.href)}
+                  onClick={() => handleNavigation(isRestricted ? "/dashboard/subscription" : item.href)}
                   data-tutorial={item.tutorialId}
-                  className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-500 text-white shadow-lg shadow-blue-500/30 -mt-4"
+                  className={`flex h-12 w-12 items-center justify-center rounded-full -mt-4 ${
+                    isRestricted
+                      ? "bg-neutral-300 text-neutral-500 dark:bg-neutral-700 dark:text-neutral-500"
+                      : "bg-blue-500 text-white shadow-lg shadow-blue-500/30"
+                  }`}
                 >
-                  <Plus className="h-6 w-6" strokeWidth={2.5} />
+                  {isRestricted ? (
+                    <Lock className="h-5 w-5" />
+                  ) : (
+                    <Plus className="h-6 w-6" strokeWidth={2.5} />
+                  )}
                 </button>
               );
             }

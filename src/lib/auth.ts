@@ -106,6 +106,7 @@ export const authOptions: NextAuthOptions = {
             theme: true,
             image: true,
             emailVerified: true,
+            onboardingCompleted: true,
           },
         });
 
@@ -116,6 +117,7 @@ export const authOptions: NextAuthOptions = {
           session.user.theme = dbUser.theme;
           session.user.image = dbUser.image;
           session.user.emailVerified = dbUser.emailVerified;
+          session.user.onboardingCompleted = dbUser.onboardingCompleted;
           // Convert BigInt to Number for JSON serialization
           session.user.storageUsedBytes = Number(dbUser.storageUsedBytes);
         }

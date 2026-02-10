@@ -40,6 +40,9 @@ model User {
   // Encryption
   encryptionKey        String?   // User's encryption key (encrypted with master key)
 
+  // Onboarding
+  onboardingCompleted  Boolean   @default(false)
+
   // Email Import
   importEmailId        String?   @unique // Unique ID for import email (e.g., abc123 for user-abc123@import.docusafe.app)
 

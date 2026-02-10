@@ -16,9 +16,11 @@ import {
   HelpCircle,
   MessageCircle,
   FileUp,
+  Lock,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useSubscription } from "@/components/providers/subscription-provider";
 import type { TranslationKey } from "@/lib/translations";
 
 const navigation: Array<{ nameKey: TranslationKey; href: string; icon: any; tutorialId?: string }> = [
@@ -39,6 +41,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useTranslation();
+  const { isRestricted } = useSubscription();
 
   const handleSignOut = async () => {
     await signOut({ callbackUrl: "/" });
@@ -66,11 +69,15 @@ export function Sidebar() {
       {/* Upload Button */}
       <div className="px-4 py-2">
         <button
-          onClick={() => handleNavigation("/dashboard/upload")}
+          onClick={() => handleNavigation(isRestricted ? "/dashboard/subscription" : "/dashboard/upload")}
           data-tutorial="upload-button"
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl hover:shadow-blue-500/30 hover:scale-[1.02] active:scale-[0.98]"
+          className={`flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3.5 text-sm font-semibold transition-all ${
+            isRestricted
+              ? "bg-neutral-200 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500 cursor-not-allowed"
+              : "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 hover:scale-[1.02] active:scale-[0.98]"
+          }`}
         >
-          <Upload className="h-4 w-4" />
+          {isRestricted ? <Lock className="h-4 w-4" /> : <Upload className="h-4 w-4" />}
           {t("addDocument")}
         </button>
       </div>
@@ -137,19 +144,23 @@ export function Sidebar() {
         </p>
         {bottomNavigation.map((item) => {
           const isActive = pathname === item.href;
+          const isLocked = isRestricted && (item.nameKey === "docubot" || item.nameKey === "settings");
           return (
             <button
               key={item.nameKey}
-              onClick={() => handleNavigation(item.href)}
+              onClick={() => handleNavigation(isLocked ? "/dashboard/subscription" : item.href)}
               data-tutorial={item.tutorialId}
               className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
-                isActive
+                isLocked
+                  ? "text-neutral-400 dark:text-neutral-600"
+                  : isActive
                   ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
                   : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/5 dark:hover:text-white"
               }`}
             >
-              <item.icon className={`h-5 w-5 ${isActive ? "text-blue-500" : ""}`} />
+              <item.icon className={`h-5 w-5 ${isActive && !isLocked ? "text-blue-500" : ""}`} />
               {t(item.nameKey)}
+              {isLocked && <Lock className="h-3.5 w-3.5 ml-auto text-neutral-400 dark:text-neutral-600" />}
             </button>
           );
         })}

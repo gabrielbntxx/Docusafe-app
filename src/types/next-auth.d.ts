@@ -15,6 +15,7 @@ declare module "next-auth" {
       language?: string;
       theme?: string;
       emailVerified?: Date | null;
+      onboardingCompleted?: boolean;
     };
   }
 

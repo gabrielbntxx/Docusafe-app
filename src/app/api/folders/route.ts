@@ -71,6 +71,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
+    // Check subscription - FREE users cannot create folders
+    const currentUser = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { planType: true },
+    });
+    if (!currentUser || currentUser.planType === "FREE") {
+      return NextResponse.json(
+        { error: "Abonnement requis pour créer des dossiers" },
+        { status: 403 }
+      );
+    }
+
     const { name, color, icon, pin, parentId } = await req.json();
 
     if (!name || name.trim().length === 0) {
