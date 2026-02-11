@@ -89,7 +89,7 @@ const PLANS = {
     gradient: "from-amber-500 to-orange-600",
     shadow: "shadow-amber-500/25",
     badgeBg: "bg-amber-100 text-amber-700",
-    stripeLink: "https://buy.stripe.com/business-plan",
+    stripeLink: "https://buy.stripe.com/4gMcN62Icfqn4LxcJvgYU07",
     features: [
       { icon: Users, text: "5 utilisateurs (+)" },
       { icon: Palette, text: "IA personnalisée" },

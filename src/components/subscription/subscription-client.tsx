@@ -128,7 +128,7 @@ export function SubscriptionClient({
         { icon: Lock, text: "Validation équipe", included: true },
         { icon: Crown, text: "Support prioritaire", included: true },
       ],
-      stripeLink: "https://buy.stripe.com/business-plan",
+      stripeLink: "https://buy.stripe.com/4gMcN62Icfqn4LxcJvgYU07",
       badge: "Entreprise",
     },
   ];
