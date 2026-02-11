@@ -23,6 +23,7 @@ import {
   AlertTriangle,
   Loader2,
 } from "lucide-react";
+import { TeamSection } from "@/components/settings/team-section";
 
 type UserSettings = {
   id: string;
@@ -38,7 +39,15 @@ const LANGUAGES = [
   { code: "fr", name: "Français", flag: "🇫🇷" },
 ];
 
-export function SettingsClient({ user }: { user: UserSettings }) {
+export function SettingsClient({
+  user,
+  planType,
+  isTeamOwner,
+}: {
+  user: UserSettings;
+  planType?: string;
+  isTeamOwner?: boolean;
+}) {
   const { t } = useTranslation();
   const { setTheme: setGlobalTheme } = useTheme();
   const { startTutorial, hasCompletedTutorial } = useTutorial();
@@ -535,6 +544,17 @@ export function SettingsClient({ user }: { user: UserSettings }) {
           </div>
         </div>
       </div>
+
+      {/* Team Section - Business plan only */}
+      {isTeamOwner && planType === "BUSINESS" && (
+        <div className="mt-3 sm:mt-4 lg:mt-6">
+          <div className="overflow-hidden rounded-2xl border border-violet-200 bg-white shadow-sm dark:border-violet-500/30 dark:bg-neutral-800/50 sm:rounded-3xl">
+            <div className="p-4 sm:p-6">
+              <TeamSection />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Danger Zone - Delete Account */}
       <div className="mt-3 sm:mt-4 lg:mt-6">

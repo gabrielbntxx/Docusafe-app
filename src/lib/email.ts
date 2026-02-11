@@ -573,6 +573,71 @@ function getDocumentShareEmailHtml(
   `;
 }
 
+/**
+ * Send team invitation email (Business plan)
+ */
+export async function sendTeamInvitationEmail(
+  toEmail: string,
+  ownerName: string,
+  inviteToken: string
+) {
+  if (!resend) {
+    console.warn("[Email] Resend not configured, skipping invitation email");
+    return { success: false, error: "Email service not configured" };
+  }
+
+  const inviteUrl = `${process.env.NEXTAUTH_URL || "https://www.docusafe.online"}/invite/${inviteToken}`;
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: toEmail,
+      subject: `${ownerName} vous invite sur DocuSafe Business`,
+      html: getTeamInvitationEmailHtml(ownerName, inviteUrl),
+    });
+
+    if (error) {
+      console.error("[Email] Error sending invitation email:", error);
+      return { success: false, error };
+    }
+
+    console.log("[Email] Team invitation sent to:", toEmail);
+    return { success: true, data };
+  } catch (error) {
+    console.error("[Email] Failed to send invitation email:", error);
+    return { success: false, error };
+  }
+}
+
+function getTeamInvitationEmailHtml(ownerName: string, inviteUrl: string): string {
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:40px 20px;"><tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="background-color:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,0.05);">
+<tr><td style="background:linear-gradient(135deg,#7c3aed 0%,#4f46e5 100%);padding:40px;text-align:center;">
+<h1 style="margin:0;color:#fff;font-size:28px;font-weight:700;">DocuSafe Business</h1>
+<p style="margin:10px 0 0;color:rgba(255,255,255,0.85);font-size:16px;">Invitation a rejoindre une equipe</p>
+</td></tr>
+<tr><td style="padding:40px;">
+<h2 style="margin:0 0 20px;color:#18181b;font-size:24px;">Vous avez ete invite !</h2>
+<p style="margin:0 0 20px;color:#52525b;font-size:16px;line-height:1.6;"><strong>${ownerName}</strong> vous invite a rejoindre son espace DocuSafe Business. Vous aurez acces a tous les documents et dossiers partages de l'equipe.</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0fdf4;border-radius:12px;margin:30px 0;"><tr><td style="padding:20px;">
+<p style="margin:0 0 8px;color:#166534;font-size:14px;font-weight:600;">Ce que vous obtenez :</p>
+<p style="margin:0;color:#166534;font-size:14px;line-height:1.8;">&#10003; Stockage illimite<br>&#10003; IA d'analyse illimitee<br>&#10003; Documents et dossiers partages<br>&#10003; Toutes les fonctionnalites Business</p>
+</td></tr></table>
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+<a href="${inviteUrl}" style="display:inline-block;background:linear-gradient(135deg,#7c3aed 0%,#4f46e5 100%);color:#fff;text-decoration:none;padding:16px 40px;border-radius:10px;font-size:16px;font-weight:600;">Accepter l'invitation</a>
+</td></tr></table>
+<p style="margin:20px 0 0;color:#a1a1aa;font-size:13px;text-align:center;">Ce lien expire dans 7 jours.</p>
+</td></tr>
+<tr><td style="background-color:#f4f4f5;padding:24px 40px;text-align:center;">
+<p style="margin:0;color:#a1a1aa;font-size:12px;">&copy; 2024 DocuSafe. Tous droits reserves.</p>
+</td></tr>
+</table></td></tr></table>
+</body></html>`;
+}
+
 function getCancellationEmailHtml(name: string): string {
   return `
 <!DOCTYPE html>

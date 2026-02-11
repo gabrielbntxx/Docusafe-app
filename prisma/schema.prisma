@@ -46,6 +46,10 @@ model User {
   // Email Import
   importEmailId        String?   @unique // Unique ID for import email (e.g., abc123 for user-abc123@import.docusafe.app)
 
+  // Team (Business plan)
+  teamOwnerId  String?   // If set, this user is a member of this owner's team
+  teamRole     String?   // "owner" | "member" (null = solo user)
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -54,9 +58,13 @@ model User {
   documents     Document[]
   folders       Folder[]
   notifications Notification[]
+  teamOwner     User?     @relation("TeamMembers", fields: [teamOwnerId], references: [id])
+  teamMembers   User[]    @relation("TeamMembers")
+  teamInvitations TeamInvitation[]
 
   @@index([email])
   @@index([stripeCustomerId])
+  @@index([teamOwnerId])
 }
 
 model Account {
@@ -99,6 +107,7 @@ model Folder {
   parentId    String?
   pin         String?  // Optional 4-digit PIN for this folder (hashed)
   rules       String?  @default("{}") // JSON string for folder rules (e.g., convertToPdf)
+  isPrivate   Int      @default(0) // 1 = visible only to owner (Business team)
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -141,6 +150,7 @@ model Document {
   // Metadata
   tags            String   @default("")
   description     String?
+  isPrivate       Int      @default(0) // 1 = visible only to owner (Business team)
   uploadedAt      DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -353,4 +363,25 @@ model RequestUpload {
   request       DocumentRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
 
   @@index([requestId])
+}
+
+// ============================================
+// TEAM (Business plan)
+// ============================================
+
+model TeamInvitation {
+  id          String   @id @default(cuid())
+  ownerId     String   // The team owner who sent the invite
+  email       String   // Email of the invitee
+  token       String   @unique // Unique token for the invitation link
+  status      String   @default("pending") // pending, accepted, expired, revoked
+
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime // Expires after 7 days
+
+  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([ownerId])
+  @@index([email])
 }

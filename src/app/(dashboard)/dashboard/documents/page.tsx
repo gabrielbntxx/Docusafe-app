@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { DocumentsClient } from "@/components/documents/documents-client";
+import { getEffectiveUserId } from "@/lib/team";
 
 export default async function DocumentsPage() {
   const session = await getServerSession(authOptions);
@@ -11,10 +12,14 @@ export default async function DocumentsPage() {
     redirect("/login");
   }
 
-  // Récupérer tous les documents de l'utilisateur
+  const effectiveUserId = await getEffectiveUserId(session.user.id);
+  const isOwner = effectiveUserId === session.user.id;
+
+  // Récupérer tous les documents (shared workspace aware)
   const documents = await db.document.findMany({
     where: {
-      userId: session.user.id,
+      userId: effectiveUserId,
+      ...(isOwner ? {} : { isPrivate: 0 }),
     },
     include: {
       folder: {
@@ -34,7 +39,8 @@ export default async function DocumentsPage() {
   // Récupérer les dossiers pour les filtres
   const folders = await db.folder.findMany({
     where: {
-      userId: session.user.id,
+      userId: effectiveUserId,
+      ...(isOwner ? {} : { isPrivate: 0 }),
     },
     select: {
       id: true,

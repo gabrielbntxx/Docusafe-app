@@ -17,12 +17,12 @@ async function getRedirectOrUser() {
 
   const user = await db.user.findUnique({
     where: { id: session.user.id },
-    select: { emailVerified: true, email: true, planType: true, onboardingCompleted: true },
+    select: { emailVerified: true, email: true, planType: true, onboardingCompleted: true, teamOwnerId: true },
   });
 
   if (!user) return "/login";
   if (!user.emailVerified) return `/verify-email?email=${encodeURIComponent(user.email)}`;
-  if (user.planType === "FREE" && !user.onboardingCompleted) return "/onboarding";
+  if (user.planType === "FREE" && !user.onboardingCompleted && !user.teamOwnerId) return "/onboarding";
 
   return user;
 }
@@ -39,7 +39,8 @@ export default async function DashboardLayout({
   }
 
   const user = result;
-  const isRestricted = user.planType === "FREE";
+  // Team members are not restricted even if their personal plan is FREE
+  const isRestricted = user.planType === "FREE" && !user.teamOwnerId;
 
   return (
     <SessionProvider>

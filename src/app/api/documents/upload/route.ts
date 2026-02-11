@@ -23,6 +23,7 @@ import {
   decryptUserKey,
 } from "@/lib/encryption";
 import { applyFolderRules } from "@/lib/folder-rules";
+import { getEffectiveUserId } from "@/lib/team";
 
 export async function POST(req: Request) {
   try {
@@ -35,12 +36,12 @@ export async function POST(req: Request) {
       );
     }
 
-    // Check subscription - FREE users cannot upload
+    // Check subscription - FREE users cannot upload (unless team member)
     const currentUser = await db.user.findUnique({
       where: { id: session.user.id },
-      select: { planType: true },
+      select: { planType: true, teamOwnerId: true },
     });
-    if (!currentUser || currentUser.planType === "FREE") {
+    if (!currentUser || (currentUser.planType === "FREE" && !currentUser.teamOwnerId)) {
       return NextResponse.json(
         { error: "Abonnement requis pour importer des documents" },
         { status: 403 }
@@ -64,9 +65,12 @@ export async function POST(req: Request) {
       );
     }
 
-    // Récupérer les infos utilisateur avec la clé de chiffrement
+    // For team members, use the owner's space
+    const effectiveUserId = await getEffectiveUserId(session.user.id);
+
+    // Récupérer les infos du propriétaire de l'espace (owner or self)
     const user = await db.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: effectiveUserId },
       select: {
         planType: true,
         documentsCount: true,
@@ -94,12 +98,12 @@ export async function POST(req: Request) {
       );
     }
 
-    // Verify folder belongs to user if provided
+    // Verify folder belongs to workspace if provided
     if (folderId) {
       const folder = await db.folder.findFirst({
         where: {
           id: folderId,
-          userId: session.user.id,
+          userId: effectiveUserId,
         },
       });
       if (!folder) {
@@ -166,13 +170,13 @@ export async function POST(req: Request) {
     // Générer un nom de fichier sécurisé pour le stockage
     const secureFilename = generateSecureFilename(
       finalFileName,
-      session.user.id
+      effectiveUserId
     );
 
     // Générer la clé de stockage avec le nom sécurisé
-    const storageKey = generateStorageKey(session.user.id, secureFilename);
+    const storageKey = generateStorageKey(effectiveUserId, secureFilename);
 
-    // Obtenir ou créer la clé de chiffrement utilisateur
+    // Obtenir ou créer la clé de chiffrement (always use workspace owner's key)
     let userEncryptionKey: string;
     if (user.encryptionKey) {
       // Déchiffrer la clé existante
@@ -182,7 +186,7 @@ export async function POST(req: Request) {
       userEncryptionKey = generateUserEncryptionKey();
       const encryptedKey = encryptUserKey(userEncryptionKey);
       await db.user.update({
-        where: { id: session.user.id },
+        where: { id: effectiveUserId },
         data: { encryptionKey: encryptedKey },
       });
     }
@@ -201,10 +205,10 @@ export async function POST(req: Request) {
     else if (finalMimeType.startsWith("audio/")) fileType = "audio";
     else if (finalMimeType.startsWith("video/")) fileType = "video";
 
-    // Créer l'entrée dans la DB avec le nom final (après règles)
+    // Créer l'entrée dans la DB (under workspace owner's space)
     const document = await db.document.create({
       data: {
-        userId: session.user.id,
+        userId: effectiveUserId,
         folderId: folderId || null, // Associate with folder if provided
         originalName: processedFile.wasConverted
           ? processedFile.originalFileName || fileValidation.sanitizedName
@@ -224,18 +228,18 @@ export async function POST(req: Request) {
       },
     });
 
-    // Mettre à jour les statistiques utilisateur (avec taille finale)
+    // Mettre à jour les statistiques du propriétaire de l'espace
     await db.user.update({
-      where: { id: session.user.id },
+      where: { id: effectiveUserId },
       data: {
         documentsCount: { increment: 1 },
         storageUsedBytes: { increment: finalFileSize },
       },
     });
 
-    // Créer une notification
+    // Créer une notification pour le propriétaire
     await createNotification(
-      session.user.id,
+      effectiveUserId,
       "document_uploaded",
       finalFileName
     );

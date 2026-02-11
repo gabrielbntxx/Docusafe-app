@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { MyFilesClient } from "@/components/my-files/my-files-client";
+import { getEffectiveUserId } from "@/lib/team";
 
 export default async function MyFilesPage() {
   const session = await getServerSession(authOptions);
@@ -11,10 +12,14 @@ export default async function MyFilesPage() {
     redirect("/login");
   }
 
-  // Récupérer tous les dossiers avec le nombre de documents et sous-dossiers
+  const effectiveUserId = await getEffectiveUserId(session.user.id);
+  const isOwner = effectiveUserId === session.user.id;
+
+  // Récupérer tous les dossiers (shared workspace aware)
   const folders = await db.folder.findMany({
     where: {
-      userId: session.user.id,
+      userId: effectiveUserId,
+      ...(isOwner ? {} : { isPrivate: 0 }),
     },
     include: {
       _count: {
@@ -29,10 +34,11 @@ export default async function MyFilesPage() {
     },
   });
 
-  // Récupérer tous les documents
+  // Récupérer tous les documents (shared workspace aware)
   const documents = await db.document.findMany({
     where: {
-      userId: session.user.id,
+      userId: effectiveUserId,
+      ...(isOwner ? {} : { isPrivate: 0 }),
     },
     include: {
       folder: {

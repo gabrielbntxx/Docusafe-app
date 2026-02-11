@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { createNotification } from "@/lib/notifications";
+import { getEffectiveUserId } from "@/lib/team";
 
 // GET - List all folders for the current user
 export async function GET(req: Request) {
@@ -14,13 +15,17 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
+    const effectiveUserId = await getEffectiveUserId(session.user.id);
+    const isOwner = effectiveUserId === session.user.id;
+
     // Check for parentId query param
     const { searchParams } = new URL(req.url);
     const parentId = searchParams.get("parentId");
 
     const folders = await db.folder.findMany({
       where: {
-        userId: session.user.id,
+        userId: effectiveUserId,
+        ...(isOwner ? {} : { isPrivate: 0 }),
         // If parentId is specified, filter by it; if "root" get only root folders
         ...(parentId === "root"
           ? { parentId: null }
@@ -71,12 +76,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
-    // Check subscription - FREE users cannot create folders
+    // Check subscription - FREE users cannot create folders (unless team member)
     const currentUser = await db.user.findUnique({
       where: { id: session.user.id },
-      select: { planType: true },
+      select: { planType: true, teamOwnerId: true },
     });
-    if (!currentUser || currentUser.planType === "FREE") {
+    if (!currentUser || (currentUser.planType === "FREE" && !currentUser.teamOwnerId)) {
       return NextResponse.json(
         { error: "Abonnement requis pour créer des dossiers" },
         { status: 403 }
@@ -92,12 +97,14 @@ export async function POST(req: Request) {
       );
     }
 
+    const effectiveUserId = await getEffectiveUserId(session.user.id);
+
     // Verify parent folder belongs to user if provided
     if (parentId) {
       const parentFolder = await db.folder.findFirst({
         where: {
           id: parentId,
-          userId: session.user.id,
+          userId: effectiveUserId,
         },
       });
       if (!parentFolder) {
@@ -125,7 +132,7 @@ export async function POST(req: Request) {
         name: name.trim(),
         color: color || "#3B82F6",
         icon: icon || "folder",
-        userId: session.user.id,
+        userId: effectiveUserId,
         parentId: parentId || null,
         pin: hashedPin,
       },
