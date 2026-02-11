@@ -2,6 +2,15 @@ import { db } from "@/lib/db";
 
 const MAX_TEAM_MEMBERS = 5; // Including the owner
 
+// 5 distinct colors for team members (owner + 4 members)
+export const TEAM_COLORS = [
+  "#8B5CF6", // violet (owner)
+  "#3B82F6", // blue
+  "#10B981", // emerald
+  "#F59E0B", // amber
+  "#EF4444", // red
+] as const;
+
 /**
  * Get the effective userId for shared workspace queries.
  * If the user is a team member, returns the team owner's ID.
@@ -51,6 +60,7 @@ export async function getTeamMembers(ownerId: string) {
       name: true,
       email: true,
       image: true,
+      memberColor: true,
       createdAt: true,
     },
     orderBy: { createdAt: "asc" },
@@ -78,4 +88,54 @@ export async function getTeamMemberCount(ownerId: string): Promise<number> {
 export async function canInviteMore(ownerId: string): Promise<boolean> {
   const count = await getTeamMemberCount(ownerId);
   return count < MAX_TEAM_MEMBERS;
+}
+
+/**
+ * Get the next available member color for a team.
+ * Owner always gets TEAM_COLORS[0], members get 1-4.
+ */
+export async function getNextMemberColor(ownerId: string): Promise<string> {
+  const usedColors = await db.user.findMany({
+    where: { teamOwnerId: ownerId },
+    select: { memberColor: true },
+  });
+
+  const used = new Set(usedColors.map((u) => u.memberColor));
+  // Skip index 0 (owner color), assign from 1 onward
+  for (let i = 1; i < TEAM_COLORS.length; i++) {
+    if (!used.has(TEAM_COLORS[i])) return TEAM_COLORS[i];
+  }
+  return TEAM_COLORS[1]; // fallback
+}
+
+/**
+ * Get a map of userId -> { name, color } for all team members + owner.
+ * Used to display who added a document/folder.
+ */
+export async function getTeamMemberMap(ownerId: string): Promise<Record<string, { name: string; color: string }>> {
+  const [owner, members] = await Promise.all([
+    db.user.findUnique({
+      where: { id: ownerId },
+      select: { id: true, name: true, email: true, memberColor: true },
+    }),
+    db.user.findMany({
+      where: { teamOwnerId: ownerId },
+      select: { id: true, name: true, email: true, memberColor: true },
+    }),
+  ]);
+
+  const map: Record<string, { name: string; color: string }> = {};
+  if (owner) {
+    map[owner.id] = {
+      name: owner.name || owner.email,
+      color: owner.memberColor || TEAM_COLORS[0],
+    };
+  }
+  for (const m of members) {
+    map[m.id] = {
+      name: m.name || m.email,
+      color: m.memberColor || TEAM_COLORS[1],
+    };
+  }
+  return map;
 }

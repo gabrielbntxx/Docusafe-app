@@ -3,7 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { MyFilesClient } from "@/components/my-files/my-files-client";
-import { getEffectiveUserId } from "@/lib/team";
+import { getEffectiveUserId, getTeamMemberMap, hasTeam } from "@/lib/team";
 
 export default async function MyFilesPage() {
   const session = await getServerSession(authOptions);
@@ -54,6 +54,10 @@ export default async function MyFilesPage() {
     },
   });
 
+  // Build team member map for color indicators (only if in a team)
+  const isInTeam = !isOwner || await hasTeam(effectiveUserId);
+  const teamMemberMap = isInTeam ? await getTeamMemberMap(effectiveUserId) : {};
+
   // Serialize for JSON - filter out default folders
   const serializedFolders = folders
     .filter((folder) => folder.isDefault !== 1)
@@ -68,6 +72,9 @@ export default async function MyFilesPage() {
       parentId: folder.parentId,
       createdAt: folder.createdAt.toISOString(),
       hasPin: !!folder.pin,
+      addedBy: folder.addedById && teamMemberMap[folder.addedById]
+        ? teamMemberMap[folder.addedById]
+        : null,
     }));
 
   const serializedDocuments = documents.map((doc) => ({
@@ -79,12 +86,16 @@ export default async function MyFilesPage() {
     uploadedAt: doc.uploadedAt.toISOString(),
     folderId: doc.folderId,
     folder: doc.folder,
+    addedBy: doc.addedById && teamMemberMap[doc.addedById]
+      ? teamMemberMap[doc.addedById]
+      : null,
   }));
 
   return (
     <MyFilesClient
       folders={serializedFolders}
       documents={serializedDocuments}
+      isTeam={isInTeam}
     />
   );
 }

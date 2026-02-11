@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { createNotification } from "@/lib/notifications";
 import { deleteFromR2 } from "@/lib/storage";
+import { getEffectiveUserId } from "@/lib/team";
 
 export async function DELETE(
   req: Request,
@@ -33,8 +34,9 @@ export async function DELETE(
       );
     }
 
-    // Vérifier que le document appartient à l'utilisateur
-    if (document.userId !== session.user.id) {
+    // Check document belongs to user's workspace (shared team or own)
+    const effectiveUserId = await getEffectiveUserId(session.user.id);
+    if (document.userId !== effectiveUserId) {
       return NextResponse.json(
         { error: "Non autorisé" },
         { status: 403 }
@@ -46,12 +48,11 @@ export async function DELETE(
       await deleteFromR2(document.storageKey);
     } catch (fileError) {
       console.error("Error deleting file from R2:", fileError);
-      // Continue même si le fichier n'existe pas
     }
 
-    // Récupérer les stats actuelles de l'utilisateur
+    // Récupérer les stats du propriétaire de l'espace
     const user = await db.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: effectiveUserId },
       select: {
         documentsCount: true,
         storageUsedBytes: true,
@@ -63,12 +64,12 @@ export async function DELETE(
       where: { id },
     });
 
-    // Mettre à jour les statistiques utilisateur en évitant les valeurs négatives
+    // Mettre à jour les statistiques du propriétaire
     const newDocumentsCount = Math.max(0, (user?.documentsCount || 0) - 1);
     const newStorageUsed = Math.max(0, Number(user?.storageUsedBytes || 0) - Number(document.sizeBytes));
 
     await db.user.update({
-      where: { id: session.user.id },
+      where: { id: effectiveUserId },
       data: {
         documentsCount: newDocumentsCount,
         storageUsedBytes: BigInt(newStorageUsed),
@@ -77,7 +78,7 @@ export async function DELETE(
 
     // Créer une notification
     await createNotification(
-      session.user.id,
+      effectiveUserId,
       "document_deleted",
       document.displayName
     );

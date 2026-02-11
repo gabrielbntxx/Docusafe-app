@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getNextMemberColor, TEAM_COLORS } from "@/lib/team";
 
 // POST /api/team/accept - Accept a team invitation
 export async function POST(req: Request) {
@@ -46,7 +47,7 @@ export async function POST(req: Request) {
     // Check user is not already in a team
     const currentUser = await db.user.findUnique({
       where: { id: session.user.id },
-      select: { teamOwnerId: true, teamRole: true },
+      select: { teamOwnerId: true, teamRole: true, planType: true },
     });
 
     if (currentUser?.teamOwnerId) {
@@ -63,13 +64,34 @@ export async function POST(req: Request) {
       );
     }
 
+    // Assign a unique color for this member
+    const memberColor = await getNextMemberColor(invitation.ownerId);
+
+    // Also ensure owner has their color set
+    const owner = await db.user.findUnique({
+      where: { id: invitation.ownerId },
+      select: { memberColor: true },
+    });
+    if (!owner?.memberColor) {
+      await db.user.update({
+        where: { id: invitation.ownerId },
+        data: { memberColor: TEAM_COLORS[0] },
+      });
+    }
+
     // Accept: update user and invitation in a transaction
+    // - Set team membership + color
+    // - Upgrade planType to BUSINESS
+    // - Mark onboarding as completed so they go straight to dashboard
     await db.$transaction([
       db.user.update({
         where: { id: session.user.id },
         data: {
           teamOwnerId: invitation.ownerId,
           teamRole: "member",
+          planType: "BUSINESS",
+          memberColor,
+          onboardingCompleted: true,
         },
       }),
       db.teamInvitation.update({

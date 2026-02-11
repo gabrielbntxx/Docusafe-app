@@ -49,6 +49,7 @@ model User {
   // Team (Business plan)
   teamOwnerId  String?   // If set, this user is a member of this owner's team
   teamRole     String?   // "owner" | "member" (null = solo user)
+  memberColor  String?   // Unique color assigned in team context (hex)
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -108,6 +109,7 @@ model Folder {
   pin         String?  // Optional 4-digit PIN for this folder (hashed)
   rules       String?  @default("{}") // JSON string for folder rules (e.g., convertToPdf)
   isPrivate   Int      @default(0) // 1 = visible only to owner (Business team)
+  addedById   String?  // ID of the team member who created this folder
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -151,6 +153,7 @@ model Document {
   tags            String   @default("")
   description     String?
   isPrivate       Int      @default(0) // 1 = visible only to owner (Business team)
+  addedById       String?  // ID of the team member who uploaded this document
   uploadedAt      DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 

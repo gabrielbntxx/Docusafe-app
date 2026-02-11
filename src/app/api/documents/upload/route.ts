@@ -221,6 +221,7 @@ export async function POST(req: Request) {
         storageUrl: `r2://${storageKey}`,
         aiAnalyzed: 0, // Not analyzed yet
         isEncrypted: 1, // Document chiffré
+        addedById: session.user.id, // Track who uploaded
         // Store conversion info in description if converted
         description: processedFile.wasConverted
           ? `Converti depuis ${processedFile.originalMimeType}`

@@ -135,6 +135,7 @@ export async function POST(req: Request) {
         userId: effectiveUserId,
         parentId: parentId || null,
         pin: hashedPin,
+        addedById: session.user.id,
       },
       include: {
         _count: {

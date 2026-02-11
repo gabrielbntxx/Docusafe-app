@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { getFromR2 } from "@/lib/storage";
 import { decryptDocument, decryptUserKey, removeEncryptionMarker } from "@/lib/encryption";
 import { analyzeDocumentWithAI, getOrCreateCategoryFolder } from "@/lib/ai-analysis";
+import { getEffectiveUserId } from "@/lib/team";
 
 // Helper to get user encryption key
 async function getUserEncryptionKey(userId: string): Promise<string | null> {
@@ -1108,12 +1109,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
-    // Check subscription - FREE users cannot use DocuBot
+    // Check subscription - FREE users cannot use DocuBot (unless team member)
     const currentUser = await db.user.findUnique({
       where: { id: session.user.id },
-      select: { planType: true },
+      select: { planType: true, teamOwnerId: true },
     });
-    if (!currentUser || currentUser.planType === "FREE") {
+    if (!currentUser || (currentUser.planType === "FREE" && !currentUser.teamOwnerId)) {
       return NextResponse.json(
         { error: "Abonnement requis pour utiliser DocuBot" },
         { status: 403 }
@@ -1126,7 +1127,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Message requis" }, { status: 400 });
     }
 
-    const userId = session.user.id;
+    // Use effective workspace userId for team members
+    const userId = await getEffectiveUserId(session.user.id);
 
     // Get user context and language preference
     const [folders, recentDocs, userSettings] = await Promise.all([

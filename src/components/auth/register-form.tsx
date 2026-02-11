@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { User, Mail, Lock, Eye, EyeOff, Loader2, Phone } from "lucide-react";
 
 export function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -79,8 +81,11 @@ export function RegisterForm() {
         return;
       }
 
-      // Redirect to email verification page
-      router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
+      // Redirect to email verification page (preserve callbackUrl for invite flow)
+      const verifyUrl = callbackUrl !== "/dashboard"
+        ? `/verify-email?email=${encodeURIComponent(formData.email)}&callbackUrl=${encodeURIComponent(callbackUrl)}`
+        : `/verify-email?email=${encodeURIComponent(formData.email)}`;
+      router.push(verifyUrl);
     } catch (error) {
       setError("Une erreur est survenue. Veuillez réessayer.");
     } finally {
@@ -90,12 +95,12 @@ export function RegisterForm() {
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
-    await signIn("google", { callbackUrl: "/dashboard" });
+    await signIn("google", { callbackUrl });
   };
 
   const handleAppleSignIn = async () => {
     setIsLoading(true);
-    await signIn("apple", { callbackUrl: "/dashboard" });
+    await signIn("apple", { callbackUrl });
   };
 
   return (
@@ -295,7 +300,7 @@ export function RegisterForm() {
         {/* Login Link */}
         <p className="mt-8 text-center text-gray-600">
           Vous avez déjà un compte ?{" "}
-          <Link href="/login" className="text-blue-500 hover:text-blue-600 font-semibold transition-colors">
+          <Link href={callbackUrl !== "/dashboard" ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/login"} className="text-blue-500 hover:text-blue-600 font-semibold transition-colors">
             Se connecter
           </Link>
         </p>

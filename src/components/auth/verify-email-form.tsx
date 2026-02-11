@@ -8,6 +8,7 @@ export function VerifyEmailForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
+  const callbackUrl = searchParams.get("callbackUrl") || "";
 
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [isLoading, setIsLoading] = useState(false);
@@ -92,7 +93,10 @@ export function VerifyEmailForm() {
 
       setSuccess("Email vérifié avec succès !");
       setTimeout(() => {
-        router.push("/login?verified=true");
+        const loginUrl = callbackUrl
+          ? `/login?verified=true&callbackUrl=${encodeURIComponent(callbackUrl)}`
+          : "/login?verified=true";
+        router.push(loginUrl);
       }, 1500);
     } catch {
       setError("Une erreur est survenue. Veuillez réessayer.");

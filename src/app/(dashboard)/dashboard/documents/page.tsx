@@ -3,7 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { DocumentsClient } from "@/components/documents/documents-client";
-import { getEffectiveUserId } from "@/lib/team";
+import { getEffectiveUserId, getTeamMemberMap, hasTeam } from "@/lib/team";
 
 export default async function DocumentsPage() {
   const session = await getServerSession(authOptions);
@@ -58,18 +58,26 @@ export default async function DocumentsPage() {
     },
   });
 
+  // Build team member map for color indicators
+  const isInTeam = !isOwner || await hasTeam(effectiveUserId);
+  const teamMemberMap = isInTeam ? await getTeamMemberMap(effectiveUserId) : {};
+
   // Convertir BigInt en Number pour le JSON
   const serializedDocuments = documents.map(doc => ({
     ...doc,
     sizeBytes: Number(doc.sizeBytes),
     uploadedAt: doc.uploadedAt.toISOString(),
     updatedAt: doc.updatedAt.toISOString(),
+    addedBy: doc.addedById && teamMemberMap[doc.addedById]
+      ? teamMemberMap[doc.addedById]
+      : null,
   }));
 
   return (
     <DocumentsClient
       documents={serializedDocuments}
       folders={folders}
+      isTeam={isInTeam}
     />
   );
 }

@@ -62,10 +62,10 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Membre non trouvé" }, { status: 404 });
     }
 
-    // Remove from team
+    // Remove from team and revert to FREE plan
     await db.user.update({
       where: { id: memberId },
-      data: { teamOwnerId: null, teamRole: null },
+      data: { teamOwnerId: null, teamRole: null, planType: "FREE" },
     });
 
     return NextResponse.json({ success: true });

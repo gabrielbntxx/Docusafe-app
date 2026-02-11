@@ -44,6 +44,7 @@ type Document = {
     color: string | null;
     icon: string | null;
   } | null;
+  addedBy?: { name: string; color: string } | null;
 };
 
 type FolderType = {
@@ -59,9 +60,11 @@ type FolderType = {
 export function DocumentsClient({
   documents,
   folders,
+  isTeam = false,
 }: {
   documents: Document[];
   folders: FolderType[];
+  isTeam?: boolean;
 }) {
   const router = useRouter();
   const { t } = useTranslation();
@@ -457,6 +460,15 @@ export function DocumentsClient({
                     <span>{formatFileSize(doc.sizeBytes)}</span>
                     <span className="text-neutral-300 dark:text-neutral-600">•</span>
                     <span>{formatDate(doc.uploadedAt)}</span>
+                    {isTeam && doc.addedBy && (
+                      <>
+                        <span className="text-neutral-300 dark:text-neutral-600">•</span>
+                        <span className="flex items-center gap-1" title={`Ajouté par ${doc.addedBy.name}`}>
+                          <span className="inline-block h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: doc.addedBy.color }} />
+                          <span className="truncate max-w-[60px]">{doc.addedBy.name.split(' ')[0]}</span>
+                        </span>
+                      </>
+                    )}
                   </div>
 
                   {doc.folder && (
@@ -564,6 +576,15 @@ export function DocumentsClient({
                               />
                               <span>{doc.folder.name}</span>
                             </div>
+                          </>
+                        )}
+                        {isTeam && doc.addedBy && (
+                          <>
+                            <span className="hidden text-neutral-300 dark:text-neutral-600 sm:inline">•</span>
+                            <span className="hidden items-center gap-1 sm:flex" title={`Ajouté par ${doc.addedBy.name}`}>
+                              <span className="inline-block h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: doc.addedBy.color }} />
+                              <span className="truncate max-w-[60px]">{doc.addedBy.name.split(' ')[0]}</span>
+                            </span>
                           </>
                         )}
                       </div>

@@ -10,6 +10,7 @@ export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const verified = searchParams.get("verified") === "true";
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
@@ -33,7 +34,7 @@ export function LoginForm() {
         setError("Email ou mot de passe incorrect");
       } else {
         // Full page redirect to ensure session is loaded
-        window.location.href = "/dashboard";
+        window.location.href = callbackUrl;
       }
     } catch (error) {
       setError("Une erreur est survenue. Veuillez réessayer.");
@@ -44,12 +45,12 @@ export function LoginForm() {
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
-    await signIn("google", { callbackUrl: "/dashboard" });
+    await signIn("google", { callbackUrl });
   };
 
   const handleAppleSignIn = async () => {
     setIsLoading(true);
-    await signIn("apple", { callbackUrl: "/dashboard" });
+    await signIn("apple", { callbackUrl });
   };
 
   return (
@@ -205,7 +206,7 @@ export function LoginForm() {
         {/* Register Link */}
         <p className="mt-8 text-center text-gray-600">
           Pas encore de compte ?{" "}
-          <Link href="/register" className="text-blue-500 hover:text-blue-600 font-semibold transition-colors">
+          <Link href={callbackUrl !== "/dashboard" ? `/register?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/register"} className="text-blue-500 hover:text-blue-600 font-semibold transition-colors">
             Créer un compte
           </Link>
         </p>

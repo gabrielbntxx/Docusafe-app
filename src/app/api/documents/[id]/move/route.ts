@@ -13,6 +13,7 @@ import {
   isEncrypted,
   removeEncryptionMarker,
 } from "@/lib/encryption";
+import { getEffectiveUserId } from "@/lib/team";
 
 // PATCH - Move a document to a different folder
 export async function PATCH(
@@ -46,11 +47,12 @@ export async function PATCH(
       );
     }
 
-    if (document.userId !== session.user.id) {
+    const effectiveUserId = await getEffectiveUserId(session.user.id);
+    if (document.userId !== effectiveUserId) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
     }
 
-    // If folderId is provided, verify it exists and belongs to user
+    // If folderId is provided, verify it exists and belongs to workspace
     let folder = null;
     if (folderId) {
       folder = await db.folder.findUnique({
@@ -64,7 +66,7 @@ export async function PATCH(
         );
       }
 
-      if (folder.userId !== session.user.id) {
+      if (folder.userId !== effectiveUserId) {
         return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
       }
     }
@@ -116,7 +118,7 @@ export async function PATCH(
           }
 
           // 5. Upload new PDF to R2
-          const newStorageKey = generateStorageKey(session.user.id, newFileName);
+          const newStorageKey = generateStorageKey(effectiveUserId, newFileName);
           await uploadToR2(newStorageKey, finalBuffer, "application/octet-stream");
 
           // 6. Delete old file from R2
@@ -140,7 +142,7 @@ export async function PATCH(
           // 8. Update user storage stats
           if (sizeDiff !== BigInt(0)) {
             await db.user.update({
-              where: { id: session.user.id },
+              where: { id: effectiveUserId },
               data: {
                 storageUsedBytes: { increment: sizeDiff },
               },

@@ -40,6 +40,11 @@ import { DocuBotWidget } from "@/components/docubot/docubot-widget";
 import { DocumentPreviewModal } from "@/components/documents/document-preview-modal";
 import { ShareModal } from "@/components/share/share-modal";
 
+type MemberInfo = {
+  name: string;
+  color: string;
+} | null;
+
 type FolderType = {
   id: string;
   name: string;
@@ -51,6 +56,7 @@ type FolderType = {
   parentId: string | null;
   createdAt: string;
   hasPin?: boolean;
+  addedBy?: MemberInfo;
 };
 
 type DocumentType = {
@@ -66,6 +72,7 @@ type DocumentType = {
     name: string;
     color: string | null;
   } | null;
+  addedBy?: MemberInfo;
 };
 
 const FOLDER_COLORS = [
@@ -82,9 +89,11 @@ const FOLDER_COLORS = [
 export function MyFilesClient({
   folders: initialFolders,
   documents: initialDocuments,
+  isTeam = false,
 }: {
   folders: FolderType[];
   documents: DocumentType[];
+  isTeam?: boolean;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -899,6 +908,12 @@ export function MyFilesClient({
                         {folder.name}
                       </span>
                       <div className="flex items-center gap-2 text-xs text-neutral-400">
+                        {isTeam && folder.addedBy && (
+                          <span className="flex items-center gap-1" title={`Ajouté par ${folder.addedBy.name}`}>
+                            <span className="inline-block h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: folder.addedBy.color }} />
+                            <span className="hidden sm:inline truncate max-w-[80px]">{folder.addedBy.name.split(' ')[0]}</span>
+                          </span>
+                        )}
                         {folder.hasPin && (
                           <span className="flex items-center gap-1">
                             <Lock className="h-3 w-3" />
@@ -1355,9 +1370,15 @@ export function MyFilesClient({
                           >
                             {doc.displayName}
                           </button>
-                          <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                            {formatFileSize(doc.sizeBytes)}
-                          </p>
+                          <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+                            <span>{formatFileSize(doc.sizeBytes)}</span>
+                            {isTeam && doc.addedBy && (
+                              <span className="flex items-center gap-1" title={`Ajouté par ${doc.addedBy.name}`}>
+                                <span className="inline-block h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: doc.addedBy.color }} />
+                                <span className="hidden sm:inline truncate max-w-[60px]">{doc.addedBy.name.split(' ')[0]}</span>
+                              </span>
+                            )}
+                          </div>
                         </div>
 
                         {/* Move menu button - mobile only */}
