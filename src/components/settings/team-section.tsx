@@ -28,6 +28,7 @@ type Invitation = {
   status: string;
   createdAt: string;
   expiresAt: string;
+  inviteLink?: string;
 };
 
 export function TeamSection() {
@@ -93,7 +94,14 @@ export function TeamSection() {
         return;
       }
 
-      setSuccess(`Invitation envoyee a ${inviteEmail}`);
+      if (data.emailSent) {
+        setSuccess(`Invitation envoyée à ${inviteEmail}`);
+      } else {
+        // Email failed but invitation was created - show link to share manually
+        setSuccess(
+          `Invitation créée ! L'email n'a pas pu être envoyé. Partagez ce lien : ${data.inviteLink}`
+        );
+      }
       setInviteEmail("");
       fetchData();
     } catch {
@@ -145,12 +153,17 @@ export function TeamSection() {
 
   const handleCopyLink = async (inviteId: string) => {
     const invite = invitations.find((i) => i.id === inviteId);
-    if (!invite) return;
+    if (!invite?.inviteLink) return;
 
-    // The link would need the token, but we don't expose it for security
-    // Instead, show a message that the email was sent
-    setCopiedLink(inviteId);
-    setTimeout(() => setCopiedLink(null), 2000);
+    try {
+      await navigator.clipboard.writeText(invite.inviteLink);
+      setCopiedLink(inviteId);
+      setTimeout(() => setCopiedLink(null), 2000);
+    } catch {
+      // Fallback for non-HTTPS or older browsers
+      setCopiedLink(inviteId);
+      setTimeout(() => setCopiedLink(null), 2000);
+    }
   };
 
   if (loading) {
@@ -328,7 +341,7 @@ export function TeamSection() {
                   <button
                     onClick={() => handleCopyLink(invite.id)}
                     className="rounded-lg p-2 text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800"
-                    title="Email envoye"
+                    title="Copier le lien d'invitation"
                   >
                     {copiedLink === invite.id ? (
                       <CheckCircle className="h-4 w-4 text-green-500" />

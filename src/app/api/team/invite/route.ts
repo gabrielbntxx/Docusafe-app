@@ -111,15 +111,29 @@ export async function POST(req: Request) {
       },
     });
 
-    // Send email (non-blocking)
-    sendTeamInvitationEmail(
-      normalizedEmail,
-      user.name || "Un utilisateur DocuSafe",
-      token
-    ).catch((err) => console.error("[Team] Failed to send invitation email:", err));
+    // Send email (await to report status)
+    const baseUrl = process.env.NEXTAUTH_URL || "https://www.docusafe.online";
+    const inviteLink = `${baseUrl}/invite/${token}`;
+    let emailSent = false;
+
+    try {
+      const emailResult = await sendTeamInvitationEmail(
+        normalizedEmail,
+        user.name || "Un utilisateur DocuSafe",
+        token
+      );
+      emailSent = emailResult.success;
+      if (!emailSent) {
+        console.error("[Team] Email not sent:", emailResult.error);
+      }
+    } catch (err) {
+      console.error("[Team] Failed to send invitation email:", err);
+    }
 
     return NextResponse.json({
       success: true,
+      emailSent,
+      inviteLink,
       invitation: {
         id: invitation.id,
         email: invitation.email,
@@ -153,6 +167,7 @@ export async function GET() {
       select: {
         id: true,
         email: true,
+        token: true,
         status: true,
         createdAt: true,
         expiresAt: true,
@@ -160,7 +175,18 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json({ invitations });
+    // Build invite links for copy functionality
+    const baseUrl = process.env.NEXTAUTH_URL || "https://www.docusafe.online";
+    const invitationsWithLinks = invitations.map((inv) => ({
+      id: inv.id,
+      email: inv.email,
+      status: inv.status,
+      createdAt: inv.createdAt,
+      expiresAt: inv.expiresAt,
+      inviteLink: `${baseUrl}/invite/${inv.token}`,
+    }));
+
+    return NextResponse.json({ invitations: invitationsWithLinks });
   } catch (error) {
     console.error("[Team Invite] Error:", error);
     return NextResponse.json(
