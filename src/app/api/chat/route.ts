@@ -642,11 +642,18 @@ async function reclassifyDocument(userId: string, documentId: string) {
       fileBuffer = encryptedData;
     }
 
-    // Re-analyze with AI
+    // Re-analyze with AI (with folder hierarchy context)
     const analysis = await analyzeDocumentWithAI(fileBuffer, document.displayName, document.mimeType);
 
-    // Get or create folder for category
-    const folderId = await getOrCreateCategoryFolder(userId, analysis.category);
+    // Get or create folder with hierarchy-aware AI decision
+    const folderId = await getOrCreateCategoryFolder(
+      userId,
+      analysis.category,
+      analysis.suggestedFolder,
+      analysis.folderAction,
+      analysis.targetFolderId,
+      analysis.parentFolderId
+    );
 
     // Update document
     await db.document.update({

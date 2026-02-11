@@ -217,11 +217,14 @@ export async function PUT(req: Request) {
       );
     }
 
-    // Get or create folder with PRECISE naming from AI
+    // Get or create folder with hierarchy-aware AI decision
     const folderId = await getOrCreateCategoryFolder(
       session.user.id,
       analysis.result.category,
-      analysis.result.suggestedFolder // Pass the precise folder name from AI
+      analysis.result.suggestedFolder,
+      analysis.result.folderAction,
+      analysis.result.targetFolderId,
+      analysis.result.parentFolderId
     );
 
     // Update document with analysis results and move to folder

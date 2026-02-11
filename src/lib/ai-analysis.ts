@@ -492,6 +492,9 @@ export type AIAnalysisResult = {
   confidence: number;
   suggestedName?: string;
   suggestedFolder?: string; // Nom de dossier PRÉCIS suggéré par l'IA (ex: "Cours Informatique")
+  folderAction?: "use_existing" | "create_new" | "create_subfolder";
+  targetFolderId?: string;   // ID du dossier existant si use_existing
+  parentFolderId?: string;   // ID du parent si create_subfolder
   extractedData: {
     date?: string;
     amount?: string;
@@ -509,6 +512,56 @@ export type AIAnalysisResult = {
   };
   rawResponse?: string;
 };
+
+// ============================================================================
+// FOLDER TREE - Fetch and serialize user's folder hierarchy for AI context
+// ============================================================================
+type FolderNode = {
+  id: string;
+  name: string;
+  children: FolderNode[];
+};
+
+async function getUserFolderTree(userId: string): Promise<FolderNode[]> {
+  const allFolders = await db.folder.findMany({
+    where: { userId },
+    select: { id: true, name: true, parentId: true, updatedAt: true },
+    orderBy: { updatedAt: "desc" },
+    take: 50, // Limit to avoid overloading the prompt
+  });
+
+  // Build tree from flat list
+  const folderMap = new Map<string, FolderNode>();
+  for (const f of allFolders) {
+    folderMap.set(f.id, { id: f.id, name: f.name, children: [] });
+  }
+
+  const roots: FolderNode[] = [];
+  for (const f of allFolders) {
+    const node = folderMap.get(f.id)!;
+    if (f.parentId && folderMap.has(f.parentId)) {
+      folderMap.get(f.parentId)!.children.push(node);
+    } else {
+      roots.push(node);
+    }
+  }
+
+  return roots;
+}
+
+function serializeFolderTree(tree: FolderNode[], indent = 0): string {
+  if (tree.length === 0) return "(aucun dossier)";
+
+  let result = "";
+  for (const node of tree) {
+    const prefix = "  ".repeat(indent);
+    result += `${prefix}- "${node.name}" (id: ${node.id})\n`;
+    if (node.children.length > 0) {
+      result += serializeFolderTree(node.children, indent + 1);
+    }
+  }
+  return result;
+}
 
 // Free tier limit (currently unlimited for all users)
 const _FREE_AI_LIMIT = 10; // Reserved for future use
@@ -818,7 +871,7 @@ Tu dois créer des noms de dossiers PRÉCIS et CONTEXTUELS, jamais génériques!
 
 Réponds UNIQUEMENT avec ce JSON (PAS de \`\`\`, PAS de markdown):
 
-{"documentType":"type_exact","confidence":0.95,"suggestedName":"Nom fichier descriptif","suggestedFolder":"Nom Dossier Ultra Précis","extractedData":{"date":"2024-01-15","amount":"150.00€","issuer":"Émetteur","recipient":"Destinataire","reference":"REF123","subject":"Sujet principal détaillé","topic":"Matière/Thème précis","location":"Lieu","people":"Personnes","language":"Langue","duration":"Durée si applicable","genre":"Genre si musique/vidéo","description":"Description détaillée du contenu"}}
+{"documentType":"type_exact","confidence":0.95,"suggestedName":"Nom fichier descriptif","suggestedFolder":"Nom Dossier Ultra Précis","folderAction":"use_existing|create_new|create_subfolder","targetFolderId":"id_du_dossier_existant_ou_null","parentFolderId":"id_du_parent_pour_sous_dossier_ou_null","extractedData":{"date":"2024-01-15","amount":"150.00€","issuer":"Émetteur","recipient":"Destinataire","reference":"REF123","subject":"Sujet principal détaillé","topic":"Matière/Thème précis","location":"Lieu","people":"Personnes","language":"Langue","duration":"Durée si applicable","genre":"Genre si musique/vidéo","description":"Description détaillée du contenu"}}
 
 ## 🚨 RAPPELS CRITIQUES
 1. suggestedFolder doit être PRÉCIS: "Cours Informatique" pas "Études"
@@ -1105,7 +1158,8 @@ async function uploadToGeminiFileAPI(
 export async function analyzeDocumentWithAI(
   fileBuffer: Buffer,
   fileName: string,
-  mimeType: string
+  mimeType: string,
+  folderContext?: string
 ): Promise<AIAnalysisResult> {
   const apiKey = process.env.GEMINI_API_KEY;
   const fileSize = fileBuffer.length;
@@ -1182,8 +1236,22 @@ export async function analyzeDocumentWithAI(
     // Determine which method to use based on file size and type
     let contentParts: Array<{ text: string } | { inline_data: { mime_type: string; data: string } } | { file_data: { mime_type: string; file_uri: string } }> = [];
 
-    // Add the prompt first
-    contentParts.push({ text: AI_CLASSIFICATION_PROMPT });
+    // Add the prompt first, with folder context if available
+    let fullPrompt = AI_CLASSIFICATION_PROMPT;
+    if (folderContext) {
+      fullPrompt += `\n\n## 📂 DOSSIERS EXISTANTS DE L'UTILISATEUR
+Voici l'arborescence actuelle des dossiers de l'utilisateur. Tu DOIS choisir parmi ces 3 actions :
+- "use_existing": Placer dans un dossier/sous-dossier existant qui correspond (donne son targetFolderId)
+- "create_subfolder": Créer un sous-dossier dans un dossier parent existant (donne parentFolderId + suggestedFolder pour le nom du nouveau sous-dossier)
+- "create_new": Créer un nouveau dossier à la racine (donne suggestedFolder pour le nom)
+
+⚠️ PRIORITÉ ABSOLUE : utilise un dossier existant ("use_existing") si un dossier correspond au document ! Ne crée un nouveau dossier que si AUCUN existant ne correspond.
+⚠️ Si un dossier parent correspond à la catégorie mais qu'un sous-dossier plus précis serait utile, utilise "create_subfolder".
+
+ARBORESCENCE :
+${folderContext}`;
+    }
+    contentParts.push({ text: fullPrompt });
 
     if (isTextBased) {
       // For text-based files (code, etc.), send the content as text
@@ -1291,12 +1359,22 @@ export async function analyzeDocumentWithAI(
     // Use the AI's suggested folder if provided, otherwise fall back to category
     const suggestedFolder = parsed.suggestedFolder || category;
 
+    // Extract folder placement decision from AI
+    const folderAction = parsed.folderAction || "create_new";
+    const targetFolderId = parsed.targetFolderId || undefined;
+    const parentFolderId = parsed.parentFolderId || undefined;
+
+    console.log("[AI Analysis] Folder decision:", folderAction, "targetFolderId:", targetFolderId, "parentFolderId:", parentFolderId);
+
     return {
       documentType,
       category,
       confidence: parsed.confidence || 0.5,
       suggestedName: parsed.suggestedName,
       suggestedFolder, // Nom de dossier PRÉCIS de l'IA
+      folderAction,
+      targetFolderId,
+      parentFolderId,
       extractedData: {
         date: parsed.extractedData?.date || undefined,
         amount: parsed.extractedData?.amount || undefined,
@@ -1368,10 +1446,15 @@ export async function analyzeDocument(
     return { success: false, error: canUse.reason };
   }
 
-  // Analyze with AI
+  // Fetch user's folder tree for AI context
+  const folderTree = await getUserFolderTree(userId);
+  const folderContext = serializeFolderTree(folderTree);
+  console.log("[analyzeDocument] Folder context for AI:", folderTree.length, "root folders");
+
+  // Analyze with AI (with folder hierarchy context)
   console.log("[analyzeDocument] Calling analyzeDocumentWithAI...");
-  const result = await analyzeDocumentWithAI(fileBuffer, fileName, mimeType);
-  console.log("[analyzeDocument] AI result:", result.documentType, "confidence:", result.confidence, "suggestedFolder:", result.suggestedFolder);
+  const result = await analyzeDocumentWithAI(fileBuffer, fileName, mimeType, folderContext);
+  console.log("[analyzeDocument] AI result:", result.documentType, "confidence:", result.confidence, "suggestedFolder:", result.suggestedFolder, "folderAction:", result.folderAction);
 
   // Cache the result
   await cacheAnalysis(fileHash, result);
@@ -1385,26 +1468,86 @@ export async function analyzeDocument(
 }
 
 /**
- * Get or create folder with INTELLIGENT matching
- * Uses AI's suggestedFolder for precise naming (e.g., "Cours Informatique" instead of "Études")
+ * Get or create folder with INTELLIGENT hierarchy-aware matching
+ * The AI sees the user's folder tree and decides: use_existing, create_subfolder, or create_new
  */
 export async function getOrCreateCategoryFolder(
   userId: string,
   category: string,
-  suggestedFolder?: string
+  suggestedFolder?: string,
+  folderAction?: string,
+  targetFolderId?: string,
+  parentFolderId?: string
 ): Promise<string> {
-  // Use the AI's precise folder name if available, otherwise fall back to category
   const targetFolderName = suggestedFolder || category;
 
-  console.log(`[AI Smart Folder] Looking for folder: "${targetFolderName}" (category: ${category})`);
+  console.log(`[AI Smart Folder] Action: "${folderAction}" | folder: "${targetFolderName}" | targetId: ${targetFolderId} | parentId: ${parentFolderId}`);
 
-  // Get all user folders
+  // Helper: get category icon/color
+  const getCategoryInfo = () => {
+    const categoryKey = Object.keys(DOCUMENT_CATEGORIES).find(
+      (key) => DOCUMENT_CATEGORIES[key as keyof typeof DOCUMENT_CATEGORIES].name === category
+    ) as keyof typeof DOCUMENT_CATEGORIES | undefined;
+    return categoryKey ? DOCUMENT_CATEGORIES[categoryKey] : DOCUMENT_CATEGORIES.AUTRE;
+  };
+
+  // PATH 1: Use existing folder (AI gave us a direct folder ID)
+  if (folderAction === "use_existing" && targetFolderId) {
+    const existing = await db.folder.findFirst({
+      where: { id: targetFolderId, userId },
+      select: { id: true, name: true },
+    });
+    if (existing) {
+      console.log(`[AI Smart Folder] ✓ Using existing folder: "${existing.name}"`);
+      return existing.id;
+    }
+    console.log(`[AI Smart Folder] ⚠ targetFolderId "${targetFolderId}" not found, falling back to name matching`);
+  }
+
+  // PATH 2: Create subfolder under an existing parent
+  if (folderAction === "create_subfolder" && parentFolderId) {
+    const parent = await db.folder.findFirst({
+      where: { id: parentFolderId, userId },
+      select: { id: true, name: true },
+    });
+    if (parent) {
+      // Check if subfolder already exists under this parent
+      const existingSub = await db.folder.findFirst({
+        where: {
+          userId,
+          parentId: parent.id,
+          name: { equals: targetFolderName, mode: "insensitive" as const },
+        },
+        select: { id: true, name: true },
+      });
+      if (existingSub) {
+        console.log(`[AI Smart Folder] ✓ Subfolder already exists: "${existingSub.name}" under "${parent.name}"`);
+        return existingSub.id;
+      }
+
+      const categoryInfo = getCategoryInfo();
+      const newSub = await db.folder.create({
+        data: {
+          userId,
+          name: targetFolderName,
+          parentId: parent.id,
+          icon: categoryInfo.icon,
+          color: categoryInfo.color,
+        },
+      });
+      console.log(`[AI Smart Folder] ✓ Created subfolder: "${newSub.name}" under "${parent.name}"`);
+      return newSub.id;
+    }
+    console.log(`[AI Smart Folder] ⚠ parentFolderId "${parentFolderId}" not found, falling back to name matching`);
+  }
+
+  // PATH 3: Create new at root OR fallback name-based matching
+  // This also handles cases where the AI's folder IDs were invalid
   const allFolders = await db.folder.findMany({
     where: { userId },
     select: { id: true, name: true },
   });
 
-  // Normalize for comparison (lowercase, no accents)
   const normalize = (str: string) =>
     str.toLowerCase()
       .normalize("NFD")
@@ -1413,24 +1556,19 @@ export async function getOrCreateCategoryFolder(
 
   const normalizedTarget = normalize(targetFolderName);
 
-  // 1. Check EXACT match first (case insensitive)
+  // Fuzzy matching as safety net
   let matchingFolder = allFolders.find(
     (f) => normalize(f.name) === normalizedTarget
   );
 
-  // 2. Check if any existing folder contains the target or vice versa
-  // This helps group similar content (e.g., "Cours Informatique L1" goes into existing "Cours Informatique")
   if (!matchingFolder) {
     matchingFolder = allFolders.find((f) => {
       const normalizedFolderName = normalize(f.name);
-      // Check if folder contains target or target contains folder
       return normalizedFolderName.includes(normalizedTarget) ||
              normalizedTarget.includes(normalizedFolderName);
     });
   }
 
-  // 3. For generic category matches - if suggestedFolder is specific, prefer creating new
-  // But if no suggestedFolder, fall back to category matching
   if (!matchingFolder && !suggestedFolder) {
     const normalizedCategory = normalize(category);
     matchingFolder = allFolders.find(
@@ -1439,7 +1577,6 @@ export async function getOrCreateCategoryFolder(
     );
   }
 
-  // 4. Check for common variations (singular/plural)
   if (!matchingFolder) {
     const targetBase = normalizedTarget.replace(/s$/, "");
     matchingFolder = allFolders.find((f) => {
@@ -1448,28 +1585,19 @@ export async function getOrCreateCategoryFolder(
     });
   }
 
-  // If found, return existing folder
   if (matchingFolder) {
-    console.log(`[AI Smart Folder] ✓ Found existing folder: "${matchingFolder.name}"`);
+    console.log(`[AI Smart Folder] ✓ Found existing folder by name: "${matchingFolder.name}"`);
     return matchingFolder.id;
   }
 
-  // No existing folder found - CREATE with the PRECISE name from AI
-  console.log(`[AI Smart Folder] ➕ Creating new folder: "${targetFolderName}"`);
-
-  // Find category info for icon and color
-  const categoryKey = Object.keys(DOCUMENT_CATEGORIES).find(
-    (key) => DOCUMENT_CATEGORIES[key as keyof typeof DOCUMENT_CATEGORIES].name === category
-  ) as keyof typeof DOCUMENT_CATEGORIES | undefined;
-
-  const categoryInfo = categoryKey
-    ? DOCUMENT_CATEGORIES[categoryKey]
-    : DOCUMENT_CATEGORIES.AUTRE;
+  // Create new folder at root
+  console.log(`[AI Smart Folder] ➕ Creating new root folder: "${targetFolderName}"`);
+  const categoryInfo = getCategoryInfo();
 
   const newFolder = await db.folder.create({
     data: {
       userId,
-      name: targetFolderName, // Use the PRECISE name, not generic category
+      name: targetFolderName,
       icon: categoryInfo.icon,
       color: categoryInfo.color,
     },

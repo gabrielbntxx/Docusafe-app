@@ -354,9 +354,16 @@ export async function processEmailAttachment(
           suggestedName: result.suggestedName,
         };
 
-        // Get or create folder for the category
+        // Get or create folder with hierarchy-aware AI decision
         if (result.category) {
-          folderId = await getOrCreateCategoryFolder(userId, result.category);
+          folderId = await getOrCreateCategoryFolder(
+            userId,
+            result.category,
+            result.suggestedFolder,
+            result.folderAction,
+            result.targetFolderId,
+            result.parentFolderId
+          );
         }
       }
     } catch (aiError) {
