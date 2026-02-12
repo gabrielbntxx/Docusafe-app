@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
+import { checkRateLimit, getClientIdentifier } from "@/lib/security";
 
 // GET - Get shared content info (public)
 export async function GET(
@@ -54,6 +55,17 @@ export async function POST(
 ) {
   try {
     const { token } = await params;
+
+    // Rate limit password attempts per IP + token
+    const clientId = await getClientIdentifier();
+    const rateLimit = checkRateLimit(`${clientId}_share_${token}`, "sharedAccess");
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: rateLimit.error },
+        { status: 429, headers: { "Retry-After": String(rateLimit.resetIn) } }
+      );
+    }
+
     const body = await req.json().catch(() => ({}));
     const { password } = body;
 

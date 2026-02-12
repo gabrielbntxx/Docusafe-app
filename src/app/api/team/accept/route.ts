@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getNextMemberColor, TEAM_COLORS } from "@/lib/team";
+import crypto from "crypto";
 
 // POST /api/team/accept - Accept a team invitation
 export async function POST(req: Request) {
@@ -17,10 +18,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Token requis" }, { status: 400 });
     }
 
+    // Hash the incoming token to match stored hash
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+
     // Find valid invitation
     const invitation = await db.teamInvitation.findFirst({
       where: {
-        token,
+        token: tokenHash,
         status: "pending",
         expiresAt: { gt: new Date() },
       },
@@ -44,11 +48,18 @@ export async function POST(req: Request) {
       );
     }
 
-    // Check user is not already in a team
+    // Verify the logged-in user's email matches the invitation
     const currentUser = await db.user.findUnique({
       where: { id: session.user.id },
-      select: { teamOwnerId: true, teamRole: true, planType: true },
+      select: { teamOwnerId: true, teamRole: true, planType: true, email: true },
     });
+
+    if (currentUser?.email?.toLowerCase() !== invitation.email.toLowerCase()) {
+      return NextResponse.json(
+        { error: "Cette invitation n'est pas destinée à votre compte" },
+        { status: 403 }
+      );
+    }
 
     if (currentUser?.teamOwnerId) {
       return NextResponse.json(

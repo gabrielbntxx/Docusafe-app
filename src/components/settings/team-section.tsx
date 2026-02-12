@@ -28,7 +28,6 @@ type Invitation = {
   status: string;
   createdAt: string;
   expiresAt: string;
-  inviteLink?: string;
 };
 
 export function TeamSection() {
@@ -42,7 +41,8 @@ export function TeamSection() {
   const [success, setSuccess] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [revokingId, setRevokingId] = useState<string | null>(null);
-  const [copiedLink, setCopiedLink] = useState<string | null>(null);
+  const [lastInviteLink, setLastInviteLink] = useState<string | null>(null);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -79,6 +79,8 @@ export function TeamSection() {
     setInviting(true);
     setError(null);
     setSuccess(null);
+    setLastInviteLink(null);
+    setCopiedLink(false);
 
     try {
       const res = await fetch("/api/team/invite", {
@@ -94,12 +96,16 @@ export function TeamSection() {
         return;
       }
 
+      // Store the invite link (only available at creation time)
+      if (data.inviteLink) {
+        setLastInviteLink(data.inviteLink);
+      }
+
       if (data.emailSent) {
         setSuccess(`Invitation envoyée à ${inviteEmail}`);
       } else {
-        // Email failed but invitation was created - show link to share manually
         setSuccess(
-          `Invitation créée ! L'email n'a pas pu être envoyé. Partagez ce lien : ${data.inviteLink}`
+          `Invitation créée ! L'email n'a pas pu être envoyé. Copiez le lien ci-dessous pour le partager manuellement.`
         );
       }
       setInviteEmail("");
@@ -151,18 +157,16 @@ export function TeamSection() {
     }
   };
 
-  const handleCopyLink = async (inviteId: string) => {
-    const invite = invitations.find((i) => i.id === inviteId);
-    if (!invite?.inviteLink) return;
+  const handleCopyInviteLink = async () => {
+    if (!lastInviteLink) return;
 
     try {
-      await navigator.clipboard.writeText(invite.inviteLink);
-      setCopiedLink(inviteId);
-      setTimeout(() => setCopiedLink(null), 2000);
+      await navigator.clipboard.writeText(lastInviteLink);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
     } catch {
-      // Fallback for non-HTTPS or older browsers
-      setCopiedLink(inviteId);
-      setTimeout(() => setCopiedLink(null), 2000);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
     }
   };
 
@@ -239,9 +243,24 @@ export function TeamSection() {
         </div>
       )}
       {success && (
-        <div className="flex items-center gap-2 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-600 dark:bg-green-500/10 dark:text-green-400">
-          <CheckCircle className="h-4 w-4 flex-shrink-0" />
-          {success}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-600 dark:bg-green-500/10 dark:text-green-400">
+            <CheckCircle className="h-4 w-4 flex-shrink-0" />
+            {success}
+          </div>
+          {lastInviteLink && (
+            <button
+              onClick={handleCopyInviteLink}
+              className="flex items-center gap-2 rounded-lg border border-neutral-200 px-4 py-2 text-sm text-neutral-700 transition hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
+            >
+              {copiedLink ? (
+                <CheckCircle className="h-4 w-4 text-green-500" />
+              ) : (
+                <Copy className="h-4 w-4" />
+              )}
+              {copiedLink ? "Lien copié !" : "Copier le lien d'invitation"}
+            </button>
+          )}
         </div>
       )}
 
@@ -337,31 +356,18 @@ export function TeamSection() {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => handleCopyLink(invite.id)}
-                    className="rounded-lg p-2 text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800"
-                    title="Copier le lien d'invitation"
-                  >
-                    {copiedLink === invite.id ? (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                  </button>
-                  <button
-                    onClick={() => handleRevokeInvite(invite.id)}
-                    disabled={revokingId === invite.id}
-                    className="rounded-lg p-2 text-neutral-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10"
-                    title="Annuler l'invitation"
-                  >
-                    {revokingId === invite.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <X className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
+                <button
+                  onClick={() => handleRevokeInvite(invite.id)}
+                  disabled={revokingId === invite.id}
+                  className="rounded-lg p-2 text-neutral-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10"
+                  title="Annuler l'invitation"
+                >
+                  {revokingId === invite.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <X className="h-4 w-4" />
+                  )}
+                </button>
               </div>
             ))}
           </div>

@@ -97,16 +97,17 @@ export async function POST(req: Request) {
       data: { teamRole: "owner" },
     });
 
-    // Generate invitation token
+    // Generate invitation token and hash it for storage
     const token = crypto.randomBytes(32).toString("hex");
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-    // Create invitation
+    // Create invitation (store hash, not raw token)
     const invitation = await db.teamInvitation.create({
       data: {
         ownerId: session.user.id,
         email: normalizedEmail,
-        token,
+        token: tokenHash,
         expiresAt,
       },
     });
@@ -167,7 +168,6 @@ export async function GET() {
       select: {
         id: true,
         email: true,
-        token: true,
         status: true,
         createdAt: true,
         expiresAt: true,
@@ -175,18 +175,7 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     });
 
-    // Build invite links for copy functionality
-    const baseUrl = process.env.NEXTAUTH_URL || "https://www.docusafe.online";
-    const invitationsWithLinks = invitations.map((inv) => ({
-      id: inv.id,
-      email: inv.email,
-      status: inv.status,
-      createdAt: inv.createdAt,
-      expiresAt: inv.expiresAt,
-      inviteLink: `${baseUrl}/invite/${inv.token}`,
-    }));
-
-    return NextResponse.json({ invitations: invitationsWithLinks });
+    return NextResponse.json({ invitations });
   } catch (error) {
     console.error("[Team Invite] Error:", error);
     return NextResponse.json(

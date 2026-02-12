@@ -377,6 +377,11 @@ const RATE_LIMIT_CONFIG = {
     windowMs: 10 * 60 * 1000, // 10 minutes
     blockDurationMs: 30 * 60 * 1000, // 30 minutes block
   },
+  sharedAccess: {
+    maxAttempts: 5,
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    blockDurationMs: 30 * 60 * 1000, // 30 minutes block
+  },
 };
 
 // In-memory rate limit store (pour production, utiliser Redis)

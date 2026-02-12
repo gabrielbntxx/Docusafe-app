@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { randomBytes, createHash } from "crypto";
 import bcrypt from "bcryptjs";
-import { validateFile } from "@/lib/security";
+import { validateFile, checkRateLimit, getClientIdentifier } from "@/lib/security";
 
 const s3Client = new S3Client({
   region: "auto",
@@ -24,6 +24,16 @@ export async function POST(
 ) {
   try {
     const { token } = params;
+
+    // Rate limit password attempts per IP + token
+    const clientId = await getClientIdentifier();
+    const rateLimit = checkRateLimit(`${clientId}_upload_${token}`, "sharedAccess");
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: rateLimit.error },
+        { status: 429, headers: { "Retry-After": String(rateLimit.resetIn) } }
+      );
+    }
 
     // Find the request with user info
     const request = await db.documentRequest.findUnique({

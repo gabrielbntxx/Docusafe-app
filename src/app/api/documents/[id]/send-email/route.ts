@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import crypto from "crypto";
 import { sendDocumentEmail } from "@/lib/email";
 import { checkRateLimit, getClientIdentifier, validateEmail } from "@/lib/security";
+import { getEffectiveUserId } from "@/lib/team";
 
 export async function POST(
   req: Request,
@@ -60,6 +61,7 @@ export async function POST(
     }
 
     // Find document and verify ownership
+    const effectiveUserId = await getEffectiveUserId(session.user.id);
     const document = await db.document.findUnique({
       where: { id },
       select: {
@@ -77,7 +79,7 @@ export async function POST(
       );
     }
 
-    if (document.userId !== session.user.id) {
+    if (document.userId !== effectiveUserId) {
       return NextResponse.json(
         { error: "Non autorisé" },
         { status: 403 }

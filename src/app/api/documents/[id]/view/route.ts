@@ -9,6 +9,7 @@ import {
   isEncrypted,
   removeEncryptionMarker,
 } from "@/lib/encryption";
+import { getEffectiveUserId } from "@/lib/team";
 
 export async function GET(
   req: Request,
@@ -25,17 +26,10 @@ export async function GET(
     }
 
     const { id } = await params;
+    const effectiveUserId = await getEffectiveUserId(session.user.id);
 
-    // Récupérer le document avec les infos utilisateur
     const document = await db.document.findUnique({
       where: { id },
-      include: {
-        user: {
-          select: {
-            encryptionKey: true,
-          },
-        },
-      },
     });
 
     if (!document) {
@@ -45,8 +39,7 @@ export async function GET(
       );
     }
 
-    // Vérifier que le document appartient à l'utilisateur
-    if (document.userId !== session.user.id) {
+    if (document.userId !== effectiveUserId) {
       return NextResponse.json(
         { error: "Non autorisé" },
         { status: 403 }
@@ -56,16 +49,21 @@ export async function GET(
     // Récupérer le fichier depuis R2
     let fileBuffer = await getFromR2(document.storageKey);
 
-    // Déchiffrer si le document est chiffré
+    // Déchiffrer avec la clé du propriétaire de l'espace
     if (document.isEncrypted === 1 && isEncrypted(fileBuffer)) {
-      if (!document.user.encryptionKey) {
+      const owner = await db.user.findUnique({
+        where: { id: effectiveUserId },
+        select: { encryptionKey: true },
+      });
+
+      if (!owner?.encryptionKey) {
         return NextResponse.json(
           { error: "Clé de chiffrement manquante" },
           { status: 500 }
         );
       }
 
-      const userKey = decryptUserKey(document.user.encryptionKey);
+      const userKey = decryptUserKey(owner.encryptionKey);
       const encryptedData = removeEncryptionMarker(fileBuffer);
       fileBuffer = decryptDocument(encryptedData, userKey);
     }

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { checkRateLimit, getClientIdentifier } from "@/lib/security";
+import crypto from "crypto";
 
 // GET /api/team/invite/info?token=xxx - Get invitation info (public, no auth required)
 export async function GET(req: NextRequest) {
@@ -9,9 +11,22 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Token requis" }, { status: 400 });
     }
 
+    // Rate limit to prevent enumeration
+    const clientId = await getClientIdentifier();
+    const rateLimit = checkRateLimit(`${clientId}_invite_info`, "api");
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: rateLimit.error },
+        { status: 429, headers: { "Retry-After": String(rateLimit.resetIn) } }
+      );
+    }
+
+    // Hash the incoming token to match stored hash
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+
     const invitation = await db.teamInvitation.findFirst({
       where: {
-        token,
+        token: tokenHash,
         status: "pending",
         expiresAt: { gt: new Date() },
       },
