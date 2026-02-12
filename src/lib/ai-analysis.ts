@@ -1420,23 +1420,26 @@ export async function analyzeDocument(
   userId: string,
   fileBuffer: Buffer,
   fileName: string,
-  mimeType: string
+  mimeType: string,
+  skipCache = false
 ): Promise<{
   success: boolean;
   result?: AIAnalysisResult;
   fromCache?: boolean;
   error?: string;
 }> {
-  console.log("[analyzeDocument] START - file:", fileName, "mimeType:", mimeType, "size:", fileBuffer.length);
+  console.log("[analyzeDocument] START - file:", fileName, "mimeType:", mimeType, "size:", fileBuffer.length, "skipCache:", skipCache);
 
   const fileHash = calculateFileHash(fileBuffer);
   console.log("[analyzeDocument] File hash:", fileHash.substring(0, 16) + "...");
 
-  // Check cache first
-  const cached = await getCachedAnalysis(fileHash);
-  if (cached) {
-    console.log("[analyzeDocument] Found in cache, returning cached result");
-    return { success: true, result: cached, fromCache: true };
+  // Check cache first (skip for auto-sort to get fresh folder decisions)
+  if (!skipCache) {
+    const cached = await getCachedAnalysis(fileHash);
+    if (cached) {
+      console.log("[analyzeDocument] Found in cache, returning cached result");
+      return { success: true, result: cached, fromCache: true };
+    }
   }
 
   // Check usage limits

@@ -15,22 +15,24 @@ import {
   decryptDocument,
   decryptUserKey,
 } from "@/lib/encryption";
+import { getEffectiveUserId } from "@/lib/team";
 
 /**
- * Decrypt file buffer if encrypted
+ * Decrypt file buffer if encrypted.
+ * Uses the workspace OWNER's encryption key (effectiveUserId).
  */
 async function getDecryptedBuffer(
   fileBuffer: Buffer,
-  userId: string
+  effectiveUserId: string
 ): Promise<Buffer> {
   // Check if document is encrypted
   if (!isEncrypted(fileBuffer)) {
     return fileBuffer;
   }
 
-  // Get user's encryption key
+  // Get the workspace owner's encryption key
   const user = await db.user.findUnique({
-    where: { id: userId },
+    where: { id: effectiveUserId },
     select: { encryptionKey: true },
   });
 
@@ -64,6 +66,9 @@ export async function POST(req: Request) {
       );
     }
 
+    // Get effective userId (team owner's ID if member)
+    const effectiveUserId = await getEffectiveUserId(session.user.id);
+
     // Get document
     const document = await db.document.findUnique({
       where: { id: documentId },
@@ -76,8 +81,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // Check ownership
-    if (document.userId !== session.user.id) {
+    // Check ownership against workspace (shared team or own)
+    if (document.userId !== effectiveUserId) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
     }
 
@@ -102,14 +107,14 @@ export async function POST(req: Request) {
     const encryptedBuffer = await getFromR2(document.storageKey);
     console.log("[Analyze POST] Got encrypted buffer, size:", encryptedBuffer.length);
 
-    // Decrypt the document before analysis
-    const fileBuffer = await getDecryptedBuffer(encryptedBuffer, session.user.id);
+    // Decrypt the document using workspace owner's key
+    const fileBuffer = await getDecryptedBuffer(encryptedBuffer, effectiveUserId);
     console.log("[Analyze POST] Decrypted buffer, size:", fileBuffer.length);
 
-    // Analyze document (now decrypted)
+    // Analyze document (use effectiveUserId for folder tree context and usage tracking)
     console.log("[Analyze POST] Starting AI analysis for:", document.originalName, "mimeType:", document.mimeType);
     const analysis = await analyzeDocument(
-      session.user.id,
+      effectiveUserId,
       fileBuffer,
       document.originalName,
       document.mimeType
@@ -173,6 +178,9 @@ export async function PUT(req: Request) {
       );
     }
 
+    // Get effective userId (team owner's ID if member)
+    const effectiveUserId = await getEffectiveUserId(session.user.id);
+
     // Get document
     const document = await db.document.findUnique({
       where: { id: documentId },
@@ -185,8 +193,8 @@ export async function PUT(req: Request) {
       );
     }
 
-    // Check ownership
-    if (document.userId !== session.user.id) {
+    // Check ownership against workspace (shared team or own)
+    if (document.userId !== effectiveUserId) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
     }
 
@@ -195,17 +203,19 @@ export async function PUT(req: Request) {
     const encryptedBuffer = await getFromR2(document.storageKey);
     console.log("[Analyze PUT] Got encrypted buffer, size:", encryptedBuffer.length);
 
-    // Decrypt the document before analysis
-    const fileBuffer = await getDecryptedBuffer(encryptedBuffer, session.user.id);
+    // Decrypt the document using workspace owner's key
+    const fileBuffer = await getDecryptedBuffer(encryptedBuffer, effectiveUserId);
     console.log("[Analyze PUT] Decrypted buffer, size:", fileBuffer.length);
 
-    // Analyze document (now decrypted)
+    // Analyze document — skip cache for auto-sort to get fresh folder decisions
+    // (cache doesn't store suggestedFolder/folderAction, so cached results lose folder precision)
     console.log("[Analyze PUT] Starting AI analysis for:", document.originalName, "mimeType:", document.mimeType);
     const analysis = await analyzeDocument(
-      session.user.id,
+      effectiveUserId,
       fileBuffer,
       document.originalName,
-      document.mimeType
+      document.mimeType,
+      true // skipCache — ensure fresh folder decision from AI
     );
     console.log("[Analyze PUT] Analysis result:", analysis.success, "fromCache:", analysis.fromCache);
 
@@ -217,15 +227,21 @@ export async function PUT(req: Request) {
       );
     }
 
-    // Get or create folder with hierarchy-aware AI decision
-    const folderId = await getOrCreateCategoryFolder(
-      session.user.id,
-      analysis.result.category,
-      analysis.result.suggestedFolder,
-      analysis.result.folderAction,
-      analysis.result.targetFolderId,
-      analysis.result.parentFolderId
-    );
+    // Get or create folder in the workspace owner's space
+    let folderId: string | null = null;
+    try {
+      folderId = await getOrCreateCategoryFolder(
+        effectiveUserId,
+        analysis.result.category,
+        analysis.result.suggestedFolder,
+        analysis.result.folderAction,
+        analysis.result.targetFolderId,
+        analysis.result.parentFolderId
+      );
+    } catch (folderError) {
+      console.error("[Analyze PUT] Folder creation failed:", folderError);
+      // Continue without folder — document is still analyzed
+    }
 
     // Update document with analysis results and move to folder
     await db.document.update({
@@ -237,7 +253,7 @@ export async function PUT(req: Request) {
         aiConfidence: analysis.result.confidence,
         aiExtractedData: JSON.stringify(analysis.result.extractedData),
         fileHash: calculateFileHash(fileBuffer),
-        folderId, // Move to category folder
+        ...(folderId && { folderId }), // Move to folder only if we got one
         // Update display name if suggested
         ...(analysis.result.suggestedName && {
           displayName: analysis.result.suggestedName,
@@ -250,7 +266,7 @@ export async function PUT(req: Request) {
       fromCache: analysis.fromCache,
       result: analysis.result,
       folderId,
-      folderName: analysis.result.suggestedFolder || analysis.result.category, // Precise folder name
+      folderName: analysis.result.suggestedFolder || analysis.result.category,
     });
   } catch (error) {
     console.error("Document auto-sort error:", error);
@@ -275,7 +291,7 @@ export async function GET() {
     // Get user's AI sorting preference
     const user = await db.user.findUnique({
       where: { id: session.user.id },
-      select: { aiSortingEnabled: true, planType: true },
+      select: { aiSortingEnabled: true, planType: true, teamOwnerId: true },
     });
 
     return NextResponse.json({
