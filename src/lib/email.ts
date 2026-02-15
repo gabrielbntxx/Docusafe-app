@@ -7,6 +7,15 @@ const resend = process.env.RESEND_API_KEY
 
 const FROM_EMAIL = process.env.FROM_EMAIL || "DocuSafe <noreply@docusafe.online>";
 
+/** Mask email for safe logging: user@example.com → u***@e***.com */
+function maskEmail(email: string): string {
+  const [local, domain] = email.split("@");
+  if (!domain) return "***";
+  const domainParts = domain.split(".");
+  const tld = domainParts.pop() || "";
+  return `${local[0]}***@${domainParts[0]?.[0] || ""}***.${tld}`;
+}
+
 /**
  * Send welcome email when user upgrades to Pro
  */
@@ -31,7 +40,7 @@ export async function sendWelcomeProEmail(userEmail: string, userName?: string) 
       return { success: false, error };
     }
 
-    console.log("[Email] Welcome Pro email sent to:", userEmail);
+    console.log("[Email] Welcome Pro email sent to:", maskEmail(userEmail));
     return { success: true, data };
   } catch (error) {
     console.error("[Email] Failed to send welcome email:", error);
@@ -63,7 +72,7 @@ export async function sendCancellationEmail(userEmail: string, userName?: string
       return { success: false, error };
     }
 
-    console.log("[Email] Cancellation email sent to:", userEmail);
+    console.log("[Email] Cancellation email sent to:", maskEmail(userEmail));
     return { success: true, data };
   } catch (error) {
     console.error("[Email] Failed to send cancellation email:", error);
@@ -215,7 +224,7 @@ export async function sendPasswordResetEmail(userEmail: string, token: string, u
       return { success: false, error };
     }
 
-    console.log("[Email] Password reset email sent to:", userEmail);
+    console.log("[Email] Password reset email sent to:", maskEmail(userEmail));
     return { success: true, data };
   } catch (error) {
     console.error("[Email] Failed to send password reset email:", error);
@@ -341,7 +350,7 @@ export async function sendVerificationCodeEmail(
       return { success: false, error };
     }
 
-    console.log("[Email] Verification code email sent to:", userEmail);
+    console.log("[Email] Verification code email sent to:", maskEmail(userEmail));
     return { success: true, data };
   } catch (error) {
     console.error("[Email] Failed to send verification email:", error);

@@ -52,7 +52,7 @@ export async function POST() {
         },
       });
 
-      console.log("[Subscription] User downgraded without Stripe subscription:", user.email);
+      console.log("[Subscription] User downgraded without Stripe subscription:", user.id);
 
       return NextResponse.json({
         success: true,
@@ -69,7 +69,7 @@ export async function POST() {
       }
     );
 
-    console.log("[Subscription] Subscription set to cancel at period end:", user.email);
+    console.log("[Subscription] Subscription set to cancel at period end:", user.id);
 
     // Update user status (they remain PRO until the period ends)
     await db.user.update({

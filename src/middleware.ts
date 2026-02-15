@@ -106,8 +106,38 @@ export function middleware(request: NextRequest) {
     loginAttempts.set(key, data);
   }
 
+  // Block cross-origin API requests (CORS)
+  if (pathname.startsWith("/api/")) {
+    const origin = request.headers.get("origin");
+    const appUrl = process.env.NEXTAUTH_URL || "https://www.docusafe.online";
+    const allowedOrigins = [appUrl, appUrl.replace("www.", "")];
+
+    if (request.method === "OPTIONS") {
+      return new NextResponse(null, {
+        status: 204,
+        headers: {
+          "Access-Control-Allow-Origin": allowedOrigins.includes(origin || "") ? origin! : allowedOrigins[0],
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization",
+          "Access-Control-Max-Age": "86400",
+        },
+      });
+    }
+  }
+
   // Headers de sécurité pour toutes les réponses
   const response = NextResponse.next();
+
+  // CORS headers for API routes
+  if (pathname.startsWith("/api/")) {
+    const origin = request.headers.get("origin");
+    const appUrl = process.env.NEXTAUTH_URL || "https://www.docusafe.online";
+    const allowedOrigins = [appUrl, appUrl.replace("www.", "")];
+    const effectiveOrigin = allowedOrigins.includes(origin || "") ? origin! : allowedOrigins[0];
+    response.headers.set("Access-Control-Allow-Origin", effectiveOrigin);
+    response.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  }
 
   // Security headers
   response.headers.set("X-Content-Type-Options", "nosniff");

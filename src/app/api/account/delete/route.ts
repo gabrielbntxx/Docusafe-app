@@ -37,13 +37,13 @@ export async function POST() {
       );
     }
 
-    console.log(`[AccountDelete] Starting account deletion for ${user.email}`);
+    console.log(`[AccountDelete] Starting account deletion for ${user.id}`);
 
     // 2. Cancel Stripe subscription if active
     if (stripe && user.stripeSubscriptionId) {
       try {
         await stripe.subscriptions.cancel(user.stripeSubscriptionId);
-        console.log(`[AccountDelete] Stripe subscription canceled for ${user.email}`);
+        console.log(`[AccountDelete] Stripe subscription canceled for ${user.id}`);
       } catch (stripeError) {
         console.error("[AccountDelete] Stripe cancellation error (continuing):", stripeError);
       }
@@ -93,7 +93,7 @@ export async function POST() {
       where: { id: userId },
     });
 
-    console.log(`[AccountDelete] Account deleted successfully for ${user.email}`);
+    console.log(`[AccountDelete] Account deleted successfully for ${user.id}`);
 
     return NextResponse.json({ success: true });
   } catch (error) {

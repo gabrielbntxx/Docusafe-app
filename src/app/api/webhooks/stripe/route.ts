@@ -9,6 +9,14 @@ const stripe = process.env.STRIPE_SECRET_KEY
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "";
 
+function maskEmail(email: string): string {
+  const [local, domain] = email.split("@");
+  if (!domain) return "***";
+  const domainParts = domain.split(".");
+  const tld = domainParts.pop() || "";
+  return `${local[0]}***@${domainParts[0]?.[0] || ""}***.${tld}`;
+}
+
 export async function POST(req: Request) {
   if (!stripe || !webhookSecret) {
     console.error("[Stripe Webhook] Stripe not configured");
@@ -85,7 +93,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const customerId = session.customer as string;
   const subscriptionId = session.subscription as string;
 
-  console.log("[Stripe Webhook] Checkout completed for:", customerEmail);
+  console.log("[Stripe Webhook] Checkout completed for:", customerEmail ? maskEmail(customerEmail) : "unknown");
 
   if (!customerEmail) {
     console.error("[Stripe Webhook] No customer email found in session");
@@ -98,7 +106,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   });
 
   if (!user) {
-    console.error("[Stripe Webhook] User not found for email:", customerEmail);
+    console.error("[Stripe Webhook] User not found for email:", maskEmail(customerEmail));
     return;
   }
 
@@ -119,7 +127,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     },
   });
 
-  console.log(`[Stripe Webhook] User upgraded to ${planType}:`, user.email);
+  console.log(`[Stripe Webhook] User upgraded to ${planType}:`, maskEmail(user.email));
 
   // Send welcome email
   await sendWelcomeProEmail(user.email, user.name || undefined);
@@ -190,7 +198,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     },
   });
 
-  console.log("[Stripe Webhook] User downgraded to FREE:", user.email);
+  console.log("[Stripe Webhook] User downgraded to FREE:", maskEmail(user.email));
 
   // Send cancellation email
   await sendCancellationEmail(user.email, user.name || undefined);
@@ -222,5 +230,5 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
     },
   });
 
-  console.log("[Stripe Webhook] User marked as past_due:", user.email);
+  console.log("[Stripe Webhook] User marked as past_due:", maskEmail(user.email));
 }
