@@ -10,7 +10,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 export const STORAGE_LIMITS: Record<string, number> = {
   STUDENT: 100 * 1024 * 1024 * 1024, // 100 GB
   PRO: 200 * 1024 * 1024 * 1024, // 200 GB
-  BUSINESS: 500 * 1024 * 1024 * 1024, // 500 GB
+  BUSINESS: Infinity, // Unlimited
 } as const;
 
 const DEFAULT_STORAGE_LIMIT = 1 * 1024 * 1024 * 1024; // 1 GB for non-subscribed users

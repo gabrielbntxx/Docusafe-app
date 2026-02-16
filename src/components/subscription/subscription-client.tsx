@@ -45,16 +45,16 @@ export function SubscriptionClient({
   const formatStorage = (bytes: number) => {
     const mb = bytes / (1024 * 1024);
     if (mb >= 1024) {
-      return `${(mb / 1024).toFixed(2)} GB`;
+      return `${(mb / 1024).toFixed(2)} Go`;
     }
-    return `${mb.toFixed(2)} MB`;
+    return `${mb.toFixed(2)} Mo`;
   };
 
   const getMaxStorage = (plan: PlanType) => {
     switch (plan) {
       case "STUDENT": return 100 * 1024;
       case "PRO": return 200 * 1024;
-      case "BUSINESS": return 500 * 1024;
+      case "BUSINESS": return Infinity;
       default: return 1024; // 1 GB
     }
   };
@@ -72,7 +72,7 @@ export function SubscriptionClient({
   const maxDocs = getMaxDocs(currentPlan);
   const maxStorage = getMaxStorage(currentPlan);
   const docsPercentage = maxDocs === Infinity ? 10 : (documentsCount / maxDocs) * 100;
-  const storagePercentage = (storageUsedBytes / (1024 * 1024)) / maxStorage * 100;
+  const storagePercentage = maxStorage === Infinity ? 0 : (storageUsedBytes / (1024 * 1024)) / maxStorage * 100;
 
   const plans = [
     {
@@ -237,7 +237,7 @@ export function SubscriptionClient({
               <p className="mt-0.5 sm:mt-1 text-lg sm:text-3xl font-bold text-neutral-900 dark:text-white truncate">
                 <span className="text-sm sm:text-2xl">{formatStorage(storageUsedBytes)}</span>
                 <span className="text-xs sm:text-lg font-normal text-neutral-400">
-                  {" "}/ {currentPlan === "BUSINESS" ? "∞" : `${maxStorage / 1024}GB`}
+                  {" "}/ {maxStorage === Infinity ? "∞" : `${maxStorage / 1024} Go`}
                 </span>
               </p>
             </div>

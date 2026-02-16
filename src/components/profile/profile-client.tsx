@@ -32,6 +32,61 @@ type ProfileUser = {
   createdAt: string;
 };
 
+const PLAN_CONFIG: Record<
+  string,
+  {
+    label: string;
+    storageLimitBytes: number;
+    storageLabel: string;
+    docLimit: number;
+    docLabel: string;
+    isPaid: boolean;
+    gradient: string;
+    shadow: string;
+  }
+> = {
+  FREE: {
+    label: "Gratuit",
+    storageLimitBytes: 1 * 1024 * 1024 * 1024,
+    storageLabel: "1 Go",
+    docLimit: 15,
+    docLabel: "15",
+    isPaid: false,
+    gradient: "",
+    shadow: "",
+  },
+  STUDENT: {
+    label: "Étudiant",
+    storageLimitBytes: 100 * 1024 * 1024 * 1024,
+    storageLabel: "100 Go",
+    docLimit: Infinity,
+    docLabel: "∞",
+    isPaid: true,
+    gradient: "bg-gradient-to-br from-blue-500 to-indigo-600",
+    shadow: "shadow-xl shadow-blue-500/25",
+  },
+  PRO: {
+    label: "Pro",
+    storageLimitBytes: 200 * 1024 * 1024 * 1024,
+    storageLabel: "200 Go",
+    docLimit: Infinity,
+    docLabel: "∞",
+    isPaid: true,
+    gradient: "bg-gradient-to-br from-violet-500 to-purple-600",
+    shadow: "shadow-xl shadow-violet-500/25",
+  },
+  BUSINESS: {
+    label: "Business",
+    storageLimitBytes: Infinity,
+    storageLabel: "Illimité",
+    docLimit: Infinity,
+    docLabel: "∞",
+    isPaid: true,
+    gradient: "bg-gradient-to-br from-indigo-600 to-violet-700",
+    shadow: "shadow-xl shadow-indigo-500/25",
+  },
+};
+
 export function ProfileClient({ user }: { user: ProfileUser }) {
   const { t } = useTranslation();
   const { update } = useSession();
@@ -40,6 +95,11 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isCanceling, setIsCanceling] = useState(false);
+
+  const plan = PLAN_CONFIG[user.planType] || PLAN_CONFIG.FREE;
+  const storagePercentage = plan.storageLimitBytes === Infinity ? 0 : (user.storageUsedBytes / plan.storageLimitBytes) * 100;
+  const docsPercentage =
+    plan.docLimit === Infinity ? 0 : (user.documentsCount / plan.docLimit) * 100;
 
   // Synchroniser avec l'URL signée
   useEffect(() => {
@@ -75,10 +135,8 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
 
       if (response.ok) {
         const data = await response.json();
-        // L'API retourne une URL signée directement utilisable
         setProfileImage(data.imageUrl);
         await update();
-        // Rafraîchir pour obtenir la nouvelle URL signée
         await refreshProfileImage();
       } else {
         const errorData = await response.json();
@@ -102,12 +160,12 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
   };
 
   const formatBytes = (bytes: number) => {
-    if (bytes === 0) return "0 MB";
+    if (bytes === 0) return "0 Mo";
     const mb = bytes / (1024 * 1024);
     if (mb >= 1024) {
-      return (mb / 1024).toFixed(2) + " GB";
+      return (mb / 1024).toFixed(2) + " Go";
     }
-    return mb.toFixed(2) + " MB";
+    return mb.toFixed(2) + " Mo";
   };
 
   const handleCancelSubscription = async () => {
@@ -133,12 +191,6 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
       setIsCanceling(false);
     }
   };
-
-  const maxStorage =
-    user.planType === "PRO" ? 100 * 1024 * 1024 * 1024 : 2 * 1024 * 1024;
-  const storagePercentage = (user.storageUsedBytes / maxStorage) * 100;
-  const maxDocs = user.planType === "PRO" ? 999 : 5;
-  const docsPercentage = (user.documentsCount / maxDocs) * 100;
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
@@ -206,10 +258,10 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
           <div className="flex-1 text-center sm:text-left">
             <div className="flex items-center justify-center gap-3 sm:justify-start">
               <h2 className="text-2xl font-bold sm:text-3xl">{user.name}</h2>
-              {user.planType === "PRO" && (
+              {plan.isPaid && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold backdrop-blur-sm">
                   <Sparkles className="h-3 w-3" />
-                  PRO
+                  {plan.label.toUpperCase()}
                 </span>
               )}
             </div>
@@ -262,7 +314,7 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
                 {user.documentsCount}
                 <span className="text-lg font-normal text-neutral-400">
                   {" "}
-                  / {user.planType === "PRO" ? "∞" : "15"}
+                  / {plan.docLabel}
                 </span>
               </p>
             </div>
@@ -289,7 +341,7 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
                 {formatBytes(user.storageUsedBytes)}
                 <span className="text-lg font-normal text-neutral-400">
                   {" "}
-                  / {user.planType === "PRO" ? "100 GB" : "1 GB"}
+                  / {plan.storageLabel}
                 </span>
               </p>
             </div>
@@ -313,12 +365,12 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
       {/* Plan Card */}
       <div
         className={`relative overflow-hidden rounded-3xl p-8 ${
-          user.planType === "PRO"
-            ? "bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-xl shadow-violet-500/25"
+          plan.isPaid
+            ? `${plan.gradient} text-white ${plan.shadow}`
             : "bg-white shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none"
         }`}
       >
-        {user.planType === "PRO" && (
+        {plan.isPaid && (
           <>
             <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10" />
             <div className="absolute -bottom-10 -left-10 h-32 w-32 rounded-full bg-white/5" />
@@ -329,14 +381,14 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
           <div className="flex items-start gap-4">
             <div
               className={`flex h-14 w-14 items-center justify-center rounded-2xl ${
-                user.planType === "PRO"
+                plan.isPaid
                   ? "bg-white/20"
                   : "bg-amber-100 dark:bg-amber-500/20"
               }`}
             >
               <Crown
                 className={`h-7 w-7 ${
-                  user.planType === "PRO"
+                  plan.isPaid
                     ? "text-white"
                     : "text-amber-600 dark:text-amber-400"
                 }`}
@@ -345,23 +397,23 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
             <div>
               <h3
                 className={`text-xl font-bold ${
-                  user.planType === "PRO"
+                  plan.isPaid
                     ? "text-white"
                     : "text-neutral-900 dark:text-white"
                 }`}
               >
-                Plan {user.planType === "PRO" ? "Pro" : "Gratuit"}
+                Plan {plan.label}
               </h3>
               <p
                 className={`mt-1 text-sm ${
-                  user.planType === "PRO"
-                    ? "text-violet-200"
+                  plan.isPaid
+                    ? "text-white/70"
                     : "text-neutral-500 dark:text-neutral-400"
                 }`}
               >
-                {user.planType === "PRO"
-                  ? "Profitez de tous les avantages premium"
-                  : "Passez à Pro pour débloquer toutes les fonctionnalités"}
+                {plan.isPaid
+                  ? `${plan.storageLabel} de stockage - Documents illimités`
+                  : "Passez à un plan supérieur pour débloquer toutes les fonctionnalités"}
               </p>
             </div>
           </div>
@@ -465,7 +517,7 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
 
             {/* Description */}
             <p className="mt-3 text-center text-sm text-neutral-500 dark:text-neutral-400">
-              En annulant votre abonnement Pro, vous perdrez accès à :
+              En annulant votre abonnement {plan.label}, vous perdrez accès à :
             </p>
 
             {/* Liste des avantages perdus */}
@@ -476,16 +528,18 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
               </li>
               <li className="flex items-center gap-2">
                 <div className="h-1.5 w-1.5 rounded-full bg-red-500" />
-                100 GB de stockage
+                {plan.storageLabel} de stockage
               </li>
               <li className="flex items-center gap-2">
                 <div className="h-1.5 w-1.5 rounded-full bg-red-500" />
                 OCR intelligent
               </li>
-              <li className="flex items-center gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-red-500" />
-                Support prioritaire
-              </li>
+              {user.planType === "BUSINESS" && (
+                <li className="flex items-center gap-2">
+                  <div className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                  Equipe (jusqu&apos;à 5 membres)
+                </li>
+              )}
             </ul>
 
             {/* Boutons */}
@@ -494,7 +548,7 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
                 onClick={() => setShowCancelModal(false)}
                 className="flex-1 rounded-xl bg-neutral-100 py-3 text-sm font-semibold text-neutral-700 transition-colors hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-600"
               >
-                Rester Pro
+                Rester {plan.label}
               </button>
               <button
                 onClick={handleCancelSubscription}
