@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { hasActiveSubscription } from "@/lib/storage";
 
 // PATCH - Update user settings
 export async function PATCH(req: Request) {
@@ -15,11 +16,17 @@ export async function PATCH(req: Request) {
     // Check subscription - FREE users cannot modify settings
     const currentUser = await db.user.findUnique({
       where: { id: session.user.id },
-      select: { planType: true },
+      select: { planType: true, subscriptionStatus: true },
     });
     if (!currentUser || currentUser.planType === "FREE") {
       return NextResponse.json(
         { error: "Abonnement requis pour modifier les paramètres" },
+        { status: 403 }
+      );
+    }
+    if (!hasActiveSubscription(currentUser)) {
+      return NextResponse.json(
+        { error: "Votre abonnement est expiré. Veuillez renouveler votre paiement." },
         { status: 403 }
       );
     }

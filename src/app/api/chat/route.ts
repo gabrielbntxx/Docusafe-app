@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { getFromR2 } from "@/lib/storage";
+import { getFromR2, hasActiveSubscription } from "@/lib/storage";
 import { decryptDocument, decryptUserKey, removeEncryptionMarker } from "@/lib/encryption";
 import { analyzeDocumentWithAI, getOrCreateCategoryFolder } from "@/lib/ai-analysis";
 import { getEffectiveUserId } from "@/lib/team";
@@ -1112,11 +1112,17 @@ export async function POST(request: NextRequest) {
     // Check subscription - FREE users cannot use DocuBot (unless team member)
     const currentUser = await db.user.findUnique({
       where: { id: session.user.id },
-      select: { planType: true, teamOwnerId: true },
+      select: { planType: true, teamOwnerId: true, subscriptionStatus: true },
     });
     if (!currentUser || (currentUser.planType === "FREE" && !currentUser.teamOwnerId)) {
       return NextResponse.json(
         { error: "Abonnement requis pour utiliser DocuBot" },
+        { status: 403 }
+      );
+    }
+    if (!hasActiveSubscription(currentUser)) {
+      return NextResponse.json(
+        { error: "Votre abonnement est expiré. Veuillez renouveler votre paiement." },
         { status: 403 }
       );
     }

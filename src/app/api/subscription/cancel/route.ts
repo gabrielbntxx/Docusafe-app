@@ -35,7 +35,7 @@ export async function POST() {
       );
     }
 
-    if (user.planType !== "PRO") {
+    if (user.planType === "FREE") {
       return NextResponse.json(
         { error: "Vous n'avez pas d'abonnement actif" },
         { status: 400 }

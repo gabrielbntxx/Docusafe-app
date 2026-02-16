@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { canInviteMore } from "@/lib/team";
+import { hasActiveSubscription } from "@/lib/storage";
 import { sendTeamInvitationEmail } from "@/lib/email";
 import crypto from "crypto";
 
@@ -21,15 +22,21 @@ export async function POST(req: Request) {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Check user is BUSINESS plan
+    // Check user is BUSINESS plan with active subscription
     const user = await db.user.findUnique({
       where: { id: session.user.id },
-      select: { planType: true, name: true, email: true, teamOwnerId: true },
+      select: { planType: true, name: true, email: true, teamOwnerId: true, subscriptionStatus: true },
     });
 
     if (!user || user.planType !== "BUSINESS") {
       return NextResponse.json(
         { error: "Le plan Business est requis pour inviter des membres" },
+        { status: 403 }
+      );
+    }
+    if (!hasActiveSubscription(user)) {
+      return NextResponse.json(
+        { error: "Votre abonnement est expiré. Veuillez renouveler votre paiement." },
         { status: 403 }
       );
     }

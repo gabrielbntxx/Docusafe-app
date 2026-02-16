@@ -9,6 +9,13 @@ const stripe = process.env.STRIPE_SECRET_KEY
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "";
 
+// Map Stripe Price IDs to plan types (server-side source of truth)
+const PRICE_TO_PLAN: Record<string, string> = {
+  [process.env.STRIPE_PRICE_STUDENT || ""]: "STUDENT",
+  [process.env.STRIPE_PRICE_PRO || ""]: "PRO",
+  [process.env.STRIPE_PRICE_BUSINESS || ""]: "BUSINESS",
+};
+
 function maskEmail(email: string): string {
   const [local, domain] = email.split("@");
   if (!domain) return "***";
@@ -86,7 +93,40 @@ export async function POST(req: Request) {
 }
 
 /**
- * Handle successful checkout - upgrade user to PRO
+ * Resolve plan type from Stripe session line items (server-side source of truth).
+ * Falls back to client_reference_id only if price ID mapping is not configured.
+ */
+async function resolvePlanType(session: Stripe.Checkout.Session): Promise<string> {
+  // Try to resolve from Stripe price ID (trusted, server-side)
+  if (stripe && session.id) {
+    try {
+      const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 });
+      const priceId = lineItems.data[0]?.price?.id;
+      if (priceId && PRICE_TO_PLAN[priceId]) {
+        console.log("[Stripe Webhook] Plan resolved from price ID:", PRICE_TO_PLAN[priceId]);
+        return PRICE_TO_PLAN[priceId];
+      }
+      if (priceId) {
+        console.warn("[Stripe Webhook] Unknown price ID:", priceId, "— check STRIPE_PRICE_* env vars");
+      }
+    } catch (err) {
+      console.error("[Stripe Webhook] Failed to fetch line items:", err);
+    }
+  }
+
+  // Fallback: client_reference_id (only if price mapping not configured)
+  const planFromRef = session.client_reference_id;
+  const validPlans = ["STUDENT", "PRO", "BUSINESS"];
+  if (planFromRef && validPlans.includes(planFromRef)) {
+    console.warn("[Stripe Webhook] Using client_reference_id fallback:", planFromRef);
+    return planFromRef;
+  }
+
+  return "PRO";
+}
+
+/**
+ * Handle successful checkout - upgrade user to paid plan
  */
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const customerEmail = session.customer_email || session.customer_details?.email;
@@ -110,10 +150,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return;
   }
 
-  // Detect plan type from client_reference_id or default to PRO
-  const planFromRef = session.client_reference_id;
-  const validPlans = ["STUDENT", "PRO", "BUSINESS"];
-  const planType = planFromRef && validPlans.includes(planFromRef) ? planFromRef : "PRO";
+  // Resolve plan from Stripe price ID (not client_reference_id)
+  const planType = await resolvePlanType(session);
 
   // Update user plan
   await db.user.update({
@@ -197,6 +235,24 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
       stripeSubscriptionId: null,
     },
   });
+
+  // Cascade downgrade: if this user was a team owner, downgrade all team members
+  const teamMembers = await db.user.findMany({
+    where: { teamOwnerId: user.id },
+    select: { id: true, email: true },
+  });
+
+  if (teamMembers.length > 0) {
+    await db.user.updateMany({
+      where: { teamOwnerId: user.id },
+      data: {
+        planType: "FREE",
+        teamOwnerId: null,
+        teamRole: null,
+      },
+    });
+    console.log(`[Stripe Webhook] ${teamMembers.length} team members downgraded for owner:`, maskEmail(user.email));
+  }
 
   console.log("[Stripe Webhook] User downgraded to FREE:", maskEmail(user.email));
 

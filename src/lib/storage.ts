@@ -27,6 +27,26 @@ export const DOCUMENT_LIMITS: Record<string, number> = {
 
 const DEFAULT_DOCUMENT_LIMIT = 15;
 
+/**
+ * Check if a user has an active paid subscription.
+ * Returns true for FREE users (no subscription needed) or active/trialing subscribers.
+ * Returns false for past_due, canceled, or unpaid subscriptions on paid plans.
+ * Team members are checked against their own record (team owner status is validated separately).
+ */
+export function hasActiveSubscription(user: {
+  planType: string;
+  subscriptionStatus?: string | null;
+  teamOwnerId?: string | null;
+}): boolean {
+  // FREE plan doesn't require a subscription
+  if (user.planType === "FREE") return true;
+  // Team members inherit access from the team (validated elsewhere)
+  if (user.teamOwnerId) return true;
+  // Paid plan: subscription must be active or canceling (still in billing period)
+  const status = user.subscriptionStatus;
+  return status === "active" || status === "canceling" || status === "trialing";
+}
+
 // Initialize R2 client
 const R2 = new S3Client({
   region: "auto",

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { hasActiveSubscription } from "@/lib/storage";
 import { randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
 
@@ -14,15 +15,21 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user has PRO or BUSINESS plan
+    // Check if user has PRO or BUSINESS plan with active subscription
     const user = await db.user.findUnique({
       where: { id: session.user.id },
-      select: { planType: true },
+      select: { planType: true, subscriptionStatus: true },
     });
 
     if (!user || (user.planType !== "PRO" && user.planType !== "BUSINESS")) {
       return NextResponse.json(
         { error: "This feature requires a Pro or Business plan" },
+        { status: 403 }
+      );
+    }
+    if (!hasActiveSubscription(user)) {
+      return NextResponse.json(
+        { error: "Votre abonnement est expiré. Veuillez renouveler votre paiement." },
         { status: 403 }
       );
     }
@@ -95,15 +102,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user has PRO or BUSINESS plan
+    // Check if user has PRO or BUSINESS plan with active subscription
     const user = await db.user.findUnique({
       where: { id: session.user.id },
-      select: { planType: true },
+      select: { planType: true, subscriptionStatus: true },
     });
 
     if (!user || (user.planType !== "PRO" && user.planType !== "BUSINESS")) {
       return NextResponse.json(
         { error: "This feature requires a Pro or Business plan" },
+        { status: 403 }
+      );
+    }
+    if (!hasActiveSubscription(user)) {
+      return NextResponse.json(
+        { error: "Votre abonnement est expiré. Veuillez renouveler votre paiement." },
         { status: 403 }
       );
     }

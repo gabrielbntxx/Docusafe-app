@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { createNotification } from "@/lib/notifications";
 import { getEffectiveUserId } from "@/lib/team";
+import { hasActiveSubscription } from "@/lib/storage";
 
 // GET - List all folders for the current user
 export async function GET(req: Request) {
@@ -79,11 +80,17 @@ export async function POST(req: Request) {
     // Check subscription - FREE users cannot create folders (unless team member)
     const currentUser = await db.user.findUnique({
       where: { id: session.user.id },
-      select: { planType: true, teamOwnerId: true },
+      select: { planType: true, teamOwnerId: true, subscriptionStatus: true },
     });
     if (!currentUser || (currentUser.planType === "FREE" && !currentUser.teamOwnerId)) {
       return NextResponse.json(
         { error: "Abonnement requis pour créer des dossiers" },
+        { status: 403 }
+      );
+    }
+    if (!hasActiveSubscription(currentUser)) {
+      return NextResponse.json(
+        { error: "Votre abonnement est expiré. Veuillez renouveler votre paiement." },
         { status: 403 }
       );
     }

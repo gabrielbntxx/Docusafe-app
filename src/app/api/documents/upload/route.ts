@@ -8,6 +8,7 @@ import {
   generateStorageKey,
   checkStorageLimit,
   checkDocumentLimit,
+  hasActiveSubscription,
 } from "@/lib/storage";
 import {
   validateFile,
@@ -39,11 +40,17 @@ export async function POST(req: Request) {
     // Check subscription - FREE users cannot upload (unless team member)
     const currentUser = await db.user.findUnique({
       where: { id: session.user.id },
-      select: { planType: true, teamOwnerId: true },
+      select: { planType: true, teamOwnerId: true, subscriptionStatus: true },
     });
     if (!currentUser || (currentUser.planType === "FREE" && !currentUser.teamOwnerId)) {
       return NextResponse.json(
         { error: "Abonnement requis pour importer des documents" },
+        { status: 403 }
+      );
+    }
+    if (!hasActiveSubscription(currentUser)) {
+      return NextResponse.json(
+        { error: "Votre abonnement est expiré. Veuillez renouveler votre paiement." },
         { status: 403 }
       );
     }
