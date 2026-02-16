@@ -52,13 +52,12 @@ export async function POST(req: Request) {
       },
     });
 
-    // Send email (non-blocking)
-    sendVerificationCodeEmail(normalizedEmail, code, user.name || undefined).catch(
-      (err) => console.error("[Resend Verification] Failed to send email:", err)
-    );
+    // Send email (blocking)
+    const emailResult = await sendVerificationCodeEmail(normalizedEmail, code, user.name || undefined);
 
     return NextResponse.json({
       message: "Si un compte non vérifié existe, un nouveau code a été envoyé.",
+      emailSent: emailResult.success,
     });
   } catch (error) {
     console.error("Resend verification error:", error);

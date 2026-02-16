@@ -82,10 +82,14 @@ export function RegisterForm() {
       }
 
       // Redirect to email verification page (preserve callbackUrl for invite flow)
-      const verifyUrl = callbackUrl !== "/dashboard"
-        ? `/verify-email?email=${encodeURIComponent(formData.email)}&callbackUrl=${encodeURIComponent(callbackUrl)}`
-        : `/verify-email?email=${encodeURIComponent(formData.email)}`;
-      router.push(verifyUrl);
+      const params = new URLSearchParams({ email: formData.email });
+      if (callbackUrl !== "/dashboard") {
+        params.set("callbackUrl", callbackUrl);
+      }
+      if (data.emailSent === false) {
+        params.set("emailFailed", "true");
+      }
+      router.push(`/verify-email?${params.toString()}`);
     } catch (error) {
       setError("Une erreur est survenue. Veuillez réessayer.");
     } finally {

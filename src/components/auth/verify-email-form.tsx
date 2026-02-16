@@ -9,11 +9,14 @@ export function VerifyEmailForm() {
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
   const callbackUrl = searchParams.get("callbackUrl") || "";
+  const emailFailed = searchParams.get("emailFailed") === "true";
 
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(
+    emailFailed ? "L'email n'a pas pu être envoyé. Cliquez sur \"Renvoyer le code\" ci-dessous." : ""
+  );
   const [success, setSuccess] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);

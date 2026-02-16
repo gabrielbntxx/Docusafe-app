@@ -31,6 +31,11 @@ export function LoginForm() {
       });
 
       if (result?.error) {
+        if (result.error === "EMAIL_NOT_VERIFIED") {
+          // Redirect to verification page
+          router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
+          return;
+        }
         setError("Email ou mot de passe incorrect");
       } else {
         // Full page redirect to ensure session is loaded

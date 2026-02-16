@@ -123,10 +123,8 @@ export async function POST(req: Request) {
       },
     });
 
-    // Send verification email (non-blocking)
-    sendVerificationCodeEmail(normalizedEmail, code, name.trim()).catch(
-      (err) => console.error("[Register] Failed to send verification email:", err)
-    );
+    // Send verification email (blocking - user needs to know if it fails)
+    const emailResult = await sendVerificationCodeEmail(normalizedEmail, code, name.trim());
 
     return NextResponse.json(
       {
@@ -136,6 +134,7 @@ export async function POST(req: Request) {
           email: user.email,
         },
         requiresVerification: true,
+        emailSent: emailResult.success,
       },
       { status: 201 }
     );
