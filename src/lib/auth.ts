@@ -123,10 +123,9 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Incorrect email or password");
         }
 
-        // Block login if email is not verified
-        if (!user.emailVerified) {
-          throw new Error("EMAIL_NOT_VERIFIED");
-        }
+        // Unverified users are blocked at the login form level
+        // via /api/auth/check-verification before signIn is called.
+        // Do NOT block here — NextAuth swallows custom error messages.
 
         return {
           id: user.id,

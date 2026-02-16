@@ -80,10 +80,21 @@ export async function POST(req: Request) {
     });
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: "Un compte existe déjà avec cet email" },
-        { status: 400 }
-      );
+      if (existingUser.emailVerified) {
+        // Account exists and is verified - cannot re-register
+        return NextResponse.json(
+          { error: "Un compte existe déjà avec cet email" },
+          { status: 400 }
+        );
+      }
+
+      // Account exists but NOT verified - delete it and allow re-registration
+      await db.emailVerificationToken.deleteMany({
+        where: { email: normalizedEmail },
+      });
+      await db.user.delete({
+        where: { id: existingUser.id },
+      });
     }
 
     // Hash password avec un coût plus élevé

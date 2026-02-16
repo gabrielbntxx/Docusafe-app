@@ -24,6 +24,31 @@ export function LoginForm() {
     setError("");
 
     try {
+      // Step 1: Check credentials + email verification status
+      const checkRes = await fetch("/api/auth/check-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      const checkData = await checkRes.json();
+
+      if (checkData.status === "invalid_credentials") {
+        setError("Email ou mot de passe incorrect");
+        setIsLoading(false);
+        return;
+      }
+
+      if (checkData.status === "needs_verification") {
+        // Code already sent by the endpoint — redirect to verify
+        router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
+        return;
+      }
+
+      // Step 2: Credentials valid + email verified → create session
       const result = await signIn("credentials", {
         email: formData.email,
         password: formData.password,
@@ -31,11 +56,6 @@ export function LoginForm() {
       });
 
       if (result?.error) {
-        if (result.error === "EMAIL_NOT_VERIFIED") {
-          // Redirect to verification page
-          router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
-          return;
-        }
         setError("Email ou mot de passe incorrect");
       } else {
         // Full page redirect to ensure session is loaded
