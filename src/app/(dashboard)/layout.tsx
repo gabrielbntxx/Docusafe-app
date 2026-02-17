@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -51,12 +52,12 @@ export default async function DashboardLayout({
               {/* Restricted Mode Banner */}
               {isRestricted && (
                 <div className="fixed top-0 left-0 right-0 z-[100] bg-gradient-to-r from-violet-600 to-blue-600 text-white text-center py-2 px-4 text-sm font-medium lg:pl-72">
-                  <a href="/dashboard/subscription" className="flex items-center justify-center gap-2 hover:underline">
+                  <Link href="/dashboard/subscription" className="flex items-center justify-center gap-2 hover:underline">
                     Abonnez-vous pour débloquer toutes les fonctionnalités
                     <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold backdrop-blur-sm">
                       Voir les offres →
                     </span>
-                  </a>
+                  </Link>
                 </div>
               )}
               <Sidebar />

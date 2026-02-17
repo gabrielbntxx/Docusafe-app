@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useTranslation } from "@/hooks/useTranslation";
 import {
   FileUp,
@@ -264,13 +265,13 @@ export function RequestsClient({ userPlan, requests: initialRequests }: Requests
               </div>
             </div>
 
-            <a
+            <Link
               href="/dashboard/subscription"
               className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-violet-600 shadow-lg transition-all hover:bg-violet-50 active:scale-[0.98]"
             >
               <Crown className="h-4 w-4" />
               Passer à Pro
-            </a>
+            </Link>
           </div>
         </div>
       )}

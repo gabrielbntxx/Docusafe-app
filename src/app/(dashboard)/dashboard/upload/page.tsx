@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Upload, X, FileText, File, Image as ImageIcon, FileCheck, Cloud, Sparkles, Wand2, FolderOpen, Loader2, Music, Video, FolderUp, Folder, FileCode, FileSpreadsheet, Presentation, Archive, CloudCog } from "lucide-react";
 import { CloudPicker } from "@/components/cloud-picker/cloud-picker";
 
@@ -870,9 +871,9 @@ export default function UploadPage() {
                 <li>Maximum 15 fichiers</li>
                 <li>Stockage total: 1 GB</li>
               </ul>
-              <a href="/dashboard/subscription" className="mt-4 inline-block rounded-xl bg-white/20 px-4 py-2 text-sm font-medium backdrop-blur-sm transition-colors hover:bg-white/30">
+              <Link href="/dashboard/subscription" className="mt-4 inline-block rounded-xl bg-white/20 px-4 py-2 text-sm font-medium backdrop-blur-sm transition-colors hover:bg-white/30">
                 Passer à Pro
-              </a>
+              </Link>
             </div>
           </div>
         </div>

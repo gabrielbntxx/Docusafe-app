@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -89,7 +88,9 @@ export function Sidebar() {
           Menu
         </p>
         {navigation.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = item.href.includes("?")
+            ? pathname === item.href.split("?")[0]
+            : pathname === item.href;
           return (
             <button
               key={item.nameKey}

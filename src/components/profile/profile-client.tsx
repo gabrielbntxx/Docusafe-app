@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useProfileImage } from "@/hooks/useProfileImage";
 import {
@@ -89,6 +91,7 @@ const PLAN_CONFIG: Record<
 
 export function ProfileClient({ user }: { user: ProfileUser }) {
   const { t } = useTranslation();
+  const router = useRouter();
   const { update } = useSession();
   const [isUploading, setIsUploading] = useState(false);
   const { imageUrl, refresh: refreshProfileImage } = useProfileImage(user.image);
@@ -181,7 +184,7 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
       if (response.ok) {
         alert(data.message || "Abonnement annulé avec succès");
         setShowCancelModal(false);
-        window.location.reload();
+        router.refresh();
       } else {
         alert(data.error || "Erreur lors de l'annulation");
       }
@@ -283,20 +286,20 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
 
             {/* Quick Actions */}
             <div className="mt-6 flex flex-wrap justify-center gap-3 sm:justify-start">
-              <a
+              <Link
                 href="/dashboard/settings"
                 className="inline-flex items-center gap-2 rounded-xl bg-white/20 px-4 py-2 text-sm font-medium backdrop-blur-sm transition-all hover:bg-white/30"
               >
                 <Settings className="h-4 w-4" />
                 {t("settings")}
-              </a>
-              <a
+              </Link>
+              <Link
                 href="/dashboard/subscription"
                 className="inline-flex items-center gap-2 rounded-xl bg-white/20 px-4 py-2 text-sm font-medium backdrop-blur-sm transition-all hover:bg-white/30"
               >
                 <CreditCard className="h-4 w-4" />
                 {t("subscription")}
-              </a>
+              </Link>
             </div>
           </div>
         </div>
