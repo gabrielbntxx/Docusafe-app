@@ -13,19 +13,26 @@ export default async function ProfilePage() {
     redirect("/login");
   }
 
-  const user = await db.user.findUnique({
-    where: { id: session.user.id },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      image: true,
-      planType: true,
-      documentsCount: true,
-      storageUsedBytes: true,
-      createdAt: true,
-    },
-  });
+  const [user, storageAgg] = await Promise.all([
+    db.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+        planType: true,
+        createdAt: true,
+        _count: {
+          select: { documents: true },
+        },
+      },
+    }),
+    db.document.aggregate({
+      where: { userId: session.user.id },
+      _sum: { sizeBytes: true },
+    }),
+  ]);
 
   if (!user) {
     redirect("/login");
@@ -39,8 +46,8 @@ export default async function ProfilePage() {
         email: user.email,
         image: user.image,
         planType: user.planType,
-        documentsCount: user.documentsCount,
-        storageUsedBytes: Number(user.storageUsedBytes),
+        documentsCount: user._count.documents,
+        storageUsedBytes: Number(storageAgg._sum.sizeBytes) || 0,
         createdAt: user.createdAt.toISOString(),
       }}
     />
