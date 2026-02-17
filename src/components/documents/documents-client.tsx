@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -79,6 +79,14 @@ export function DocumentsClient({
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [isBulkDownloading, setIsBulkDownloading] = useState(false);
   const [isTriageMode, setIsTriageMode] = useState(false);
+
+  // Auto-activate triage mode from URL query param (?triage=1)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("triage") === "1" && documents.length > 0) {
+      setIsTriageMode(true);
+    }
+  }, [documents.length]);
 
   const handleView = (doc: Document) => {
     setPreviewDocument(doc);

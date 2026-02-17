@@ -12,10 +12,8 @@ import {
   Music,
   Video,
   Loader2,
-  Eye,
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
-import { DocumentPreviewModal } from "./document-preview-modal";
 
 type Document = {
   id: string;
@@ -45,6 +43,102 @@ type DocumentTriageProps = {
 
 const SWIPE_THRESHOLD = 80;
 
+// Inline preview component that fetches and displays file content
+function FilePreview({ document }: { document: Document }) {
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    let currentBlobUrl: string | null = null;
+    setIsLoading(true);
+    setHasError(false);
+    setBlobUrl(null);
+
+    fetch(`/api/documents/${document.id}/view`)
+      .then((response) => {
+        if (!response.ok) throw new Error("Failed to fetch");
+        return response.blob();
+      })
+      .then((blob) => {
+        currentBlobUrl = URL.createObjectURL(blob);
+        setBlobUrl(currentBlobUrl);
+        setIsLoading(false);
+      })
+      .catch(() => {
+        setHasError(true);
+        setIsLoading(false);
+      });
+
+    return () => {
+      if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+    };
+  }, [document.id]);
+
+  const getFileIcon = (fileType: string) => {
+    if (fileType === "pdf") return FileText;
+    if (fileType === "image") return ImageIcon;
+    if (fileType === "audio") return Music;
+    if (fileType === "video") return Video;
+    return File;
+  };
+
+  const Icon = getFileIcon(document.fileType);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="h-10 w-10 text-blue-500/50 animate-spin" />
+      </div>
+    );
+  }
+
+  if (hasError || !blobUrl) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Icon className="h-20 w-20 text-blue-500 dark:text-blue-400" />
+      </div>
+    );
+  }
+
+  if (document.fileType === "image") {
+    return (
+      <img
+        src={blobUrl}
+        alt={document.displayName}
+        className="h-full w-full object-contain rounded-2xl"
+      />
+    );
+  }
+
+  if (document.fileType === "pdf") {
+    return (
+      <iframe
+        src={blobUrl}
+        title={document.displayName}
+        className="h-full w-full rounded-2xl"
+      />
+    );
+  }
+
+  if (document.fileType === "video") {
+    return (
+      <video
+        src={blobUrl}
+        className="h-full w-full object-contain rounded-2xl"
+        muted
+      />
+    );
+  }
+
+  // Fallback: show icon
+  return (
+    <div className="flex h-full items-center justify-center">
+      <Icon className="h-20 w-20 text-blue-500 dark:text-blue-400" />
+    </div>
+  );
+}
+
 export function DocumentTriage({
   documents,
   onExit,
@@ -55,19 +149,11 @@ export function DocumentTriage({
   const [isDeleting, setIsDeleting] = useState(false);
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [exitAnimation, setExitAnimation] = useState<"left" | "right" | null>(null);
-  const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
   const touchStartX = useRef(0);
   const isDragging = useRef(false);
 
   const currentDoc = currentIndex < documents.length ? documents[currentIndex] : null;
-
-  const getFileIcon = (fileType: string) => {
-    if (fileType === "pdf") return FileText;
-    if (fileType === "image") return ImageIcon;
-    if (fileType === "audio") return Music;
-    if (fileType === "video") return Video;
-    return File;
-  };
+  const nextDoc = currentIndex + 1 < documents.length ? documents[currentIndex + 1] : null;
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return "0 B";
@@ -190,8 +276,6 @@ export function DocumentTriage({
     );
   }
 
-  const Icon = getFileIcon(currentDoc.fileType);
-
   // Card transform
   const getCardTransform = () => {
     if (exitAnimation === "left") return "translateX(-150vw) rotate(-15deg)";
@@ -210,106 +294,124 @@ export function DocumentTriage({
   const deleteOpacity = swipeOffset < -30 ? Math.min(1, (-swipeOffset - 30) / 50) : 0;
 
   return (
-    <>
-      <DocumentPreviewModal
-        document={previewDocument}
-        isOpen={!!previewDocument}
-        onClose={() => setPreviewDocument(null)}
-      />
+    <div className="mx-auto max-w-6xl space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={onExit}
+          className="flex items-center gap-2 text-sm font-medium text-neutral-500 transition-colors hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          {t("triageExit")}
+        </button>
+        <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
+          {t("triageMode")}
+        </h2>
+        <div className="w-24" />
+      </div>
 
-      <div className="mx-auto max-w-6xl space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <button
-            onClick={onExit}
-            className="flex items-center gap-2 text-sm font-medium text-neutral-500 transition-colors hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            {t("triageExit")}
-          </button>
-          <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
-            {t("triageMode")}
-          </h2>
-          <div className="w-24" />
+      {/* Progress */}
+      <div className="text-center">
+        <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm shadow-lg shadow-black/5 dark:bg-neutral-800 dark:shadow-none">
+          <span className="font-semibold text-blue-600 dark:text-blue-400">
+            {currentIndex + 1}
+          </span>
+          <span className="text-neutral-400">/</span>
+          <span className="text-neutral-600 dark:text-neutral-300">
+            {documents.length}
+          </span>
+          <span className="text-neutral-400 dark:text-neutral-500">
+            {t("triageProgress")}
+          </span>
         </div>
-
-        {/* Progress */}
-        <div className="text-center">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm shadow-lg shadow-black/5 dark:bg-neutral-800 dark:shadow-none">
-            <span className="font-semibold text-blue-600 dark:text-blue-400">
-              {currentIndex + 1}
-            </span>
-            <span className="text-neutral-400">/</span>
-            <span className="text-neutral-600 dark:text-neutral-300">
-              {documents.length}
-            </span>
-            <span className="text-neutral-400 dark:text-neutral-500">
-              {t("triageProgress")}
-            </span>
-          </div>
-          {/* Progress bar */}
-          <div className="mx-auto mt-3 h-1.5 max-w-xs overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-700">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-300"
-              style={{ width: `${((currentIndex) / documents.length) * 100}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Swipe hint (mobile only) */}
-        <p className="text-center text-xs text-neutral-400 dark:text-neutral-500 sm:hidden">
-          {t("triageSwipeHint")}
-        </p>
-
-        {/* Card */}
-        <div className="flex justify-center px-4">
+        {/* Progress bar */}
+        <div className="mx-auto mt-3 h-1.5 max-w-xs overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-700">
           <div
+            className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-300"
+            style={{ width: `${((currentIndex) / documents.length) * 100}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Swipe hint (mobile only) */}
+      <p className="text-center text-xs text-neutral-400 dark:text-neutral-500 sm:hidden">
+        {t("triageSwipeHint")}
+      </p>
+
+      {/* Card stack */}
+      <div className="relative flex justify-center px-4" style={{ minHeight: "420px" }}>
+        {/* Next card (behind) */}
+        {nextDoc && (
+          <div
+            className="absolute w-full max-w-sm select-none"
             style={{
-              transform: getCardTransform(),
-              transition: getCardTransition(),
-              touchAction: "pan-y",
+              transform: "scale(0.95) translateY(12px)",
+              opacity: 0.6,
+              zIndex: 0,
             }}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            className="relative w-full max-w-sm select-none"
           >
-            {/* Keep overlay */}
-            <div
-              className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-3xl border-4 border-green-500 bg-green-500/10"
-              style={{ opacity: keepOpacity }}
-            >
-              <span className="text-4xl font-black text-green-500 -rotate-12 drop-shadow-lg">
-                {t("triageKeep")}
-              </span>
-            </div>
-
-            {/* Delete overlay */}
-            <div
-              className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-3xl border-4 border-red-500 bg-red-500/10"
-              style={{ opacity: deleteOpacity }}
-            >
-              <span className="text-4xl font-black text-red-500 rotate-12 drop-shadow-lg">
-                {t("triageDelete")}
-              </span>
-            </div>
-
-            {/* Card content */}
-            <div className="overflow-hidden rounded-3xl bg-white p-6 shadow-2xl shadow-black/10 dark:bg-neutral-800 dark:shadow-black/30">
-              {/* Preview button */}
-              <button
-                onClick={() => setPreviewDocument(currentDoc)}
-                className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 text-neutral-600 shadow-lg backdrop-blur-sm transition-all hover:bg-white hover:text-blue-600 dark:bg-neutral-700/80 dark:text-neutral-300 dark:hover:bg-neutral-700 dark:hover:text-blue-400"
-              >
-                <Eye className="h-5 w-5" />
-              </button>
-
-              {/* File icon area */}
-              <div className="mb-6 flex h-48 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-violet-50 dark:from-blue-500/10 dark:to-violet-500/10">
-                <Icon className="h-20 w-20 text-blue-500 dark:text-blue-400" />
+            <div className="overflow-hidden rounded-3xl bg-white shadow-xl dark:bg-neutral-800">
+              {/* Preview area */}
+              <div className="h-56 bg-gradient-to-br from-blue-50 to-violet-50 dark:from-blue-500/10 dark:to-violet-500/10 overflow-hidden">
+                <FilePreview key={nextDoc.id} document={nextDoc} />
               </div>
+              {/* Info */}
+              <div className="p-5">
+                <h3 className="text-lg font-semibold text-neutral-900 dark:text-white truncate">
+                  {nextDoc.displayName}
+                </h3>
+                <div className="mt-1.5 flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
+                  <span>{formatFileSize(nextDoc.sizeBytes)}</span>
+                  <span className="text-neutral-300 dark:text-neutral-600">•</span>
+                  <span>{formatDate(nextDoc.uploadedAt)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
-              {/* Document info */}
+        {/* Current card (front) */}
+        <div
+          style={{
+            transform: getCardTransform(),
+            transition: getCardTransition(),
+            touchAction: "pan-y",
+            zIndex: 1,
+          }}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          className="relative w-full max-w-sm select-none"
+        >
+          {/* Keep overlay */}
+          <div
+            className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-3xl border-4 border-green-500 bg-green-500/10"
+            style={{ opacity: keepOpacity }}
+          >
+            <span className="text-4xl font-black text-green-500 -rotate-12 drop-shadow-lg">
+              {t("triageKeep")}
+            </span>
+          </div>
+
+          {/* Delete overlay */}
+          <div
+            className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-3xl border-4 border-red-500 bg-red-500/10"
+            style={{ opacity: deleteOpacity }}
+          >
+            <span className="text-4xl font-black text-red-500 rotate-12 drop-shadow-lg">
+              {t("triageDelete")}
+            </span>
+          </div>
+
+          {/* Card content */}
+          <div className="overflow-hidden rounded-3xl bg-white shadow-2xl shadow-black/10 dark:bg-neutral-800 dark:shadow-black/30">
+            {/* Preview area */}
+            <div className="h-56 bg-gradient-to-br from-blue-50 to-violet-50 dark:from-blue-500/10 dark:to-violet-500/10 overflow-hidden">
+              <FilePreview key={currentDoc.id} document={currentDoc} />
+            </div>
+
+            {/* Document info */}
+            <div className="p-5">
               <h3 className="text-xl font-semibold text-neutral-900 dark:text-white truncate">
                 {currentDoc.displayName}
               </h3>
@@ -337,37 +439,37 @@ export function DocumentTriage({
             </div>
           </div>
         </div>
-
-        {/* Action buttons */}
-        <div className="flex items-center justify-center gap-8 pb-8">
-          {/* Delete button */}
-          <button
-            onClick={handleDelete}
-            disabled={isDeleting || !!exitAnimation}
-            className="flex h-16 w-16 items-center justify-center rounded-full bg-red-100 text-red-500 shadow-lg transition-all hover:bg-red-200 hover:scale-110 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 dark:bg-red-500/20 dark:text-red-400 dark:hover:bg-red-500/30"
-          >
-            {isDeleting ? (
-              <Loader2 className="h-7 w-7 animate-spin" />
-            ) : (
-              <X className="h-8 w-8" />
-            )}
-          </button>
-
-          {/* Keep button */}
-          <button
-            onClick={handleKeep}
-            disabled={isDeleting || !!exitAnimation}
-            className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-green-500 shadow-lg transition-all hover:bg-green-200 hover:scale-110 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 dark:bg-green-500/20 dark:text-green-400 dark:hover:bg-green-500/30"
-          >
-            <Check className="h-8 w-8" />
-          </button>
-        </div>
-
-        {/* Keyboard hint (desktop only) */}
-        <p className="hidden text-center text-xs text-neutral-400 dark:text-neutral-500 sm:block">
-          ← {t("triageDelete")} &nbsp;|&nbsp; {t("triageKeep")} →
-        </p>
       </div>
-    </>
+
+      {/* Action buttons */}
+      <div className="flex items-center justify-center gap-8 pb-8">
+        {/* Delete button */}
+        <button
+          onClick={handleDelete}
+          disabled={isDeleting || !!exitAnimation}
+          className="flex h-16 w-16 items-center justify-center rounded-full bg-red-100 text-red-500 shadow-lg transition-all hover:bg-red-200 hover:scale-110 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 dark:bg-red-500/20 dark:text-red-400 dark:hover:bg-red-500/30"
+        >
+          {isDeleting ? (
+            <Loader2 className="h-7 w-7 animate-spin" />
+          ) : (
+            <X className="h-8 w-8" />
+          )}
+        </button>
+
+        {/* Keep button */}
+        <button
+          onClick={handleKeep}
+          disabled={isDeleting || !!exitAnimation}
+          className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-green-500 shadow-lg transition-all hover:bg-green-200 hover:scale-110 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 dark:bg-green-500/20 dark:text-green-400 dark:hover:bg-green-500/30"
+        >
+          <Check className="h-8 w-8" />
+        </button>
+      </div>
+
+      {/* Keyboard hint (desktop only) */}
+      <p className="hidden text-center text-xs text-neutral-400 dark:text-neutral-500 sm:block">
+        ← {t("triageDelete")} &nbsp;|&nbsp; {t("triageKeep")} →
+      </p>
+    </div>
   );
 }
