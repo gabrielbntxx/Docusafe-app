@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { checkRateLimit, getClientIdentifier } from "@/lib/security";
+import { generateShareAccessToken } from "@/lib/share-access";
 
 // GET - Get shared content info (public)
 export async function GET(
@@ -172,8 +173,12 @@ export async function POST(
       sizeBytes: Number(doc.sizeBytes),
     }));
 
+    // Generate access token for download/view endpoints (proves password was verified)
+    const accessToken = share.password ? generateShareAccessToken(token) : undefined;
+
     return NextResponse.json({
       success: true,
+      accessToken,
       share: {
         name: share.name,
         expiresAt: share.expiresAt.toISOString(),

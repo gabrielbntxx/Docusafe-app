@@ -52,6 +52,7 @@ export default function SharePage() {
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState(false);
   const [shareData, setShareData] = useState<ShareData | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [previewDoc, setPreviewDoc] = useState<DocumentType | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
@@ -98,6 +99,7 @@ export default function SharePage() {
       }
 
       setShareData(data.share);
+      if (data.accessToken) setAccessToken(data.accessToken);
       setRequiresPassword(false);
       setIsLoading(false);
     } catch (err) {
@@ -128,9 +130,15 @@ export default function SharePage() {
     return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
   };
 
+  const buildUrl = (path: string) => {
+    const url = new URL(path, window.location.origin);
+    if (accessToken) url.searchParams.set("access", accessToken);
+    return url.toString();
+  };
+
   const handleDownload = (docId: string, displayName: string) => {
     const link = document.createElement("a");
-    link.href = `/api/shared/${token}/download/${docId}`;
+    link.href = buildUrl(`/api/shared/${token}/download/${docId}`);
     link.download = displayName;
     document.body.appendChild(link);
     link.click();
@@ -142,7 +150,7 @@ export default function SharePage() {
     setIsPreviewLoading(true);
 
     try {
-      const response = await fetch(`/api/shared/${token}/view/${doc.id}`);
+      const response = await fetch(buildUrl(`/api/shared/${token}/view/${doc.id}`));
       if (response.ok) {
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
@@ -166,7 +174,7 @@ export default function SharePage() {
   const handleDownloadAll = async () => {
     setIsDownloadingAll(true);
     try {
-      const response = await fetch(`/api/shared/${token}/download-all`);
+      const response = await fetch(buildUrl(`/api/shared/${token}/download-all`));
       if (response.ok) {
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);

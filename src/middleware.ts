@@ -34,12 +34,18 @@ function cleanupStore(): void {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Skip all custom processing for NextAuth OAuth routes to prevent
-  // interference with state/PKCE cookies during OAuth flow
-  if (
-    pathname.startsWith("/api/auth/") &&
-    pathname !== "/api/auth/callback/credentials"
-  ) {
+  // Skip custom processing only for NextAuth internal OAuth routes
+  // (they manage their own state/PKCE cookies that middleware can break).
+  // Custom auth routes (register, verify, reset, etc.) still get security headers.
+  const isNextAuthInternal =
+    pathname.startsWith("/api/auth/callback/") && pathname !== "/api/auth/callback/credentials" ||
+    pathname === "/api/auth/signin" ||
+    pathname === "/api/auth/signout" ||
+    pathname === "/api/auth/session" ||
+    pathname === "/api/auth/csrf" ||
+    pathname === "/api/auth/providers";
+
+  if (isNextAuthInternal) {
     return NextResponse.next();
   }
 

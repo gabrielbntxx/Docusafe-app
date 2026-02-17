@@ -2,9 +2,20 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
+import { checkRateLimit, getClientIdentifier, validatePassword } from "@/lib/security";
 
 export async function POST(req: Request) {
   try {
+    // Rate limit: 5 requests per 15 minutes per IP
+    const clientId = await getClientIdentifier();
+    const rateLimit = checkRateLimit(`${clientId}_reset`, "resetPassword");
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: rateLimit.error },
+        { status: 429, headers: { "Retry-After": String(rateLimit.resetIn) } }
+      );
+    }
+
     const { token, password } = await req.json();
 
     if (!token || !password) {
@@ -14,31 +25,11 @@ export async function POST(req: Request) {
       );
     }
 
-    // Validate password
-    if (password.length < 8) {
+    // Validate password using shared validator
+    const pwdValidation = validatePassword(password);
+    if (!pwdValidation.valid) {
       return NextResponse.json(
-        { error: "Le mot de passe doit contenir au moins 8 caractères" },
-        { status: 400 }
-      );
-    }
-
-    if (!/[a-z]/.test(password)) {
-      return NextResponse.json(
-        { error: "Le mot de passe doit contenir au moins 1 minuscule" },
-        { status: 400 }
-      );
-    }
-
-    if (!/[A-Z]/.test(password)) {
-      return NextResponse.json(
-        { error: "Le mot de passe doit contenir au moins 1 majuscule" },
-        { status: 400 }
-      );
-    }
-
-    if (!/\d/.test(password)) {
-      return NextResponse.json(
-        { error: "Le mot de passe doit contenir au moins 1 chiffre" },
+        { error: pwdValidation.error },
         { status: 400 }
       );
     }
@@ -86,10 +77,13 @@ export async function POST(req: Request) {
     // Hash the new password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Update user's password
+    // Update user's password and mark change time (invalidates old JWTs)
     await db.user.update({
       where: { id: user.id },
-      data: { password: hashedPassword },
+      data: {
+        password: hashedPassword,
+        passwordChangedAt: new Date(),
+      },
     });
 
     // Delete the used token

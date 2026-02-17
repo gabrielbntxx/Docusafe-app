@@ -37,6 +37,9 @@ model User {
   notificationsEnabled Int       @default(1) // 1 = enabled, 0 = disabled
   aiSortingEnabled     Int       @default(1) // 1 = enabled, 0 = disabled (user preference)
 
+  // Security
+  passwordChangedAt    DateTime? // Tracks password changes to invalidate old JWTs
+
   // Encryption
   encryptionKey        String?   // User's encryption key (encrypted with master key)
 

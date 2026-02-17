@@ -2,9 +2,20 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { db } from "@/lib/db";
 import { sendPasswordResetEmail } from "@/lib/email";
+import { checkRateLimit, getClientIdentifier } from "@/lib/security";
 
 export async function POST(req: Request) {
   try {
+    // Rate limit: 3 requests per 15 minutes per IP
+    const clientId = await getClientIdentifier();
+    const rateLimit = checkRateLimit(`${clientId}_forgot`, "forgotPassword");
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: rateLimit.error },
+        { status: 429, headers: { "Retry-After": String(rateLimit.resetIn) } }
+      );
+    }
+
     const { email } = await req.json();
 
     if (!email) {

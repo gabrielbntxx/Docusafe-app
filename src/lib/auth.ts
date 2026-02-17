@@ -151,12 +151,28 @@ export const authOptions: NextAuthOptions = {
             });
           }
         }
+        return true;
       }
+
+      // Block unverified credentials users server-side
+      if (account?.provider === "credentials" && user.id) {
+        const dbUser = await db.user.findUnique({
+          where: { id: user.id },
+          select: { emailVerified: true },
+        });
+        if (!dbUser?.emailVerified) {
+          // Return false blocks the sign-in
+          return false;
+        }
+      }
+
       return true;
     },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        // Store the timestamp when the JWT was issued
+        token.iat = Math.floor(Date.now() / 1000);
       }
       return token;
     },
@@ -176,10 +192,21 @@ export const authOptions: NextAuthOptions = {
             image: true,
             emailVerified: true,
             onboardingCompleted: true,
+            passwordChangedAt: true,
           },
         });
 
         if (dbUser) {
+          // Invalidate session if password was changed after JWT was issued
+          if (dbUser.passwordChangedAt && token.iat) {
+            const changedAtSec = Math.floor(dbUser.passwordChangedAt.getTime() / 1000);
+            if (changedAtSec > (token.iat as number)) {
+              // Force sign out by returning empty session
+              session.user = {} as typeof session.user;
+              return session;
+            }
+          }
+
           session.user.planType = dbUser.planType;
           session.user.documentsCount = dbUser.documentsCount;
           session.user.language = dbUser.language;

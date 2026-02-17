@@ -57,7 +57,7 @@ export async function POST(req: Request) {
         where: { email: normalizedEmail },
       });
 
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const code = crypto.randomInt(100000, 1000000).toString();
       const hashedCode = crypto
         .createHash("sha256")
         .update(code)

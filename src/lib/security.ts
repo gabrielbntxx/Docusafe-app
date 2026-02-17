@@ -382,6 +382,16 @@ const RATE_LIMIT_CONFIG = {
     windowMs: 15 * 60 * 1000, // 15 minutes
     blockDurationMs: 30 * 60 * 1000, // 30 minutes block
   },
+  forgotPassword: {
+    maxAttempts: 3,
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    blockDurationMs: 60 * 60 * 1000, // 1 hour block
+  },
+  resetPassword: {
+    maxAttempts: 5,
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    blockDurationMs: 60 * 60 * 1000, // 1 hour block
+  },
 };
 
 // In-memory rate limit store (pour production, utiliser Redis)

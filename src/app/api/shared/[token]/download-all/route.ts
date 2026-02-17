@@ -7,6 +7,7 @@ import {
   isEncrypted,
   removeEncryptionMarker,
 } from "@/lib/encryption";
+import { verifyShareAccessToken } from "@/lib/share-access";
 import JSZip from "jszip";
 
 // GET - Download all shared documents as ZIP
@@ -38,6 +39,18 @@ export async function GET(
         { error: "Ce lien de partage a expiré" },
         { status: 410 }
       );
+    }
+
+    // If share is password-protected, require a valid access token
+    if (share.password) {
+      const url = new URL(req.url);
+      const accessToken = url.searchParams.get("access");
+      if (!accessToken || !verifyShareAccessToken(token, accessToken)) {
+        return NextResponse.json(
+          { error: "Accès non autorisé" },
+          { status: 403 }
+        );
+      }
     }
 
     // Get folder and document IDs
