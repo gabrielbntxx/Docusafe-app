@@ -41,6 +41,7 @@ export function BottomNav() {
                 <Link
                   key={item.key}
                   href={isRestricted ? "/dashboard/subscription" : item.href}
+                  prefetch={false}
                   data-tutorial={item.tutorialId}
                   className={`flex h-12 w-12 items-center justify-center rounded-full -mt-4 ${
                     isRestricted
@@ -61,6 +62,7 @@ export function BottomNav() {
               <Link
                 key={item.key}
                 href={item.href}
+                prefetch={false}
                 data-tutorial={item.tutorialId}
                 className="flex flex-col items-center justify-center w-16 h-full"
               >

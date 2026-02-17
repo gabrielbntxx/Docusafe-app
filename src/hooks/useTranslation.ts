@@ -9,11 +9,14 @@ export function useTranslation() {
   // Always start with "fr" to match server-rendered HTML and avoid hydration mismatch
   const [language, setLanguage] = useState<Language>("fr");
 
+  // Use primitive to avoid re-running on every session object reference change
+  const userLanguage = session?.user?.language as Language | undefined;
+
   useEffect(() => {
     if (status === "authenticated") {
-      const userLanguage = (session?.user?.language as Language) || "fr";
-      setLanguage(userLanguage);
-      localStorage.setItem("docusafe-language", userLanguage);
+      const resolvedLang = userLanguage || "fr";
+      setLanguage(resolvedLang);
+      localStorage.setItem("docusafe-language", resolvedLang);
     } else if (status === "unauthenticated") {
       // Check localStorage for returning visitors
       try {
@@ -21,7 +24,7 @@ export function useTranslation() {
         if (stored === "en" || stored === "fr") setLanguage(stored);
       } catch {}
     }
-  }, [session, status]);
+  }, [userLanguage, status]);
 
   const t = (key: TranslationKey): string => {
     const translation = translations[language]?.[key] || translations.fr[key];

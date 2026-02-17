@@ -24,11 +24,12 @@ export function NotificationsDropdown() {
   const [loading, setLoading] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const userId = session?.user?.id;
   useEffect(() => {
-    if (session?.user?.id) {
+    if (userId) {
       fetchNotifications();
     }
-  }, [session]);
+  }, [userId]);
 
   const fetchNotifications = async () => {
     try {

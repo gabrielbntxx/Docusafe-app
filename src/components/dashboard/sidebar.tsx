@@ -99,6 +99,7 @@ export function Sidebar() {
               <Link
                 key={item.nameKey}
                 href={item.href}
+                prefetch={false}
                 data-tutorial={item.tutorialId}
                 className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
                   isActive
@@ -121,6 +122,7 @@ export function Sidebar() {
           <div className="space-y-1">
             <Link
               href="/dashboard/help"
+              prefetch={false}
               data-tutorial="help-link"
               className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
                 pathname === "/dashboard/help"
@@ -133,6 +135,7 @@ export function Sidebar() {
             </Link>
             <Link
               href="/dashboard/support"
+              prefetch={false}
               className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
                 pathname === "/dashboard/support"
                   ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
@@ -155,6 +158,7 @@ export function Sidebar() {
             <Link
               key={item.nameKey}
               href={isLocked ? "/dashboard/subscription" : item.href}
+              prefetch={false}
               data-tutorial={item.tutorialId}
               className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200 ${
                 isLocked

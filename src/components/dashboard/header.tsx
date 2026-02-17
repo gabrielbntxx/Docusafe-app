@@ -78,6 +78,7 @@ export function Header() {
 
             <Link
               href="/dashboard/profile"
+              prefetch={false}
               className="group flex items-center gap-3 rounded-2xl bg-neutral-100/80 px-3 py-2 transition-all hover:bg-neutral-200/80 active:scale-[0.98] dark:bg-white/5 dark:hover:bg-white/10"
             >
               {profileImageUrl ? (

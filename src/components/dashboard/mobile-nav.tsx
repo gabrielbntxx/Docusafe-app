@@ -41,6 +41,8 @@ export function MobileNav() {
   const { data: session } = useSession();
   const { isRestricted } = useSubscription();
 
+  const userId = session?.user?.id;
+
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
@@ -55,10 +57,15 @@ export function MobileNav() {
       }
     };
 
-    if (session?.user?.id) {
+    if (userId) {
       fetchNotifications();
     }
-  }, [session]);
+  }, [userId]);
+
+  // Close menu on navigation to prevent stale overlay
+  useEffect(() => {
+    setIsOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     const fetchProfileImage = async () => {
@@ -101,6 +108,7 @@ export function MobileNav() {
         <div className="flex items-center gap-2">
           <Link
             href="/dashboard/notifications"
+            prefetch={false}
             className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-neutral-100/80 text-neutral-600 transition-colors hover:bg-neutral-200/80 dark:bg-white/5 dark:text-neutral-400 dark:hover:bg-white/10"
           >
             <Bell className="h-4 w-4" />
@@ -153,6 +161,7 @@ export function MobileNav() {
             {/* Help */}
             <Link
               href="/dashboard/help"
+              prefetch={false}
               onClick={closeMenu}
               className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-neutral-600 hover:bg-white active:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-white/5"
             >
@@ -166,6 +175,7 @@ export function MobileNav() {
             {/* Support */}
             <Link
               href="/dashboard/support"
+              prefetch={false}
               onClick={closeMenu}
               className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-neutral-600 hover:bg-white active:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-white/5"
             >
@@ -197,6 +207,7 @@ export function MobileNav() {
           {/* User Profile Card */}
           <Link
             href="/dashboard/profile"
+            prefetch={false}
             onClick={closeMenu}
             className="mx-3 mt-3 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-blue-50 to-violet-50 p-3 dark:from-blue-500/10 dark:to-violet-500/10"
           >
@@ -229,6 +240,7 @@ export function MobileNav() {
                   <Link
                     key={item.nameKey}
                     href={href}
+                    prefetch={false}
                     onClick={closeMenu}
                     className={`flex items-center gap-3 rounded-xl px-3 py-3 transition-all ${
                       isLocked

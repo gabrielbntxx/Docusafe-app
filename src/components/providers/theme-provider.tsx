@@ -18,16 +18,18 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("light");
   const [isLoading, setIsLoading] = useState(true);
 
+  // Use primitive to avoid re-running on every session object reference change
+  const userTheme = session?.user?.theme as Theme | undefined;
+
   useEffect(() => {
     // Only run on client side
     if (typeof window === "undefined") return;
 
     if (status === "authenticated") {
-      const userTheme = (session?.user?.theme as Theme) || "light";
-      setThemeState(userTheme);
+      const resolvedTheme = userTheme || "light";
+      setThemeState(resolvedTheme);
 
-      // Apply theme and save to localStorage for instant loading next time
-      if (userTheme === "dark") {
+      if (resolvedTheme === "dark") {
         document.documentElement.classList.add("dark");
         localStorage.setItem("docusafe-theme", "dark");
       } else {
@@ -41,7 +43,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem("docusafe-theme");
       setIsLoading(false);
     }
-  }, [session, status]);
+  }, [userTheme, status]);
 
   const setTheme = (newTheme: Theme) => {
     if (typeof window === "undefined") return;
