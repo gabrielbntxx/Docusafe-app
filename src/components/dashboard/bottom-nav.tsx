@@ -30,8 +30,9 @@ export function BottomNav() {
       <div className="bg-white dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-800" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
         <div className="flex items-center justify-around h-16 px-1">
           {navItems.map((item) => {
+            // Links with query params (like triage) are never shown as "active"
             const isActive = item.href.includes("?")
-              ? pathname === item.href.split("?")[0]
+              ? false
               : pathname === item.href;
 
             // Center button (Add)
