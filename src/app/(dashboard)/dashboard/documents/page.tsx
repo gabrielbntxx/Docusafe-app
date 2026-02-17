@@ -5,7 +5,11 @@ import { redirect } from "next/navigation";
 import { DocumentsClient } from "@/components/documents/documents-client";
 import { getEffectiveUserId, getTeamMemberMap, hasTeam } from "@/lib/team";
 
-export default async function DocumentsPage() {
+export default async function DocumentsPage({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
   const session = await getServerSession(authOptions);
 
   if (!session) {
@@ -78,6 +82,7 @@ export default async function DocumentsPage() {
       documents={serializedDocuments}
       folders={folders}
       isTeam={isInTeam}
+      initialTriageMode={searchParams?.triage === "1"}
     />
   );
 }

@@ -63,10 +63,12 @@ export function DocumentsClient({
   documents,
   folders,
   isTeam = false,
+  initialTriageMode = false,
 }: {
   documents: Document[];
   folders: FolderType[];
   isTeam?: boolean;
+  initialTriageMode?: boolean;
 }) {
   const router = useRouter();
   const { t } = useTranslation();
@@ -81,17 +83,12 @@ export function DocumentsClient({
   const [isTriageMode, setIsTriageMode] = useState(false);
   const [deletedDocIds, setDeletedDocIds] = useState<Set<string>>(new Set());
 
-  // Auto-activate triage mode from URL query param (?triage=1) — once only
+  // Auto-activate triage mode from server-side prop
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("triage") === "1" && documents.length > 0) {
+    if (initialTriageMode && documents.length > 0) {
       setIsTriageMode(true);
-      // Remove the query param so exiting triage doesn't re-activate it
-      const url = new URL(window.location.href);
-      url.searchParams.delete("triage");
-      window.history.replaceState({}, "", url.pathname + url.search);
     }
-  }, [documents.length]);
+  }, [initialTriageMode, documents.length]);
 
   const handleView = (doc: Document) => {
     setPreviewDocument(doc);

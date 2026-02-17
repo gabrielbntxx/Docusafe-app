@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useTheme } from "@/components/providers/theme-provider";
 import { useTutorial } from "@/contexts/TutorialContext";
@@ -48,6 +49,7 @@ export function SettingsClient({
   planType?: string;
   isTeamOwner?: boolean;
 }) {
+  const router = useRouter();
   const { t } = useTranslation();
   const { setTheme: setGlobalTheme } = useTheme();
   const { startTutorial, hasCompletedTutorial } = useTutorial();
@@ -130,9 +132,9 @@ export function SettingsClient({
           setGlobalTheme(value as "light" | "dark");
         }
 
-        // Reload for language change
+        // Refresh server components for language change
         if (settingName === "language" && value !== user.language) {
-          setTimeout(() => window.location.reload(), 500);
+          setTimeout(() => router.refresh(), 500);
         }
       } else {
         setSaveStatus("idle");
