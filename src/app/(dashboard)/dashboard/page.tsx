@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
@@ -12,39 +14,43 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  // Fetch user statistics
-  const user = await db.user.findUnique({
-    where: { id: session.user.id },
-    include: {
-      _count: {
-        select: {
-          documents: true,
-          folders: true,
+  // Fetch user statistics, real storage, and recent documents in parallel
+  const [user, storageAgg, recentDocuments] = await Promise.all([
+    db.user.findUnique({
+      where: { id: session.user.id },
+      include: {
+        _count: {
+          select: {
+            documents: true,
+            folders: true,
+          },
         },
       },
-    },
-  });
-
-  // Fetch recent documents
-  const recentDocuments = await db.document.findMany({
-    where: { userId: session.user.id },
-    orderBy: { uploadedAt: "desc" },
-    take: 5,
-    include: {
-      folder: {
-        select: {
-          id: true,
-          name: true,
-          color: true,
+    }),
+    db.document.aggregate({
+      where: { userId: session.user.id },
+      _sum: { sizeBytes: true },
+    }),
+    db.document.findMany({
+      where: { userId: session.user.id },
+      orderBy: { uploadedAt: "desc" },
+      take: 5,
+      include: {
+        folder: {
+          select: {
+            id: true,
+            name: true,
+            color: true,
+          },
         },
       },
-    },
-  });
+    }),
+  ]);
 
   const stats = {
     documentsCount: user?._count.documents || 0,
     foldersCount: user?._count.folders || 0,
-    storageUsedBytes: Number(user?.storageUsedBytes) || 0,
+    storageUsedBytes: Number(storageAgg._sum.sizeBytes) || 0,
     planType: user?.planType || "FREE",
   };
 
