@@ -259,8 +259,11 @@ export function DocumentsClient({
       {isTriageMode ? (
         <DocumentTriage
           documents={filteredDocuments}
-          onExit={() => setIsTriageMode(false)}
-          onDeleteComplete={() => router.refresh()}
+          onExit={() => {
+            setIsTriageMode(false);
+            router.refresh();
+          }}
+          onDeleteComplete={() => {}}
         />
       ) : (
       <div className="mx-auto max-w-6xl space-y-6">
