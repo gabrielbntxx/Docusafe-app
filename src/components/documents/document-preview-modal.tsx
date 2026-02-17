@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Download, FileText, Image as ImageIcon, File, AlertCircle, Loader2, Music, Video } from "lucide-react";
+import { X, Download, FileText, Image as ImageIcon, File, AlertCircle, Loader2, Music, Video, FileCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/useTranslation";
 
@@ -12,6 +12,17 @@ type Document = {
   mimeType: string;
   sizeBytes?: number;
 };
+
+// MIME types that can be displayed as text
+const TEXT_MIME_TYPES = new Set([
+  "text/plain", "text/csv", "text/markdown", "text/html", "text/xml",
+  "application/json", "application/xml", "application/javascript",
+  "text/css", "text/javascript", "application/x-yaml", "text/yaml",
+]);
+
+function isTextPreviewable(mimeType: string): boolean {
+  return TEXT_MIME_TYPES.has(mimeType) || mimeType.startsWith("text/");
+}
 
 type DocumentPreviewModalProps = {
   document: Document | null;
@@ -28,6 +39,7 @@ export function DocumentPreviewModal({
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [textContent, setTextContent] = useState<string | null>(null);
 
   // Fetch document and create blob URL
   useEffect(() => {
@@ -37,16 +49,23 @@ export function DocumentPreviewModal({
       setIsLoading(true);
       setHasError(false);
       setBlobUrl(null);
+      setTextContent(null);
 
       fetch(`/api/documents/${document.id}/view`)
         .then((response) => {
           if (!response.ok) throw new Error("Failed to fetch document");
-          return response.blob();
-        })
-        .then((blob) => {
-          currentBlobUrl = URL.createObjectURL(blob);
-          setBlobUrl(currentBlobUrl);
-          setIsLoading(false);
+          // For text-previewable files, read as text
+          if (isTextPreviewable(document.mimeType)) {
+            return response.text().then((text) => {
+              setTextContent(text);
+              setIsLoading(false);
+            });
+          }
+          return response.blob().then((blob) => {
+            currentBlobUrl = URL.createObjectURL(blob);
+            setBlobUrl(currentBlobUrl);
+            setIsLoading(false);
+          });
         })
         .catch(() => {
           setHasError(true);
@@ -156,7 +175,7 @@ export function DocumentPreviewModal({
         {/* Content */}
         <div className="relative flex-1 overflow-auto bg-neutral-100 dark:bg-neutral-950">
           {/* Loading indicator */}
-          {isLoading && (document.fileType === "pdf" || document.fileType === "image" || document.fileType === "audio" || document.fileType === "video") && (
+          {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-neutral-100 dark:bg-neutral-950 z-10">
               <div className="flex flex-col items-center gap-3">
                 <Loader2 className="h-8 w-8 text-primary-600 dark:text-primary-400 animate-spin" />
@@ -228,6 +247,18 @@ export function DocumentPreviewModal({
               >
                 Votre navigateur ne supporte pas la lecture vidéo.
               </video>
+            </div>
+          ) : textContent !== null ? (
+            <div className="h-full min-h-[60vh] p-4 sm:p-8">
+              <div className="h-full rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 shadow-lg overflow-auto">
+                <div className="flex items-center gap-2 px-4 py-3 border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 rounded-t-xl">
+                  <FileCode className="h-4 w-4 text-neutral-500 dark:text-neutral-400" />
+                  <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">{document.mimeType.split("/").pop()}</span>
+                </div>
+                <pre className="p-4 text-sm text-neutral-800 dark:text-neutral-200 whitespace-pre-wrap break-words font-mono leading-relaxed overflow-auto max-h-[calc(90vh-200px)]">
+                  {textContent}
+                </pre>
+              </div>
             </div>
           ) : !isLoading && !hasError ? (
             <div className="flex flex-col items-center justify-center h-full min-h-[60vh] text-center p-8">

@@ -46,6 +46,15 @@ export async function GET(
       );
     }
 
+    // Team members can't download private docs they didn't upload
+    const isOwner = effectiveUserId === session.user.id;
+    if (!isOwner && document.isPrivate === 1 && document.addedById !== session.user.id) {
+      return NextResponse.json(
+        { error: "Ce document est privé" },
+        { status: 403 }
+      );
+    }
+
     // Récupérer le fichier depuis R2
     let fileBuffer = await getFromR2(document.storageKey);
 

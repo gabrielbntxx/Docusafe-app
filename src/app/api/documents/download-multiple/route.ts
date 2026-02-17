@@ -9,6 +9,7 @@ import {
   isEncrypted,
   removeEncryptionMarker,
 } from "@/lib/encryption";
+import { getEffectiveUserId } from "@/lib/team";
 import JSZip from "jszip";
 
 // POST - Download multiple documents as ZIP
@@ -33,11 +34,22 @@ export async function POST(req: Request) {
       );
     }
 
-    // Get documents that belong to the user
+    // Use effective userId for team members (workspace owner's docs)
+    const effectiveUserId = await getEffectiveUserId(session.user.id);
+    const isOwner = effectiveUserId === session.user.id;
+
+    // Get documents that belong to the workspace
     const documents = await db.document.findMany({
       where: {
         id: { in: documentIds },
-        userId: session.user.id,
+        userId: effectiveUserId,
+        // Team members can't download private docs they didn't upload
+        ...(isOwner ? {} : {
+          OR: [
+            { isPrivate: 0 },
+            { addedById: session.user.id },
+          ],
+        }),
       },
       include: {
         folder: {
@@ -53,9 +65,9 @@ export async function POST(req: Request) {
       );
     }
 
-    // Get user encryption key
+    // Get workspace owner's encryption key (not the team member's)
     const user = await db.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: effectiveUserId },
       select: { encryptionKey: true },
     });
 
