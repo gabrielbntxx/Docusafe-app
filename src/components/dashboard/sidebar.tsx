@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   FileText,
@@ -40,7 +41,6 @@ const bottomNavigation: Array<{ nameKey: TranslationKey; href: string; icon: any
 
 export function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
   const { t } = useTranslation();
   const { isRestricted } = useSubscription();
 
@@ -48,28 +48,24 @@ export function Sidebar() {
     await signOut({ callbackUrl: "/" });
   };
 
-  const handleNavigation = (href: string) => {
-    router.push(href);
-  };
-
   return (
     <aside className="hidden lg:fixed lg:left-0 lg:top-0 lg:z-40 lg:flex lg:h-screen lg:w-72 lg:flex-col lg:bg-white/70 lg:backdrop-blur-xl lg:border-r lg:border-black/5 dark:lg:bg-neutral-950/95 dark:lg:border-white/5">
       {/* Logo */}
       <div className="flex h-16 items-center px-6">
-        <button onClick={() => handleNavigation("/dashboard")} className="flex items-center gap-3">
+        <Link href="/dashboard" className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl overflow-hidden bg-white dark:bg-neutral-800 shadow-lg">
             <Image src="/logo.png" alt="DocuSafe" width={40} height={40} className="object-contain" />
           </div>
           <span className="text-xl font-semibold text-neutral-900 dark:text-white">
             DocuSafe
           </span>
-        </button>
+        </Link>
       </div>
 
       {/* Upload Button */}
       <div className="px-4 py-2">
-        <button
-          onClick={() => handleNavigation(isRestricted ? "/dashboard/subscription" : "/dashboard/upload")}
+        <Link
+          href={isRestricted ? "/dashboard/subscription" : "/dashboard/upload"}
           data-tutorial="upload-button"
           className={`flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3.5 text-sm font-semibold transition-all ${
             isRestricted
@@ -79,7 +75,7 @@ export function Sidebar() {
         >
           {isRestricted ? <Lock className="h-4 w-4" /> : <Upload className="h-4 w-4" />}
           {t("addDocument")}
-        </button>
+        </Link>
       </div>
 
       {/* Main Navigation */}
@@ -92,9 +88,9 @@ export function Sidebar() {
             ? pathname === item.href.split("?")[0]
             : pathname === item.href;
           return (
-            <button
+            <Link
               key={item.nameKey}
-              onClick={() => handleNavigation(item.href)}
+              href={item.href}
               data-tutorial={item.tutorialId}
               className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
                 isActive
@@ -104,7 +100,7 @@ export function Sidebar() {
             >
               <item.icon className={`h-5 w-5 ${isActive ? "text-blue-500" : ""}`} />
               {t(item.nameKey)}
-            </button>
+            </Link>
           );
         })}
 
@@ -113,8 +109,8 @@ export function Sidebar() {
           <p className="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
             {t("assistance")}
           </p>
-          <button
-            onClick={() => handleNavigation("/dashboard/help")}
+          <Link
+            href="/dashboard/help"
             data-tutorial="help-link"
             className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
               pathname === "/dashboard/help"
@@ -124,9 +120,9 @@ export function Sidebar() {
           >
             <HelpCircle className={`h-5 w-5 ${pathname === "/dashboard/help" ? "text-blue-500" : ""}`} />
             {t("help")}
-          </button>
-          <button
-            onClick={() => handleNavigation("/dashboard/support")}
+          </Link>
+          <Link
+            href="/dashboard/support"
             className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
               pathname === "/dashboard/support"
                 ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
@@ -135,7 +131,7 @@ export function Sidebar() {
           >
             <MessageCircle className={`h-5 w-5 ${pathname === "/dashboard/support" ? "text-blue-500" : ""}`} />
             {t("support")}
-          </button>
+          </Link>
         </div>
       </nav>
 
@@ -148,9 +144,9 @@ export function Sidebar() {
           const isActive = pathname === item.href;
           const isLocked = isRestricted && (item.nameKey === "docubot" || item.nameKey === "settings");
           return (
-            <button
+            <Link
               key={item.nameKey}
-              onClick={() => handleNavigation(isLocked ? "/dashboard/subscription" : item.href)}
+              href={isLocked ? "/dashboard/subscription" : item.href}
               data-tutorial={item.tutorialId}
               className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
                 isLocked
@@ -163,7 +159,7 @@ export function Sidebar() {
               <item.icon className={`h-5 w-5 ${isActive && !isLocked ? "text-blue-500" : ""}`} />
               {t(item.nameKey)}
               {isLocked && <Lock className="h-3.5 w-3.5 ml-auto text-neutral-400 dark:text-neutral-600" />}
-            </button>
+            </Link>
           );
         })}
 

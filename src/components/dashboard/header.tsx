@@ -4,13 +4,12 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { NotificationsDropdown } from "./notifications-dropdown";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
 export function Header() {
   const { data: session, status } = useSession();
   const { t } = useTranslation();
-  const router = useRouter();
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
 
   // Fetch profile image URL from API
@@ -77,8 +76,8 @@ export function Header() {
           <div className="flex items-center gap-3">
             <NotificationsDropdown />
 
-            <button
-              onClick={() => router.push("/dashboard/profile")}
+            <Link
+              href="/dashboard/profile"
               className="group flex items-center gap-3 rounded-2xl bg-neutral-100/80 px-3 py-2 transition-all hover:bg-neutral-200/80 active:scale-[0.98] dark:bg-white/5 dark:hover:bg-white/10"
             >
               {profileImageUrl ? (
@@ -101,7 +100,7 @@ export function Header() {
                 </p>
               </div>
               <ChevronRight className="h-4 w-4 text-neutral-400 transition-transform group-hover:translate-x-0.5" />
-            </button>
+            </Link>
           </div>
         </div>
       </div>

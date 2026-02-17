@@ -1,6 +1,7 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   FileText,
@@ -9,13 +10,10 @@ import {
   Plus,
   Lock,
 } from "lucide-react";
-import { useTranslation } from "@/hooks/useTranslation";
 import { useSubscription } from "@/components/providers/subscription-provider";
 
 export function BottomNav() {
   const pathname = usePathname();
-  const router = useRouter();
-  const { t } = useTranslation();
   const { isRestricted } = useSubscription();
 
   const navItems = [
@@ -25,10 +23,6 @@ export function BottomNav() {
     { key: "folders", label: "Dossiers", href: "/dashboard/my-files", icon: Folder, tutorialId: "mobile-folders" },
     { key: "triage", label: "Trier", href: "/dashboard/documents?triage=1", icon: ArrowLeftRight, tutorialId: "mobile-triage" },
   ];
-
-  const handleNavigation = (href: string) => {
-    router.push(href);
-  };
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
@@ -43,9 +37,9 @@ export function BottomNav() {
             // Center button (Add)
             if (item.isCenter) {
               return (
-                <button
+                <Link
                   key={item.key}
-                  onClick={() => handleNavigation(isRestricted ? "/dashboard/subscription" : item.href)}
+                  href={isRestricted ? "/dashboard/subscription" : item.href}
                   data-tutorial={item.tutorialId}
                   className={`flex h-12 w-12 items-center justify-center rounded-full -mt-4 ${
                     isRestricted
@@ -58,14 +52,14 @@ export function BottomNav() {
                   ) : (
                     <Plus className="h-6 w-6" strokeWidth={2.5} />
                   )}
-                </button>
+                </Link>
               );
             }
 
             return (
-              <button
+              <Link
                 key={item.key}
-                onClick={() => handleNavigation(item.href)}
+                href={item.href}
                 data-tutorial={item.tutorialId}
                 className="flex flex-col items-center justify-center w-16 h-full"
               >
@@ -81,7 +75,7 @@ export function BottomNav() {
                 }`}>
                   {item.label}
                 </span>
-              </button>
+              </Link>
             );
           })}
         </div>
