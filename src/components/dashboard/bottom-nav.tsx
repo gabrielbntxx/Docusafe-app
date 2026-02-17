@@ -6,7 +6,7 @@ import {
   LayoutDashboard,
   FileText,
   Folder,
-  Search,
+  ArrowLeftRight,
   Plus,
   Lock,
 } from "lucide-react";
@@ -24,7 +24,7 @@ export function BottomNav() {
     { key: "documents", label: "Documents", href: "/dashboard/documents", icon: FileText, tutorialId: "mobile-documents" },
     { key: "add", label: "", href: "/dashboard/upload", icon: Plus, isCenter: true, tutorialId: "mobile-upload" },
     { key: "folders", label: "Dossiers", href: "/dashboard/my-files", icon: Folder, tutorialId: "mobile-folders" },
-    { key: "search", label: "Recherche", href: "/dashboard/search", icon: Search, tutorialId: "mobile-search" },
+    { key: "triage", label: "Trier", href: "/dashboard/documents?triage=1", icon: ArrowLeftRight, tutorialId: "mobile-triage" },
   ];
 
   const handleNavigation = (href: string) => {
@@ -37,7 +37,9 @@ export function BottomNav() {
       <div className="bg-white dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-800" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
         <div className="flex items-center justify-around h-16 px-1">
           {navItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = item.href.includes("?")
+              ? pathname === item.href.split("?")[0]
+              : pathname === item.href;
 
             // Center button (Add)
             if (item.isCenter) {

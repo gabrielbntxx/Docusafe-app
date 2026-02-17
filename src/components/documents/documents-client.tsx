@@ -81,11 +81,15 @@ export function DocumentsClient({
   const [isTriageMode, setIsTriageMode] = useState(false);
   const [deletedDocIds, setDeletedDocIds] = useState<Set<string>>(new Set());
 
-  // Auto-activate triage mode from URL query param (?triage=1)
+  // Auto-activate triage mode from URL query param (?triage=1) — once only
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("triage") === "1" && documents.length > 0) {
       setIsTriageMode(true);
+      // Remove the query param so exiting triage doesn't re-activate it
+      const url = new URL(window.location.href);
+      url.searchParams.delete("triage");
+      window.history.replaceState({}, "", url.pathname + url.search);
     }
   }, [documents.length]);
 
