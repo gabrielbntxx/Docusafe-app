@@ -344,6 +344,7 @@ export function SearchClient({
     return new Intl.DateTimeFormat("fr-FR", {
       day: "numeric",
       month: "short",
+      timeZone: "UTC",
     }).format(date);
   };
 

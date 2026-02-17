@@ -156,6 +156,7 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
       day: "numeric",
       month: "long",
       year: "numeric",
+      timeZone: "UTC",
     });
   };
 

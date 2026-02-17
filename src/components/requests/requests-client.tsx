@@ -177,6 +177,7 @@ export function RequestsClient({ userPlan, requests: initialRequests }: Requests
       day: "numeric",
       month: "short",
       year: "numeric",
+      timeZone: "UTC",
     });
   };
 
@@ -195,6 +196,7 @@ export function RequestsClient({ userPlan, requests: initialRequests }: Requests
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+      timeZone: "UTC",
     });
   };
 

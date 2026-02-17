@@ -199,6 +199,7 @@ export function UploadRequestClient({
       day: "numeric",
       month: "long",
       year: "numeric",
+      timeZone: "UTC",
     });
   };
 

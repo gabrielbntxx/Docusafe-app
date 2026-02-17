@@ -169,6 +169,7 @@ export function DocumentTriage({
       day: "numeric",
       month: "short",
       year: "numeric",
+      timeZone: "UTC",
     }).format(date);
   };
 

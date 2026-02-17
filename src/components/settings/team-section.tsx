@@ -352,6 +352,7 @@ export function TeamSection() {
                       {new Date(invite.expiresAt).toLocaleDateString("fr-FR", {
                         day: "numeric",
                         month: "short",
+                        timeZone: "UTC",
                       })}
                     </p>
                   </div>

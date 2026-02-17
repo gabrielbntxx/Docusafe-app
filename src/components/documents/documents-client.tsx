@@ -161,6 +161,7 @@ export function DocumentsClient({
       day: "numeric",
       month: "short",
       year: "numeric",
+      timeZone: "UTC",
     }).format(date);
   };
 
