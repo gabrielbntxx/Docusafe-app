@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   Folder,
   FolderPlus,
@@ -90,13 +90,14 @@ export function MyFilesClient({
   folders: initialFolders,
   documents: initialDocuments,
   isTeam = false,
+  initialCreateMode = false,
 }: {
   folders: FolderType[];
   documents: DocumentType[];
   isTeam?: boolean;
+  initialCreateMode?: boolean;
 }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { t } = useTranslation();
 
   // Local state for optimistic updates
@@ -192,10 +193,10 @@ export function MyFilesClient({
   const [folderPath, setFolderPath] = useState<FolderType[]>([]);
 
   useEffect(() => {
-    if (searchParams.get("create") === "true") {
+    if (initialCreateMode) {
       setIsCreatingFolder(true);
     }
-  }, [searchParams]);
+  }, [initialCreateMode]);
 
   // Sort folders with favorites first
   const sortFoldersWithFavorites = useCallback((folders: FolderType[]) => {

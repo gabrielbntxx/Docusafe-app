@@ -5,7 +5,11 @@ import { redirect } from "next/navigation";
 import { MyFilesClient } from "@/components/my-files/my-files-client";
 import { getEffectiveUserId, getTeamMemberMap, hasTeam } from "@/lib/team";
 
-export default async function MyFilesPage() {
+export default async function MyFilesPage({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
   const session = await getServerSession(authOptions);
 
   if (!session) {
@@ -96,6 +100,7 @@ export default async function MyFilesPage() {
       folders={serializedFolders}
       documents={serializedDocuments}
       isTeam={isInTeam}
+      initialCreateMode={searchParams?.create === "true"}
     />
   );
 }
