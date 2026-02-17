@@ -38,7 +38,7 @@ type Document = {
 type DocumentTriageProps = {
   documents: Document[];
   onExit: () => void;
-  onDeleteComplete: () => void;
+  onDeleteComplete: (docId: string) => void;
 };
 
 const SWIPE_THRESHOLD = 80;
@@ -195,9 +195,10 @@ export function DocumentTriage({
         method: "DELETE",
       });
       if (response.ok) {
+        const deletedId = currentDoc.id;
         advanceCard("left");
         setTimeout(() => {
-          onDeleteComplete();
+          onDeleteComplete(deletedId);
           setIsDeleting(false);
         }, 350);
       } else {

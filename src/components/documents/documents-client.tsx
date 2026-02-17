@@ -79,6 +79,7 @@ export function DocumentsClient({
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [isBulkDownloading, setIsBulkDownloading] = useState(false);
   const [isTriageMode, setIsTriageMode] = useState(false);
+  const [deletedDocIds, setDeletedDocIds] = useState<Set<string>>(new Set());
 
   // Auto-activate triage mode from URL query param (?triage=1)
   useEffect(() => {
@@ -134,6 +135,7 @@ export function DocumentsClient({
   };
 
   const filteredDocuments = documents.filter(doc => {
+    if (deletedDocIds.has(doc.id)) return false;
     const matchesSearch = doc.displayName.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFolder = !selectedFolder || doc.folder?.id === selectedFolder;
     return matchesSearch && matchesFolder;
@@ -259,11 +261,10 @@ export function DocumentsClient({
       {isTriageMode ? (
         <DocumentTriage
           documents={filteredDocuments}
-          onExit={() => {
-            setIsTriageMode(false);
-            router.refresh();
+          onExit={() => setIsTriageMode(false)}
+          onDeleteComplete={(docId) => {
+            setDeletedDocIds(prev => new Set(prev).add(docId));
           }}
-          onDeleteComplete={() => {}}
         />
       ) : (
       <div className="mx-auto max-w-6xl space-y-6">
