@@ -405,6 +405,17 @@ export const translations = {
     deleteConfirmLabel: "Type SUPPRIMER to confirm:",
     deleteAccountConfirm: "Delete my account",
     deleting: "Deleting...",
+
+    // Triage
+    triageMode: "Triage",
+    triageProgress: "documents reviewed",
+    triageKeep: "KEEP",
+    triageDelete: "DELETE",
+    triageComplete: "All done!",
+    triageCompleteDesc: "You have reviewed all documents.",
+    triageExit: "Exit triage",
+    triageSwipeHint: "Swipe right to keep, left to delete",
+    triageDeleteConfirm: "Delete this document?",
   },
 
   fr: {
@@ -813,6 +824,17 @@ export const translations = {
     deleteConfirmLabel: "Tapez SUPPRIMER pour confirmer :",
     deleteAccountConfirm: "Supprimer mon compte",
     deleting: "Suppression...",
+
+    // Triage
+    triageMode: "Trier",
+    triageProgress: "documents examinés",
+    triageKeep: "GARDER",
+    triageDelete: "SUPPRIMER",
+    triageComplete: "Terminé !",
+    triageCompleteDesc: "Vous avez examiné tous les documents.",
+    triageExit: "Quitter le tri",
+    triageSwipeHint: "Glissez à droite pour garder, à gauche pour supprimer",
+    triageDeleteConfirm: "Supprimer ce document ?",
   },
 } as const;
 

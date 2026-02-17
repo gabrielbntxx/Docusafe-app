@@ -23,8 +23,10 @@ import {
   Square,
   Loader2,
   CheckCheck,
+  ArrowLeftRight,
 } from "lucide-react";
 import { DocumentPreviewModal } from "./document-preview-modal";
+import { DocumentTriage } from "./document-triage";
 import { useTranslation } from "@/hooks/useTranslation";
 
 type Document = {
@@ -76,6 +78,7 @@ export function DocumentsClient({
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [isBulkDownloading, setIsBulkDownloading] = useState(false);
+  const [isTriageMode, setIsTriageMode] = useState(false);
 
   const handleView = (doc: Document) => {
     setPreviewDocument(doc);
@@ -244,6 +247,13 @@ export function DocumentsClient({
         onClose={() => setPreviewDocument(null)}
       />
 
+      {isTriageMode ? (
+        <DocumentTriage
+          documents={filteredDocuments}
+          onExit={() => setIsTriageMode(false)}
+          onDeleteComplete={() => router.refresh()}
+        />
+      ) : (
       <div className="mx-auto max-w-6xl space-y-6">
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -258,23 +268,32 @@ export function DocumentsClient({
 
           <div className="flex items-center gap-2">
             {documents.length > 0 && (
-              <button
-                onClick={() => {
-                  if (isSelectionMode) {
-                    cancelSelection();
-                  } else {
-                    setIsSelectionMode(true);
-                  }
-                }}
-                className={`flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-medium transition-all ${
-                  isSelectionMode
-                    ? "bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400"
-                    : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600"
-                }`}
-              >
-                <CheckSquare className="h-4 w-4" />
-                {isSelectionMode ? "Annuler" : "Sélectionner"}
-              </button>
+              <>
+                <button
+                  onClick={() => setIsTriageMode(true)}
+                  className="flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-medium bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600 transition-all"
+                >
+                  <ArrowLeftRight className="h-4 w-4" />
+                  {t("triageMode")}
+                </button>
+                <button
+                  onClick={() => {
+                    if (isSelectionMode) {
+                      cancelSelection();
+                    } else {
+                      setIsSelectionMode(true);
+                    }
+                  }}
+                  className={`flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-medium transition-all ${
+                    isSelectionMode
+                      ? "bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400"
+                      : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600"
+                  }`}
+                >
+                  <CheckSquare className="h-4 w-4" />
+                  {isSelectionMode ? "Annuler" : "Sélectionner"}
+                </button>
+              </>
             )}
             <Link
               href="/dashboard/upload"
@@ -620,6 +639,7 @@ export function DocumentsClient({
           </div>
         )}
       </div>
+      )}
     </>
   );
 }
