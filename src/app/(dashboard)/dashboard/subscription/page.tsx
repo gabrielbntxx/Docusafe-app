@@ -19,7 +19,7 @@ export default async function SubscriptionPage() {
   const [user, stats] = await Promise.all([
     db.user.findUnique({
       where: { id: session.user.id },
-      select: { email: true, planType: true },
+      select: { id: true, email: true, planType: true },
     }),
     db.document.aggregate({
       where: { userId: session.user.id, deletedAt: null },
@@ -37,6 +37,7 @@ export default async function SubscriptionPage() {
       currentPlan={user.planType as "FREE" | "STUDENT" | "PRO" | "BUSINESS"}
       documentsCount={stats._count.id}
       storageUsedBytes={Number(stats._sum.sizeBytes) || 0}
+      userId={user.id}
       userEmail={user.email}
     />
   );

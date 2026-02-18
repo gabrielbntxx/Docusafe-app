@@ -93,11 +93,50 @@ export async function POST(req: Request) {
 }
 
 /**
+ * Resolve the app user from a Stripe checkout session.
+ * Priority: client_reference_id (internal user ID) → stripeCustomerId → email (last resort)
+ */
+async function resolveUser(session: Stripe.Checkout.Session) {
+  // 1. client_reference_id = internal user ID (most reliable — set by our payment links)
+  const userId = session.client_reference_id;
+  if (userId) {
+    const user = await db.user.findUnique({ where: { id: userId } });
+    if (user) {
+      console.log("[Stripe Webhook] User resolved via client_reference_id");
+      return user;
+    }
+    console.warn("[Stripe Webhook] client_reference_id set but user not found:", userId);
+  }
+
+  // 2. stripeCustomerId — returning customers who paid before
+  const customerId = session.customer as string | undefined;
+  if (customerId) {
+    const user = await db.user.findFirst({ where: { stripeCustomerId: customerId } });
+    if (user) {
+      console.log("[Stripe Webhook] User resolved via stripeCustomerId");
+      return user;
+    }
+  }
+
+  // 3. email — last resort fallback (insecure if different email used at checkout)
+  const customerEmail = session.customer_email || session.customer_details?.email;
+  if (customerEmail) {
+    const user = await db.user.findUnique({ where: { email: customerEmail.toLowerCase() } });
+    if (user) {
+      console.warn("[Stripe Webhook] User resolved via email fallback — consider fixing client_reference_id");
+      return user;
+    }
+    console.error("[Stripe Webhook] User not found for email:", maskEmail(customerEmail));
+  }
+
+  return null;
+}
+
+/**
  * Resolve plan type from Stripe session line items (server-side source of truth).
- * Falls back to client_reference_id only if price ID mapping is not configured.
  */
 async function resolvePlanType(session: Stripe.Checkout.Session): Promise<string> {
-  // Try to resolve from Stripe price ID (trusted, server-side)
+  // Resolve from Stripe price ID (trusted, server-side)
   if (stripe && session.id) {
     try {
       const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 1 });
@@ -114,14 +153,6 @@ async function resolvePlanType(session: Stripe.Checkout.Session): Promise<string
     }
   }
 
-  // Fallback: client_reference_id (only if price mapping not configured)
-  const planFromRef = session.client_reference_id;
-  const validPlans = ["STUDENT", "PRO", "BUSINESS"];
-  if (planFromRef && validPlans.includes(planFromRef)) {
-    console.warn("[Stripe Webhook] Using client_reference_id fallback:", planFromRef);
-    return planFromRef;
-  }
-
   return "PRO";
 }
 
@@ -129,24 +160,15 @@ async function resolvePlanType(session: Stripe.Checkout.Session): Promise<string
  * Handle successful checkout - upgrade user to paid plan
  */
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
-  const customerEmail = session.customer_email || session.customer_details?.email;
   const customerId = session.customer as string;
   const subscriptionId = session.subscription as string;
 
-  console.log("[Stripe Webhook] Checkout completed for:", customerEmail ? maskEmail(customerEmail) : "unknown");
+  console.log("[Stripe Webhook] Checkout completed, resolving user...");
 
-  if (!customerEmail) {
-    console.error("[Stripe Webhook] No customer email found in session");
-    return;
-  }
-
-  // Find user by email
-  const user = await db.user.findUnique({
-    where: { email: customerEmail.toLowerCase() },
-  });
+  const user = await resolveUser(session);
 
   if (!user) {
-    console.error("[Stripe Webhook] User not found for email:", maskEmail(customerEmail));
+    console.error("[Stripe Webhook] Could not resolve user for session:", session.id);
     return;
   }
 
