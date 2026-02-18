@@ -142,7 +142,7 @@ export function CloudPicker({ isOpen, onClose, onFilesSelected }: CloudPickerPro
       // Get OAuth token
       const tokenClient = window.google.accounts.oauth2.initTokenClient({
         client_id: GOOGLE_CLIENT_ID,
-        scope: "https://www.googleapis.com/auth/drive.readonly",
+        scope: "https://www.googleapis.com/auth/drive.file",
         callback: (response: any) => {
           console.log("[Google Drive] Token response:", response.error || "success");
           if (response.error) {
