@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { translations, type Language, type TranslationKey } from "@/lib/translations";
 
@@ -26,10 +26,13 @@ export function useTranslation() {
     }
   }, [userLanguage, status]);
 
-  const t = (key: TranslationKey): string => {
+  // useCallback ensures t is a stable reference — only changes when language changes.
+  // Without this, any useEffect([t]) dependency fires on every render,
+  // causing infinite render loops (DocuBotWidget's setMessages effect was the culprit).
+  const t = useCallback((key: TranslationKey): string => {
     const translation = translations[language]?.[key] || translations.fr[key];
     return translation || key;
-  };
+  }, [language]);
 
   const isLoading = status === "loading";
 
