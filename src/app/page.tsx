@@ -150,25 +150,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ─── Social proof strip ─── */}
-      <div className="border-y border-gray-100 bg-white py-8">
-        <div className="mx-auto max-w-6xl px-4 md:px-6">
-          <div className="flex flex-wrap items-center justify-center gap-6 md:gap-12">
-            {[
-              { value: "10 000+", label: "Utilisateurs" },
-              { value: "2M+", label: "Documents stockés" },
-              { value: "99.9%", label: "Disponibilité" },
-              { value: "0", label: "Fuite de données" },
-            ].map((stat) => (
-              <div key={stat.label} className="text-center">
-                <p className="text-2xl font-extrabold text-gray-900 md:text-3xl">{stat.value}</p>
-                <p className="mt-0.5 text-sm text-gray-500">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
       {/* ─── Features ─── */}
       <section id="features" className="py-24 px-4 md:px-6">
         <div className="mx-auto max-w-6xl">
