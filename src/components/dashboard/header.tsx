@@ -8,11 +8,19 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
 export function Header() {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const { t } = useTranslation();
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+  // Greeting computed client-side only to avoid hydration mismatch (server/client timezone diff)
+  const [greeting, setGreeting] = useState<string>("");
 
-  // Fetch profile image URL from API
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) setGreeting(t("goodMorning"));
+    else if (hour < 18) setGreeting(t("goodAfternoon"));
+    else setGreeting(t("goodEvening"));
+  }, [t]);
+
   useEffect(() => {
     const fetchProfileImage = async () => {
       if (session?.user?.id) {
@@ -27,45 +35,19 @@ export function Header() {
         }
       }
     };
-
     fetchProfileImage();
   }, [session?.user?.id]);
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return t("goodMorning");
-    if (hour < 18) return t("goodAfternoon");
-    return t("goodEvening");
-  };
-
-  // Show loading state while session is loading
-  if (status === "loading") {
-    return (
-      <header className="sticky top-0 z-[50] hidden lg:block">
-        <div className="border-b border-black/5 bg-white/70 backdrop-blur-xl dark:border-white/5 dark:bg-neutral-950/90">
-          <div className="flex h-16 items-center justify-between px-8">
-            <div className="animate-pulse">
-              <div className="h-5 w-48 bg-neutral-200 dark:bg-neutral-700 rounded mb-2"></div>
-              <div className="h-4 w-32 bg-neutral-200 dark:bg-neutral-700 rounded"></div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 bg-neutral-200 dark:bg-neutral-700 rounded-xl animate-pulse"></div>
-              <div className="h-10 w-32 bg-neutral-200 dark:bg-neutral-700 rounded-2xl animate-pulse"></div>
-            </div>
-          </div>
-        </div>
-      </header>
-    );
-  }
 
   return (
     <header className="sticky top-0 z-[50] hidden lg:block">
       <div className="border-b border-black/5 bg-white/70 backdrop-blur-xl dark:border-white/5 dark:bg-neutral-950/90">
         <div className="flex h-16 items-center justify-between px-8">
-          {/* Left: Greeting */}
-          <div>
+          {/* Left: Greeting - suppressHydrationWarning because greeting is client-only */}
+          <div suppressHydrationWarning>
             <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
-              {getGreeting()}, {session?.user?.name?.split(" ")[0] || t("user")}
+              {greeting
+                ? `${greeting}, ${session?.user?.name?.split(" ")[0] || ""}`
+                : <span className="inline-block h-5 w-48 animate-pulse rounded bg-neutral-200 dark:bg-neutral-700" />}
             </h2>
             <p className="text-sm text-neutral-500 dark:text-neutral-400">
               {t("manageDocumentsEasily")}

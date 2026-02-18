@@ -7,25 +7,26 @@ import { Sidebar } from "@/components/dashboard/sidebar";
 import { MobileNav } from "@/components/dashboard/mobile-nav";
 import { BottomNav } from "@/components/dashboard/bottom-nav";
 import { Header } from "@/components/dashboard/header";
+import { NavigationProgress } from "@/components/dashboard/navigation-progress";
 import { SessionProvider } from "@/components/providers/session-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { TutorialProvider } from "@/components/providers/tutorial-provider";
 import { SubscriptionProvider } from "@/components/providers/subscription-provider";
 
-async function getRedirectOrUser() {
+async function getLayoutData() {
   const session = await getServerSession(authOptions);
-  if (!session) return "/login";
+  if (!session) return { redirect: "/login" as const, session: null };
 
   const user = await db.user.findUnique({
     where: { id: session.user.id },
     select: { emailVerified: true, email: true, planType: true, onboardingCompleted: true, teamOwnerId: true },
   });
 
-  if (!user) return "/login";
-  if (!user.emailVerified) return `/verify-email?email=${encodeURIComponent(user.email)}`;
-  if (user.planType === "FREE" && !user.onboardingCompleted && !user.teamOwnerId) return "/onboarding";
+  if (!user) return { redirect: "/login" as const, session: null };
+  if (!user.emailVerified) return { redirect: `/verify-email?email=${encodeURIComponent(user.email)}` as const, session: null };
+  if (user.planType === "FREE" && !user.onboardingCompleted && !user.teamOwnerId) return { redirect: "/onboarding" as const, session: null };
 
-  return user;
+  return { redirect: null, user, session };
 }
 
 export default async function DashboardLayout({
@@ -33,22 +34,23 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const result = await getRedirectOrUser();
+  const data = await getLayoutData();
 
-  if (typeof result === "string") {
-    redirect(result);
+  if (data.redirect) {
+    redirect(data.redirect);
   }
 
-  const user = result;
+  const { user, session } = data as { user: NonNullable<typeof data["user"]>; session: NonNullable<typeof data["session"]> };
   // Team members are not restricted even if their personal plan is FREE
   const isRestricted = user.planType === "FREE" && !user.teamOwnerId;
 
   return (
-    <SessionProvider>
+    <SessionProvider session={session}>
       <ThemeProvider>
         <SubscriptionProvider isRestricted={isRestricted} planType={user.planType}>
           <TutorialProvider>
             <div className="min-h-screen bg-neutral-100/50 dark:bg-neutral-950">
+              <NavigationProgress />
               {/* Restricted Mode Banner */}
               {isRestricted && (
                 <div className="fixed top-0 left-0 right-0 z-[100] bg-gradient-to-r from-violet-600 to-blue-600 text-white text-center py-2 px-4 text-sm font-medium lg:pl-72">
