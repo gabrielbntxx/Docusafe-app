@@ -255,7 +255,7 @@ export default function Home() {
                 Vos données vous appartiennent.
               </h2>
               <p className="mx-auto mb-10 max-w-2xl text-lg text-gray-300">
-                Chaque fichier est chiffré de bout en bout avant d'être stocké. Même nous n'y avons pas accès.
+                Chaque fichier est chiffré de bout en bout avant d&apos;être stocké. Même nous n&apos;y avons pas accès.
                 Hébergé en Europe, conforme RGPD.
               </p>
 
