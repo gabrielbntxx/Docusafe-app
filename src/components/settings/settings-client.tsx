@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { TrashSection } from "@/components/settings/trash-section";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useTheme } from "@/components/providers/theme-provider";
@@ -734,6 +735,9 @@ export function SettingsClient({
           </div>
         </div>
       )}
+
+      {/* Trash / Restore */}
+      <TrashSection />
     </div>
   );
 }

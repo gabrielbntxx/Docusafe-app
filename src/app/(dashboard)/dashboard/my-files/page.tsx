@@ -42,6 +42,7 @@ export default async function MyFilesPage({
   const documents = await db.document.findMany({
     where: {
       userId: effectiveUserId,
+      deletedAt: null,
       ...(isOwner ? {} : { isPrivate: 0 }),
     },
     include: {

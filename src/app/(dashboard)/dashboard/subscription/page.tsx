@@ -22,7 +22,7 @@ export default async function SubscriptionPage() {
       select: { email: true, planType: true },
     }),
     db.document.aggregate({
-      where: { userId: session.user.id },
+      where: { userId: session.user.id, deletedAt: null },
       _count: { id: true },
       _sum: { sizeBytes: true },
     }),

@@ -29,7 +29,7 @@ export async function GET(
     const effectiveUserId = await getEffectiveUserId(session.user.id);
 
     const document = await db.document.findUnique({
-      where: { id },
+      where: { id, deletedAt: null },
     });
 
     if (!document) {

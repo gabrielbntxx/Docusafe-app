@@ -159,6 +159,7 @@ model Document {
   addedById       String?  // ID of the team member who uploaded this document
   uploadedAt      DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime? // Soft delete: set on user deletion, null = active doc
 
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   folder          Folder?   @relation(fields: [folderId], references: [id], onDelete: SetNull)
@@ -166,6 +167,7 @@ model Document {
   @@index([userId])
   @@index([folderId])
   @@index([aiAnalyzed])
+  @@index([deletedAt])
 }
 
 model Notification {

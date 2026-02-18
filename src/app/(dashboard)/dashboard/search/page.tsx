@@ -15,6 +15,7 @@ export default async function SearchPage() {
   const documents = await db.document.findMany({
     where: {
       userId: session.user.id,
+      deletedAt: null,
     },
     include: {
       folder: {

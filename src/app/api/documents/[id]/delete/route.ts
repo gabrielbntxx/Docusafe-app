@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { createNotification } from "@/lib/notifications";
-import { deleteFromR2 } from "@/lib/storage";
 import { getEffectiveUserId } from "@/lib/team";
 
 export async function DELETE(
@@ -22,7 +21,7 @@ export async function DELETE(
 
     const { id } = await params;
 
-    // Récupérer le document
+    // Récupérer le document (y compris déjà supprimés pour éviter double-delete)
     const document = await db.document.findUnique({
       where: { id },
     });
@@ -43,37 +42,10 @@ export async function DELETE(
       );
     }
 
-    // Supprimer le fichier de R2
-    try {
-      await deleteFromR2(document.storageKey);
-    } catch (fileError) {
-      console.error("Error deleting file from R2:", fileError);
-    }
-
-    // Récupérer les stats du propriétaire de l'espace
-    const user = await db.user.findUnique({
-      where: { id: effectiveUserId },
-      select: {
-        documentsCount: true,
-        storageUsedBytes: true,
-      },
-    });
-
-    // Supprimer l'entrée en base de données
-    await db.document.delete({
+    // Soft delete: move to trash (keep R2 file for 30-day restore window)
+    await db.document.update({
       where: { id },
-    });
-
-    // Mettre à jour les statistiques du propriétaire
-    const newDocumentsCount = Math.max(0, (user?.documentsCount || 0) - 1);
-    const newStorageUsed = Math.max(0, Number(user?.storageUsedBytes || 0) - Number(document.sizeBytes));
-
-    await db.user.update({
-      where: { id: effectiveUserId },
-      data: {
-        documentsCount: newDocumentsCount,
-        storageUsedBytes: BigInt(newStorageUsed),
-      },
+      data: { deletedAt: new Date() },
     });
 
     // Créer une notification
@@ -84,7 +56,7 @@ export async function DELETE(
     );
 
     return NextResponse.json(
-      { message: "Document supprimé avec succès" },
+      { message: "Document déplacé dans la corbeille" },
       { status: 200 }
     );
   } catch (error) {

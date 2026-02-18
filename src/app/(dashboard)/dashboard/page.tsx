@@ -26,11 +26,11 @@ export default async function DashboardPage() {
       },
     }),
     db.document.aggregate({
-      where: { userId: session.user.id },
+      where: { userId: session.user.id, deletedAt: null },
       _sum: { sizeBytes: true },
     }),
     db.document.findMany({
-      where: { userId: session.user.id },
+      where: { userId: session.user.id, deletedAt: null },
       orderBy: { uploadedAt: "desc" },
       take: 5,
       include: {
