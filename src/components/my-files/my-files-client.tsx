@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   Folder,
   FolderPlus,
@@ -98,6 +98,7 @@ export function MyFilesClient({
   initialCreateMode?: boolean;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { t } = useTranslation();
 
   // Local state for optimistic updates
@@ -188,6 +189,12 @@ export function MyFilesClient({
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Close all dropdown menus when navigating away (prevents z-index blocking)
+  useEffect(() => {
+    setFolderMenuId(null);
+    setMovingDocumentId(null);
+  }, [pathname]);
 
   // Navigation breadcrumb (for when viewing folder contents)
   const [folderPath, setFolderPath] = useState<FolderType[]>([]);

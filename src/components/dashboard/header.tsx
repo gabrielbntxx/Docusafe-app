@@ -41,7 +41,7 @@ export function Header() {
   // Show loading state while session is loading
   if (status === "loading") {
     return (
-      <header className="sticky top-0 z-30 hidden lg:block">
+      <header className="sticky top-0 z-[50] hidden lg:block">
         <div className="border-b border-black/5 bg-white/70 backdrop-blur-xl dark:border-white/5 dark:bg-neutral-950/90">
           <div className="flex h-16 items-center justify-between px-8">
             <div className="animate-pulse">
@@ -59,7 +59,7 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-30 hidden lg:block">
+    <header className="sticky top-0 z-[50] hidden lg:block">
       <div className="border-b border-black/5 bg-white/70 backdrop-blur-xl dark:border-white/5 dark:bg-neutral-950/90">
         <div className="flex h-16 items-center justify-between px-8">
           {/* Left: Greeting */}
