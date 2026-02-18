@@ -31,10 +31,10 @@ const navigation: Array<{ nameKey: TranslationKey; href: string; icon: any; tuto
   { nameKey: "search", href: "/dashboard/search", icon: Search, tutorialId: "search-link" },
   { nameKey: "requests", href: "/dashboard/requests", icon: FileUp },
   { nameKey: "triageMode", href: "/dashboard/documents?triage=1", icon: ArrowLeftRight },
+  { nameKey: "docubot", href: "/dashboard/docubot", icon: Bot, tutorialId: "docubot-link" },
 ];
 
 const bottomNavigation: Array<{ nameKey: TranslationKey; href: string; icon: any; tutorialId?: string }> = [
-  { nameKey: "docubot", href: "/dashboard/docubot", icon: Bot, tutorialId: "docubot-link" },
   { nameKey: "subscription", href: "/dashboard/subscription", icon: CreditCard },
   { nameKey: "settings", href: "/dashboard/settings", icon: Settings, tutorialId: "settings-link" },
 ];
@@ -95,65 +95,65 @@ export function Sidebar() {
         <div className="space-y-1">
           {navigation.map((item) => {
             const isActive = isItemActive(item);
+            const isLocked = isRestricted && item.nameKey === "docubot";
             return (
               <Link
                 key={item.nameKey}
-                href={item.href}
+                href={isLocked ? "/dashboard/subscription" : item.href}
                 prefetch={false}
                 data-tutorial={item.tutorialId}
                 className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
-                  isActive
+                  isLocked
+                    ? "text-neutral-400 dark:text-neutral-600"
+                    : isActive
                     ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
                     : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/5 dark:hover:text-white"
                 }`}
               >
-                <item.icon className={`h-5 w-5 ${isActive ? "text-blue-500" : ""}`} />
+                <item.icon className={`h-5 w-5 ${isActive && !isLocked ? "text-blue-500" : ""}`} />
                 {t(item.nameKey)}
+                {isLocked && <Lock className="h-3.5 w-3.5 ml-auto text-neutral-400 dark:text-neutral-600" />}
               </Link>
             );
           })}
         </div>
 
-        {/* Help & Support */}
-        <div className="mt-4 pt-4 border-t border-black/5 dark:border-white/5">
-          <p className="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-            {t("assistance")}
-          </p>
-          <div className="space-y-1">
-            <Link
-              href="/dashboard/help"
-              prefetch={false}
-              data-tutorial="help-link"
-              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
-                pathname === "/dashboard/help"
-                  ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
-                  : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/5 dark:hover:text-white"
-              }`}
-            >
-              <HelpCircle className={`h-5 w-5 ${pathname === "/dashboard/help" ? "text-blue-500" : ""}`} />
-              {t("help")}
-            </Link>
-            <Link
-              href="/dashboard/support"
-              prefetch={false}
-              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
-                pathname === "/dashboard/support"
-                  ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
-                  : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/5 dark:hover:text-white"
-              }`}
-            >
-              <MessageCircle className={`h-5 w-5 ${pathname === "/dashboard/support" ? "text-blue-500" : ""}`} />
-              {t("support")}
-            </Link>
-          </div>
-        </div>
       </nav>
 
       {/* Bottom Section - Fixed */}
       <div className="shrink-0 border-t border-black/5 px-3 py-3 space-y-1 dark:border-white/5">
+        {/* Assistance & Support */}
+        <Link
+          href="/dashboard/help"
+          prefetch={false}
+          data-tutorial="help-link"
+          className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200 ${
+            pathname === "/dashboard/help"
+              ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
+              : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/5 dark:hover:text-white"
+          }`}
+        >
+          <HelpCircle className={`h-5 w-5 ${pathname === "/dashboard/help" ? "text-blue-500" : ""}`} />
+          {t("help")}
+        </Link>
+        <Link
+          href="/dashboard/support"
+          prefetch={false}
+          className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200 ${
+            pathname === "/dashboard/support"
+              ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
+              : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/5 dark:hover:text-white"
+          }`}
+        >
+          <MessageCircle className={`h-5 w-5 ${pathname === "/dashboard/support" ? "text-blue-500" : ""}`} />
+          {t("support")}
+        </Link>
+
+        <div className="border-t border-black/5 pt-1 dark:border-white/5" />
+
         {bottomNavigation.map((item) => {
           const isActive = pathname === item.href;
-          const isLocked = isRestricted && (item.nameKey === "docubot" || item.nameKey === "settings");
+          const isLocked = isRestricted && item.nameKey === "settings";
           return (
             <Link
               key={item.nameKey}
