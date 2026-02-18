@@ -16,15 +16,17 @@ export default async function SubscriptionPage() {
     redirect("/login");
   }
 
-  const user = await db.user.findUnique({
-    where: { id: session.user.id },
-    select: {
-      email: true,
-      planType: true,
-      documentsCount: true,
-      storageUsedBytes: true,
-    },
-  });
+  const [user, stats] = await Promise.all([
+    db.user.findUnique({
+      where: { id: session.user.id },
+      select: { email: true, planType: true },
+    }),
+    db.document.aggregate({
+      where: { userId: session.user.id },
+      _count: { id: true },
+      _sum: { sizeBytes: true },
+    }),
+  ]);
 
   if (!user) {
     redirect("/login");
@@ -33,8 +35,8 @@ export default async function SubscriptionPage() {
   return (
     <SubscriptionClient
       currentPlan={user.planType as "FREE" | "STUDENT" | "PRO" | "BUSINESS"}
-      documentsCount={user.documentsCount || 0}
-      storageUsedBytes={Number(user.storageUsedBytes) || 0}
+      documentsCount={stats._count.id}
+      storageUsedBytes={Number(stats._sum.sizeBytes) || 0}
       userEmail={user.email}
     />
   );
