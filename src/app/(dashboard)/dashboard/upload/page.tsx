@@ -447,7 +447,7 @@ export default function UploadPage() {
       )}
 
       {/* Upload Options Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {/* Drop Zone - Files */}
         <div
           onDragOver={handleDragOver}
@@ -529,8 +529,8 @@ export default function UploadPage() {
           </div>
         </div>
 
-        {/* Camera Scan */}
-        <div className="relative overflow-hidden rounded-3xl border-2 border-dashed p-8 text-center transition-all border-amber-300 bg-white hover:border-amber-400 hover:bg-amber-50/50 dark:border-amber-500/30 dark:bg-neutral-800/50 dark:hover:border-amber-500/50 dark:hover:bg-amber-500/5">
+        {/* Camera Scan — mobile only */}
+        <div className="md:hidden relative overflow-hidden rounded-3xl border-2 border-dashed p-8 text-center transition-all border-amber-300 bg-white hover:border-amber-400 hover:bg-amber-50/50 dark:border-amber-500/30 dark:bg-neutral-800/50 dark:hover:border-amber-500/50 dark:hover:bg-amber-500/5">
           <input
             type="file"
             accept="image/*"
