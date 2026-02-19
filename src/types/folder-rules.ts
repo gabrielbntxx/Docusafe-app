@@ -36,10 +36,46 @@ export const DEFAULT_FOLDER_RULES: FolderRules = {};
 export const DEFAULT_CONVERT_TO_PDF_RULE: ConvertToPdfRule = {
   enabled: false,
   sourceTypes: [
+    // Images
     "image/jpeg",
     "image/png",
     "image/gif",
     "image/webp",
+    "image/tiff",
+    "image/bmp",
+    "image/avif",
+    "image/svg+xml",
+    // Plain text
+    "text/plain",
+    "text/csv",
+    "text/markdown",
+    // Web
+    "text/html",
+    "text/css",
+    "text/javascript",
+    "text/xml",
+    // Code
+    "text/x-c",
+    "text/x-c++",
+    "text/x-python",
+    "text/x-java",
+    "text/x-rust",
+    "text/x-go",
+    "text/x-sh",
+    "text/x-ruby",
+    "text/x-php",
+    "text/x-swift",
+    "text/x-kotlin",
+    "text/x-typescript",
+    // Application text
+    "application/json",
+    "application/javascript",
+    "application/typescript",
+    "application/xml",
+    "application/x-httpd-php",
+    "application/x-sh",
+    "application/x-yaml",
+    "application/yaml",
   ],
 };
 

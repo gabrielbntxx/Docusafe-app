@@ -6,7 +6,7 @@
 
 import { db } from "./db";
 import { parseFolderRules } from "@/types/folder-rules";
-import { convertImageToPdf, canConvertToPdf } from "./pdf-converter";
+import { convertFileToPdf, canConvertToPdf } from "./pdf-converter";
 
 /**
  * Result of processing a file through folder rules
@@ -72,7 +72,7 @@ export async function applyFolderRules(
         console.log(`[FolderRules] Converting ${fileName} to PDF (folder: ${folder.name})`);
 
         try {
-          const { pdfBuffer, newFileName } = await convertImageToPdf(
+          const { pdfBuffer, newFileName } = await convertFileToPdf(
             fileBuffer,
             mimeType,
             fileName

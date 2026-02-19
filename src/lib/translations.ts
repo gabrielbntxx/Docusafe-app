@@ -387,7 +387,8 @@ export const translations = {
     // Folder Rules
     folderRules: "Folder Rules",
     convertToPdf: "Convert to PDF",
-    convertToPdfDescription: "Images uploaded to this folder will be automatically converted to PDF.",
+    convertToPdfTypes: "Images, text, code (30+ formats)",
+    convertToPdfDescription: "Files uploaded to this folder will be automatically converted to PDF (images, text, code…).",
     moreRulesSoon: "More rules coming soon",
     errorLoadingRules: "Error loading rules",
     errorSavingRules: "Error saving rules",
@@ -811,7 +812,8 @@ export const translations = {
     // Folder Rules
     folderRules: "Règles du dossier",
     convertToPdf: "Convertir en PDF",
-    convertToPdfDescription: "Les images téléversées dans ce dossier seront automatiquement converties en PDF.",
+    convertToPdfTypes: "Images, texte, code (30+ formats)",
+    convertToPdfDescription: "Les fichiers téléversés dans ce dossier seront automatiquement convertis en PDF (images, texte, code…).",
     moreRulesSoon: "Plus de règles bientôt disponibles",
     errorLoadingRules: "Erreur lors du chargement des règles",
     errorSavingRules: "Erreur lors de l'enregistrement des règles",

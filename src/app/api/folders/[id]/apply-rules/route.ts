@@ -12,7 +12,7 @@ import {
   addEncryptionMarker,
 } from "@/lib/encryption";
 import { parseFolderRules } from "@/types/folder-rules";
-import { convertImageToPdf, canConvertToPdf } from "@/lib/pdf-converter";
+import { convertFileToPdf, canConvertToPdf } from "@/lib/pdf-converter";
 import { getEffectiveUserId } from "@/lib/team";
 
 export async function POST(
@@ -107,7 +107,7 @@ export async function POST(
         }
 
         // 3. Convert to PDF
-        const { pdfBuffer, newFileName } = await convertImageToPdf(
+        const { pdfBuffer, newFileName } = await convertFileToPdf(
           fileBuffer,
           doc.mimeType,
           doc.displayName

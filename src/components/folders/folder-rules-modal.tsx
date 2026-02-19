@@ -180,7 +180,7 @@ export function FolderRulesModal({
                         {t("convertToPdf")}
                       </p>
                       <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                        JPG, PNG, GIF, WebP
+                        {t("convertToPdfTypes")}
                       </p>
                     </div>
                   </div>
