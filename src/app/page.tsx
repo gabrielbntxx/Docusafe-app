@@ -1,17 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import {
-  FolderOpen,
-  Shield,
-  Upload,
-  Bell,
-  Bot,
-  ChevronRight,
-  Lock,
-  FileText,
-  Zap,
-  CheckCircle2,
-} from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { HeroSection } from "@/components/landing/hero-section";
 
 export default function Home() {
@@ -50,118 +39,8 @@ export default function Home() {
       {/* ─── Hero ─── */}
       <HeroSection />
 
-      {/* ─── Features ─── */}
-      <section id="features" className="py-24 px-4 md:px-6">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-16 text-center">
-            <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-blue-500">Fonctionnalités</p>
-            <h2 className="text-4xl font-extrabold tracking-tight text-gray-900 md:text-5xl">
-              Tout ce dont vous avez besoin
-            </h2>
-            <p className="mx-auto mt-4 max-w-xl text-lg text-gray-500">
-              Une solution complète pour gérer vos documents sans effort.
-            </p>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {[
-              {
-                icon: Upload,
-                gradient: "from-blue-500 to-blue-600",
-                title: "Upload rapide",
-                desc: "Glissez-déposez vos fichiers ou prenez une photo directement depuis votre mobile. Tout est indexé automatiquement.",
-              },
-              {
-                icon: FolderOpen,
-                gradient: "from-violet-500 to-purple-600",
-                title: "Organisation intelligente",
-                desc: "Créez des dossiers personnalisés par thème. Retrouvez n'importe quel document en quelques secondes grâce à la recherche.",
-              },
-              {
-                icon: Bell,
-                gradient: "from-amber-500 to-orange-500",
-                title: "Alertes & rappels",
-                desc: "Recevez des notifications avant l'expiration de vos documents importants. Ne ratez plus jamais une échéance.",
-              },
-              {
-                icon: Bot,
-                gradient: "from-emerald-500 to-teal-600",
-                title: "Assistant IA (DocuBot)",
-                desc: "Posez des questions en langage naturel sur vos documents. DocuBot retrouve et résume l'information pour vous.",
-              },
-              {
-                icon: FileText,
-                gradient: "from-rose-500 to-pink-600",
-                title: "Aperçu instantané",
-                desc: "Consultez vos PDF et images directement dans l'application, sans télécharger. Rapide et sécurisé.",
-              },
-              {
-                icon: Zap,
-                gradient: "from-indigo-500 to-blue-600",
-                title: "Partage sécurisé",
-                desc: "Partagez des documents avec un lien temporaire chiffré. Vous contrôlez qui accède à quoi et pendant combien de temps.",
-              },
-            ].map((feature) => (
-              <div
-                key={feature.title}
-                className="group rounded-3xl border border-gray-100 bg-white p-8 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-gray-200/60"
-              >
-                <div
-                  className={`mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${feature.gradient}`}
-                >
-                  <feature.icon className="h-7 w-7 text-white" />
-                </div>
-                <h3 className="mb-2 text-lg font-bold text-gray-900">{feature.title}</h3>
-                <p className="text-gray-500 leading-relaxed">{feature.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Security ─── */}
-      <section id="security" className="px-4 pb-24 md:px-6">
-        <div className="mx-auto max-w-6xl">
-          <div className="relative overflow-hidden rounded-3xl bg-gray-900 p-10 text-center md:p-16">
-            <div className="pointer-events-none absolute -top-20 -right-20 h-64 w-64 rounded-full bg-blue-500/20 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-violet-500/20 blur-3xl" />
-
-            <div className="relative z-10">
-              <div className="mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-3xl border border-white/10 bg-white/10 backdrop-blur-xl">
-                <Shield className="h-10 w-10 text-white" />
-              </div>
-
-              <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-blue-400">Sécurité</p>
-              <h2 className="mb-4 text-4xl font-extrabold text-white md:text-5xl">
-                Vos données vous appartiennent.
-              </h2>
-              <p className="mx-auto mb-10 max-w-2xl text-lg text-gray-300">
-                Chaque fichier est chiffré de bout en bout avant d&apos;être stocké. Même nous n&apos;y avons pas accès.
-                Hébergé en Europe, conforme RGPD.
-              </p>
-
-              <div className="flex flex-wrap justify-center gap-3">
-                {[
-                  { icon: Lock, label: "Chiffrement AES-256" },
-                  { icon: CheckCircle2, label: "RGPD compliant" },
-                  { icon: Shield, label: "Hébergé en Europe" },
-                ].map((badge) => (
-                  <div
-                    key={badge.label}
-                    className="flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-5 py-2.5 backdrop-blur-sm"
-                  >
-                    <badge.icon className="h-4 w-4 text-green-400" />
-                    <span className="text-sm font-medium text-white">{badge.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* ─── Final CTA ─── */}
-      <section className="px-4 pb-28 text-center md:px-6">
+      <section className="px-4 py-28 text-center md:px-6">
         <div className="mx-auto max-w-2xl">
           <h2 className="mb-4 text-4xl font-extrabold tracking-tight text-gray-900 md:text-5xl">
             Prêt à passer à l&apos;action ?
@@ -201,12 +80,6 @@ export default function Home() {
 
             {/* Links */}
             <div className="flex flex-wrap items-center justify-center gap-6 text-sm">
-              <a href="#features" className="text-gray-500 transition-colors hover:text-gray-900">
-                Fonctionnalités
-              </a>
-              <a href="#security" className="text-gray-500 transition-colors hover:text-gray-900">
-                Sécurité
-              </a>
               <a href="https://www.docusafe.online/privacy" className="text-gray-500 transition-colors hover:text-gray-900">
                 Confidentialité
               </a>
