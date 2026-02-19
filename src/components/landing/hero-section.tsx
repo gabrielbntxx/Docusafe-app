@@ -141,11 +141,11 @@ export function HeroSection() {
               '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif',
             fontWeight: 600,
             letterSpacing: "-0.02em",
-            color: "#0a1628",
-            textShadow: "0 1px 0 rgba(255,255,255,0.25)",
+            color: "white",
+            textShadow: "0 2px 12px rgba(0,0,0,0.20)",
           }}
         >
-          Arrêtez de chercher.
+          Arrêtez de chercher. Trouvez.
         </p>
 
         <div className="hero-anim-cta flex flex-col items-center gap-3 sm:flex-row">
