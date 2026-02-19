@@ -47,15 +47,16 @@ export async function POST(
       );
     }
 
-    const sourceTypes = rules.convertToPdf.sourceTypes;
-
-    // Fetch all convertible documents in the folder
+    // Fetch all non-PDF documents in the folder.
+    // We intentionally do NOT filter by sourceTypes here because they may be
+    // stale (saved before new MIME types like text/x-c were added to the converter).
+    // canConvertToPdf() is the single source of truth — applied below in the loop.
     const documents = await db.document.findMany({
       where: {
         folderId,
         userId: effectiveUserId,
         deletedAt: null,
-        mimeType: { in: sourceTypes },
+        NOT: { mimeType: "application/pdf" },
       },
       select: {
         id: true,
