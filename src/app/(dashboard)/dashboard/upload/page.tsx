@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { X, FileText, File, Image as ImageIcon, FileCheck, Cloud, Sparkles, Wand2, FolderOpen, Loader2, Music, Video, FolderUp, Folder, FileCode, FileSpreadsheet, Presentation, Archive, CloudCog, Camera } from "lucide-react";
+import { X, FileText, File, Image as ImageIcon, FileCheck, Cloud, Sparkles, Wand2, FolderOpen, Loader2, Music, Video, FolderUp, Folder, FileCode, FileSpreadsheet, Presentation, Archive, CloudCog, Camera, Images } from "lucide-react";
 import { CloudPicker } from "@/components/cloud-picker/cloud-picker";
 
 type AIStatus = {
@@ -530,28 +530,47 @@ export default function UploadPage() {
         </div>
 
         {/* Camera Scan — mobile only */}
-        <div className="md:hidden relative overflow-hidden rounded-3xl border-2 border-dashed p-8 text-center transition-all border-amber-300 bg-white hover:border-amber-400 hover:bg-amber-50/50 dark:border-amber-500/30 dark:bg-neutral-800/50 dark:hover:border-amber-500/50 dark:hover:bg-amber-500/5">
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={handleFileSelect}
-            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-          />
-          <div className="pointer-events-none space-y-3">
+        <div className="md:hidden overflow-hidden rounded-3xl border-2 border-dashed p-6 text-center transition-all border-amber-300 bg-white dark:border-amber-500/30 dark:bg-neutral-800/50">
+          <div className="space-y-3">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-xl shadow-amber-500/25">
               <Camera className="h-8 w-8 text-white" />
             </div>
             <div>
               <p className="text-lg font-semibold text-neutral-900 dark:text-white">Scanner</p>
               <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                Photographier un document
+                Photographier un ou plusieurs documents
               </p>
             </div>
-            <div className="flex justify-center">
-              <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
-                Appareil photo
-              </span>
+            {/* Two sub-buttons */}
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              {/* Single shot — opens camera directly */}
+              <div className="relative overflow-hidden rounded-2xl border border-amber-200 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10">
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleFileSelect}
+                  className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+                />
+                <div className="pointer-events-none flex flex-col items-center gap-1.5 p-3">
+                  <Camera className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                  <span className="text-xs font-medium text-amber-700 dark:text-amber-400">Prendre<br />une photo</span>
+                </div>
+              </div>
+              {/* Multiple from gallery */}
+              <div className="relative overflow-hidden rounded-2xl border border-amber-200 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10">
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleFileSelect}
+                  className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+                />
+                <div className="pointer-events-none flex flex-col items-center gap-1.5 p-3">
+                  <Images className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                  <span className="text-xs font-medium text-amber-700 dark:text-amber-400">Galerie<br />multiple</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
