@@ -8,27 +8,27 @@ export default function Home() {
     <div className="min-h-screen bg-white text-gray-900 overflow-x-hidden">
 
       {/* ─── Header ─── */}
-      <header className="fixed top-0 left-0 right-0 z-50 border-b border-black/5 bg-white/80 backdrop-blur-2xl">
+      <header className="fixed top-0 left-0 right-0 z-50">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 md:px-6">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-white shadow-md">
+            <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-white/20 backdrop-blur-sm shadow-md ring-1 ring-white/30">
               <Image src="/logo.png" alt="DocuSafe" width={36} height={36} className="object-contain" />
             </div>
-            <span className="text-lg font-bold text-gray-900">DocuSafe</span>
+            <span className="text-lg font-bold text-white drop-shadow-sm">DocuSafe</span>
           </Link>
 
           {/* CTAs */}
           <div className="flex items-center gap-2">
             <Link
               href="/login"
-              className="hidden rounded-full px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 md:block"
+              className="hidden rounded-full px-4 py-2 text-sm font-medium text-white/90 transition-colors hover:bg-white/15 hover:text-white md:block"
             >
               Connexion
             </Link>
             <Link
               href="/register"
-              className="rounded-full bg-gray-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-gray-700 hover:shadow-md"
+              className="rounded-full bg-white/20 px-4 py-2 text-sm font-semibold text-white backdrop-blur-sm ring-1 ring-white/30 transition-all hover:bg-white/30"
             >
               Commencer
             </Link>
