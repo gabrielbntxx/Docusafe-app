@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { db } from "@/lib/db";
 import {
   sendWelcomeProEmail,
+  sendWelcomeStudentEmail,
   sendWelcomeBusinessEmail,
   sendCancellationEmail,
   sendPaymentFailedEmail,
@@ -197,6 +198,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   // Send plan-specific welcome email
   if (planType === "BUSINESS") {
     await sendWelcomeBusinessEmail(user.email, user.name || undefined);
+  } else if (planType === "STUDENT") {
+    await sendWelcomeStudentEmail(user.email, user.name || undefined);
   } else {
     await sendWelcomeProEmail(user.email, user.name || undefined);
   }

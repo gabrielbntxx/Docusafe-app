@@ -910,6 +910,29 @@ export async function sendWelcomeFreeEmail(userEmail: string, userName?: string)
 }
 
 /**
+ * Send welcome email for Student plan
+ */
+export async function sendWelcomeStudentEmail(userEmail: string, userName?: string) {
+  if (!resend) return { success: false, error: "Email service not configured" };
+  const name = userName || "cher utilisateur";
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: userEmail,
+      subject: "Bienvenue dans DocuSafe Étudiant !",
+      html: getWelcomeStudentEmailHtml(name),
+      headers: ANTI_SPAM_HEADERS,
+    });
+    if (error) return { success: false, error };
+    console.log("[Email] Welcome Student email sent to:", maskEmail(userEmail));
+    return { success: true, data };
+  } catch (error) {
+    console.error("[Email] Failed to send welcome student email:", error);
+    return { success: false, error };
+  }
+}
+
+/**
  * Send welcome email for Business plan
  */
 export async function sendWelcomeBusinessEmail(userEmail: string, userName?: string) {
@@ -1034,6 +1057,75 @@ function getWelcomeFreeEmailHtml(name: string): string {
             <td style="background-color: #f4f4f5; padding: 24px 40px; text-align: center;">
               <p style="margin: 0 0 6px; color: #71717a; font-size: 13px;">
                 Vous recevez cet email car vous venez de créer un compte sur DocuSafe.
+              </p>
+              <p style="margin: 0; color: #a1a1aa; font-size: 12px;">&copy; ${new Date().getFullYear()} DocuSafe. Tous droits réservés.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+}
+
+function getWelcomeStudentEmailHtml(name: string): string {
+  const dashboardUrl = `${APP_URL}/dashboard`;
+  return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bienvenue dans DocuSafe Étudiant</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.07);">
+          <tr>
+            <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 40px 30px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">DocuSafe Étudiant</h1>
+              <p style="margin: 10px 0 0; color: rgba(255,255,255,0.9); font-size: 16px;">Merci pour votre confiance !</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 40px;">
+              <h2 style="margin: 0 0 20px; color: #18181b; font-size: 22px;">Bienvenue ${name} !</h2>
+              <p style="margin: 0 0 20px; color: #52525b; font-size: 16px; line-height: 1.6;">
+                Votre abonnement Étudiant est actif. Organisez tous vos documents de scolarité, stages et démarches administratives en un seul endroit sécurisé.
+              </p>
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #ecfdf5; border-radius: 12px; margin: 0 0 28px;">
+                <tr>
+                  <td style="padding: 24px;">
+                    <p style="margin: 0 0 14px; color: #065f46; font-size: 15px; font-weight: 600;">Vos avantages Étudiant :</p>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr><td style="padding: 5px 0; color: #10b981; font-size: 14px;">&#10003;&nbsp; Documents illimités</td></tr>
+                      <tr><td style="padding: 5px 0; color: #10b981; font-size: 14px;">&#10003;&nbsp; Stockage étendu sécurisé</td></tr>
+                      <tr><td style="padding: 5px 0; color: #10b981; font-size: 14px;">&#10003;&nbsp; Tri automatique par IA</td></tr>
+                      <tr><td style="padding: 5px 0; color: #10b981; font-size: 14px;">&#10003;&nbsp; Alertes de renouvellement (carte étudiant, visas…)</td></tr>
+                      <tr><td style="padding: 5px 0; color: #10b981; font-size: 14px;">&#10003;&nbsp; Partage sécurisé de documents</td></tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center">
+                    <a href="${dashboardUrl}" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 12px; font-size: 16px; font-weight: 600;">
+                      Accéder à mon espace
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color: #f4f4f5; padding: 24px 40px; text-align: center;">
+              <p style="margin: 0 0 6px; color: #71717a; font-size: 13px;">
+                Vous recevez cet email car vous venez de souscrire à DocuSafe Étudiant.
               </p>
               <p style="margin: 0; color: #a1a1aa; font-size: 12px;">&copy; ${new Date().getFullYear()} DocuSafe. Tous droits réservés.</p>
             </td>
