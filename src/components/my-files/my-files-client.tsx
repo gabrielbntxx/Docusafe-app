@@ -1068,101 +1068,105 @@ export function MyFilesClient({
               </div>
             )}
 
-            {/* Header */}
-            <div className="mb-4 flex items-center justify-between gap-2">
+            {/* Header — 2 rows on mobile to avoid overflow */}
+            <div className="mb-4 space-y-2">
+              {/* Row 1 : back + title + count */}
               <div className="flex items-center gap-2">
                 {selectedFolder && (
                   <button
                     onClick={navigateBack}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-700"
+                    className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-700"
                   >
                     <ChevronLeft className="h-5 w-5" />
                   </button>
                 )}
-                <h2 className="text-base lg:text-lg font-semibold text-neutral-900 dark:text-white truncate">
+                <h2 className="flex-1 min-w-0 truncate text-base font-semibold text-neutral-900 dark:text-white lg:text-lg">
                   {currentFolderName || t("uncategorized")}
                 </h2>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {selectedFolder && (
-                  <button
-                    onClick={() => {
-                      setCreatingInParent(selectedFolder);
-                      setIsCreatingFolder(true);
-                    }}
-                    className="flex items-center gap-1.5 rounded-lg bg-violet-100 px-3 py-1.5 text-xs font-medium text-violet-600 hover:bg-violet-200 dark:bg-violet-500/20 dark:text-violet-400"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    Sous-dossier
-                  </button>
-                )}
-                {currentDocuments.length > 0 && (
-                  <button
-                    onClick={() => {
-                      if (isSelectionMode) {
-                        cancelSelection();
-                      } else {
-                        setIsSelectionMode(true);
-                      }
-                    }}
-                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
-                      isSelectionMode
-                        ? "bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400"
-                        : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600"
-                    }`}
-                  >
-                    <CheckSquare className="h-3.5 w-3.5" />
-                    {isSelectionMode ? "Annuler" : "Sélectionner"}
-                  </button>
-                )}
-                <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs lg:text-sm text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">
-                  {currentSubfolders.length > 0 && `${currentSubfolders.length} dossier${currentSubfolders.length > 1 ? 's' : ''} · `}
+                <span className="flex-shrink-0 rounded-full bg-neutral-100 px-2.5 py-1 text-xs text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">
+                  {currentSubfolders.length > 0 && `${currentSubfolders.length} · `}
                   {currentDocuments.length} doc{currentDocuments.length !== 1 ? "s" : ""}
                 </span>
               </div>
+              {/* Row 2 : action buttons (only when relevant) */}
+              {(selectedFolder || currentDocuments.length > 0) && (
+                <div className="flex items-center gap-2">
+                  {selectedFolder && (
+                    <button
+                      onClick={() => {
+                        setCreatingInParent(selectedFolder);
+                        setIsCreatingFolder(true);
+                      }}
+                      className="flex items-center gap-1.5 rounded-lg bg-violet-100 px-3 py-1.5 text-xs font-medium text-violet-600 hover:bg-violet-200 dark:bg-violet-500/20 dark:text-violet-400"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Sous-dossier
+                    </button>
+                  )}
+                  {currentDocuments.length > 0 && (
+                    <button
+                      onClick={() => {
+                        if (isSelectionMode) {
+                          cancelSelection();
+                        } else {
+                          setIsSelectionMode(true);
+                        }
+                      }}
+                      className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+                        isSelectionMode
+                          ? "bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400"
+                          : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600"
+                      }`}
+                    >
+                      <CheckSquare className="h-3.5 w-3.5" />
+                      {isSelectionMode ? "Annuler" : "Sélectionner"}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Selection toolbar */}
             {isSelectionMode && selectedDocuments.size > 0 && (
-              <div className="mb-4 flex items-center justify-between rounded-xl bg-blue-50 dark:bg-blue-500/10 p-3">
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={toggleSelectAll}
-                    className="flex items-center gap-2 text-sm font-medium text-blue-600 dark:text-blue-400"
-                  >
-                    <CheckCheck className="h-4 w-4" />
-                    {selectedDocuments.size === currentDocuments.length ? "Tout désélectionner" : "Tout sélectionner"}
-                  </button>
-                  <span className="text-sm text-blue-600 dark:text-blue-400">
+              <div className="mb-4 space-y-2 rounded-xl bg-blue-50 dark:bg-blue-500/10 p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
                     {selectedDocuments.size} sélectionné{selectedDocuments.size > 1 ? "s" : ""}
                   </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleBulkDownload}
+                      disabled={isBulkDownloading}
+                      className="flex items-center gap-1.5 rounded-lg bg-blue-500 px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-blue-600 disabled:opacity-50"
+                    >
+                      {isBulkDownloading ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Download className="h-3.5 w-3.5" />
+                      )}
+                      ZIP
+                    </button>
+                    <button
+                      onClick={handleBulkDelete}
+                      disabled={isBulkDeleting}
+                      className="flex items-center gap-1.5 rounded-lg bg-red-500 px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-red-600 disabled:opacity-50"
+                    >
+                      {isBulkDeleting ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-3.5 w-3.5" />
+                      )}
+                      Supprimer
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleBulkDownload}
-                    disabled={isBulkDownloading}
-                    className="flex items-center gap-1.5 rounded-lg bg-blue-500 px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-blue-600 disabled:opacity-50"
-                  >
-                    {isBulkDownloading ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Download className="h-3.5 w-3.5" />
-                    )}
-                    ZIP
-                  </button>
-                  <button
-                    onClick={handleBulkDelete}
-                    disabled={isBulkDeleting}
-                    className="flex items-center gap-1.5 rounded-lg bg-red-500 px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-red-600 disabled:opacity-50"
-                  >
-                    {isBulkDeleting ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-3.5 w-3.5" />
-                    )}
-                    Supprimer
-                  </button>
-                </div>
+                <button
+                  onClick={toggleSelectAll}
+                  className="flex items-center gap-2 text-xs font-medium text-blue-600 dark:text-blue-400"
+                >
+                  <CheckCheck className="h-3.5 w-3.5" />
+                  {selectedDocuments.size === currentDocuments.length ? "Tout désélectionner" : "Tout sélectionner"}
+                </button>
               </div>
             )}
 
