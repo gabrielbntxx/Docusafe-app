@@ -12,16 +12,11 @@ import {
   Zap,
   CheckCircle2,
 } from "lucide-react";
+import { HeroSection } from "@/components/landing/hero-section";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-[#fafafa] text-gray-900 overflow-x-hidden">
-      {/* Background gradients */}
-      <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute -top-32 -right-32 h-[600px] w-[600px] rounded-full bg-gradient-to-br from-blue-500/12 to-violet-500/12 blur-3xl" />
-        <div className="absolute top-1/2 -left-48 h-[500px] w-[500px] rounded-full bg-gradient-to-tr from-violet-400/8 to-blue-400/8 blur-3xl" />
-        <div className="absolute -bottom-32 right-1/4 h-[400px] w-[400px] rounded-full bg-gradient-to-br from-blue-400/8 to-indigo-400/8 blur-3xl" />
-      </div>
+    <div className="min-h-screen bg-white text-gray-900 overflow-x-hidden">
 
       {/* ─── Header ─── */}
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-black/5 bg-white/80 backdrop-blur-2xl">
@@ -63,92 +58,7 @@ export default function Home() {
       </header>
 
       {/* ─── Hero ─── */}
-      <section className="flex min-h-screen flex-col items-center justify-center px-4 pb-20 pt-32 text-center md:px-6">
-        {/* Badge */}
-        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-4 py-1.5">
-          <span className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
-          <span className="text-xs font-semibold uppercase tracking-wide text-green-700">100 % sécurisé · Hébergé en Europe</span>
-        </div>
-
-        {/* Heading */}
-        <h1 className="mb-6 max-w-3xl text-5xl font-extrabold leading-[1.1] tracking-tight text-gray-900 md:text-7xl">
-          Vos documents.{" "}
-          <span className="bg-gradient-to-r from-blue-500 via-blue-600 to-violet-600 bg-clip-text text-transparent">
-            En sécurité.
-          </span>
-        </h1>
-
-        <p className="mb-10 max-w-xl text-lg text-gray-500 md:text-xl">
-          Centralisez, organisez et protégez tous vos documents administratifs en un seul endroit.
-          Retrouvez tout en quelques secondes.
-        </p>
-
-        {/* CTAs */}
-        <div className="mb-20 flex flex-col items-center gap-3 sm:flex-row">
-          <Link
-            href="/register"
-            className="group flex items-center gap-2 rounded-full bg-blue-500 px-8 py-4 text-base font-semibold text-white shadow-lg shadow-blue-500/30 transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-600 hover:shadow-xl hover:shadow-blue-500/30"
-          >
-            Commencer gratuitement
-            <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-          </Link>
-          <Link
-            href="/login"
-            className="flex items-center gap-2 rounded-full border-2 border-gray-200 bg-white px-8 py-4 text-base font-semibold text-gray-700 shadow-sm transition-all hover:border-gray-300 hover:shadow-md"
-          >
-            J&apos;ai déjà un compte
-          </Link>
-        </div>
-
-        {/* App preview */}
-        <div className="relative w-full max-w-3xl">
-          {/* Fade bottom */}
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-1/3 bg-gradient-to-t from-[#fafafa]" />
-
-          <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white p-6 shadow-2xl shadow-gray-200/60 md:p-10">
-            {/* Fake browser bar */}
-            <div className="mb-6 flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded-full bg-red-400" />
-              <span className="h-3 w-3 rounded-full bg-amber-400" />
-              <span className="h-3 w-3 rounded-full bg-green-400" />
-              <span className="ml-3 h-6 flex-1 rounded-full bg-gray-100" />
-            </div>
-
-            {/* Grid of folder cards */}
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-              {[
-                { label: "Factures", color: "blue", count: 14 },
-                { label: "Contrats", color: "violet", count: 7 },
-                { label: "Identité", color: "emerald", count: 5 },
-                { label: "Banque", color: "orange", count: 22 },
-              ].map((folder) => (
-                <div
-                  key={folder.label}
-                  className="group cursor-pointer rounded-2xl border border-gray-100 bg-gray-50 p-4 transition-all hover:-translate-y-1 hover:border-gray-200 hover:shadow-lg"
-                >
-                  <div
-                    className={`mb-3 flex h-11 w-11 items-center justify-center rounded-xl ${
-                      folder.color === "blue" ? "bg-blue-100" :
-                      folder.color === "violet" ? "bg-violet-100" :
-                      folder.color === "emerald" ? "bg-emerald-100" : "bg-orange-100"
-                    }`}
-                  >
-                    <FolderOpen
-                      className={`h-5 w-5 ${
-                        folder.color === "blue" ? "text-blue-600" :
-                        folder.color === "violet" ? "text-violet-600" :
-                        folder.color === "emerald" ? "text-emerald-600" : "text-orange-600"
-                      }`}
-                    />
-                  </div>
-                  <p className="text-sm font-semibold text-gray-800">{folder.label}</p>
-                  <p className="mt-0.5 text-xs text-gray-400">{folder.count} fichiers</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+      <HeroSection />
 
       {/* ─── Features ─── */}
       <section id="features" className="py-24 px-4 md:px-6">
