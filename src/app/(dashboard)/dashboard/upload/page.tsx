@@ -42,6 +42,10 @@ export default function UploadPage() {
   const [aiStatus, setAiStatus] = useState<AIStatus | null>(null);
   const [aiResults, setAiResults] = useState<{ [key: string]: { category: string; type: string } }>({});
 
+  // Destination folder selector (for individual file uploads)
+  const [availableFolders, setAvailableFolders] = useState<Array<{ id: string; name: string; color: string | null }>>([]);
+  const [selectedDestinationFolderId, setSelectedDestinationFolderId] = useState<string | null>(null);
+
   // Cloud picker state
   const [isCloudPickerOpen, setIsCloudPickerOpen] = useState(false);
 
@@ -52,6 +56,16 @@ export default function UploadPage() {
       .then((data) => {
         setAiStatus(data);
         setAiSortingEnabled(data.aiSortingEnabled && data.allowed);
+      })
+      .catch(console.error);
+  }, []);
+
+  // Fetch available folders for destination selector
+  useEffect(() => {
+    fetch("/api/folders")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setAvailableFolders(data);
       })
       .catch(console.error);
   }, []);
@@ -266,7 +280,7 @@ export default function UploadPage() {
           name: f.file.name,
           folderId: f.subfolderPath ? folderIdMap[f.subfolderPath] : null,
         }))
-      : files.map(f => ({ file: f, name: f.name, folderId: null }));
+      : files.map(f => ({ file: f, name: f.name, folderId: selectedDestinationFolderId }));
 
     for (const { file, name, folderId } of filesToUpload) {
       const formData = new FormData();
@@ -632,6 +646,40 @@ export default function UploadPage() {
               Limite mensuelle atteinte. Passez à Premium pour un tri illimité.
             </p>
           )}
+        </div>
+      )}
+
+      {/* Destination Folder Selector (individual files only) */}
+      {files.length > 0 && folderFiles.length === 0 && (
+        <div className="rounded-3xl border border-neutral-200 bg-white p-5 dark:border-neutral-700 dark:bg-neutral-800/50">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 dark:bg-blue-500/20">
+              <FolderOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-neutral-900 dark:text-white">
+                Dossier de destination
+              </h3>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                Les règles du dossier (ex : conversion PDF) seront appliquées
+              </p>
+            </div>
+          </div>
+          <div className="mt-4">
+            <select
+              value={selectedDestinationFolderId ?? ""}
+              onChange={(e) => setSelectedDestinationFolderId(e.target.value || null)}
+              disabled={isUploading}
+              className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2.5 text-sm text-neutral-900 outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-700/50 dark:text-white dark:focus:border-blue-400"
+            >
+              <option value="">Aucun dossier (racine)</option>
+              {availableFolders.map((folder) => (
+                <option key={folder.id} value={folder.id}>
+                  {folder.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       )}
 
