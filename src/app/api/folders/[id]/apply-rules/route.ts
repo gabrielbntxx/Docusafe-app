@@ -15,6 +15,38 @@ import { parseFolderRules } from "@/types/folder-rules";
 import { convertFileToPdf, canConvertToPdf } from "@/lib/pdf-converter";
 import { getEffectiveUserId } from "@/lib/team";
 
+/** Map file extension → MIME type for all types convertible to PDF. */
+const EXT_TO_MIME: Record<string, string> = {
+  // Images
+  ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
+  ".gif": "image/gif", ".webp": "image/webp", ".tiff": "image/tiff",
+  ".tif": "image/tiff", ".bmp": "image/bmp", ".avif": "image/avif",
+  ".svg": "image/svg+xml",
+  // Text / code
+  ".txt": "text/plain", ".csv": "text/csv", ".md": "text/markdown",
+  ".markdown": "text/markdown", ".html": "text/html", ".htm": "text/html",
+  ".css": "text/css", ".js": "text/javascript", ".xml": "text/xml",
+  ".c": "text/x-c", ".h": "text/x-c",
+  ".cpp": "text/x-c++", ".cc": "text/x-c++", ".hpp": "text/x-c++",
+  ".py": "text/x-python", ".java": "text/x-java", ".rs": "text/x-rust",
+  ".go": "text/x-go", ".sh": "text/x-sh", ".rb": "text/x-ruby",
+  ".php": "text/x-php", ".swift": "text/x-swift", ".kt": "text/x-kotlin",
+  ".ts": "text/x-typescript", ".tsx": "text/x-typescript",
+  ".json": "application/json", ".yaml": "application/yaml",
+  ".yml": "application/yaml",
+};
+
+/**
+ * Return the effective MIME type to use for conversion.
+ * Falls back to extension-based detection when the stored type is absent/generic.
+ */
+function resolveConvertibleMime(storedMime: string, filename: string): string | null {
+  if (canConvertToPdf(storedMime)) return storedMime;
+  const ext = filename.toLowerCase().slice(filename.lastIndexOf("."));
+  const detected = EXT_TO_MIME[ext];
+  return detected && canConvertToPdf(detected) ? detected : null;
+}
+
 export async function POST(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -88,7 +120,10 @@ export async function POST(
     let failed = 0;
 
     for (const doc of documents) {
-      if (!canConvertToPdf(doc.mimeType)) {
+      // Resolve effective MIME — stored type may be empty/octet-stream for old uploads
+      const effectiveMime = resolveConvertibleMime(doc.mimeType, doc.displayName);
+      if (!effectiveMime) {
+        console.log(`[ApplyRules] Skipping ${doc.displayName} (storedMime="${doc.mimeType}", not convertible)`);
         skipped++;
         continue;
       }
@@ -107,10 +142,10 @@ export async function POST(
           fileBuffer = decryptDocument(encryptedData, userEncryptionKey);
         }
 
-        // 3. Convert to PDF
+        // 3. Convert to PDF (use resolved MIME, not stale stored one)
         const { pdfBuffer, newFileName } = await convertFileToPdf(
           fileBuffer,
-          doc.mimeType,
+          effectiveMime,
           doc.displayName
         );
 
