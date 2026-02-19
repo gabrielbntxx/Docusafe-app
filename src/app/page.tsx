@@ -29,16 +29,6 @@ export default function Home() {
             <span className="text-lg font-bold text-gray-900">DocuSafe</span>
           </Link>
 
-          {/* Desktop nav links */}
-          <nav className="hidden items-center gap-8 md:flex">
-            <a href="#features" className="text-sm font-medium text-gray-500 transition-colors hover:text-gray-900">
-              Fonctionnalités
-            </a>
-            <a href="#security" className="text-sm font-medium text-gray-500 transition-colors hover:text-gray-900">
-              Sécurité
-            </a>
-          </nav>
-
           {/* CTAs */}
           <div className="flex items-center gap-2">
             <Link
