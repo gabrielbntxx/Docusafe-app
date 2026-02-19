@@ -135,15 +135,17 @@ export function HeroSection() {
         </h1>
 
         <p
-          className="hero-anim-sub mb-10 max-w-xs text-lg text-white/82 md:max-w-sm md:text-xl"
+          className="hero-anim-sub mb-10 max-w-xs text-xl md:max-w-sm md:text-2xl"
           style={{
             fontFamily:
               '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif',
-            fontWeight: 500,
-            letterSpacing: "-0.01em",
+            fontWeight: 600,
+            letterSpacing: "-0.02em",
+            color: "#0a1628",
+            textShadow: "0 1px 0 rgba(255,255,255,0.25)",
           }}
         >
-          Vos documents. Sécurisés. Partout.
+          Arrêtez de chercher.
         </p>
 
         <div className="hero-anim-cta flex flex-col items-center gap-3 sm:flex-row">
