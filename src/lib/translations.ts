@@ -391,6 +391,11 @@ export const translations = {
     moreRulesSoon: "More rules coming soon",
     errorLoadingRules: "Error loading rules",
     errorSavingRules: "Error saving rules",
+    applyRulesToExisting: "Apply to existing files",
+    applyRulesToExistingDesc: "Convert images already in this folder to PDF",
+    applyingRules: "Converting...",
+    applyRulesSuccess: "{{count}} file(s) converted successfully",
+    applyRulesNone: "No convertible files found in this folder",
 
     // Account Deletion
     dangerZone: "Danger Zone",
@@ -810,6 +815,11 @@ export const translations = {
     moreRulesSoon: "Plus de règles bientôt disponibles",
     errorLoadingRules: "Erreur lors du chargement des règles",
     errorSavingRules: "Erreur lors de l'enregistrement des règles",
+    applyRulesToExisting: "Appliquer aux fichiers existants",
+    applyRulesToExistingDesc: "Convertir les images déjà présentes dans ce dossier en PDF",
+    applyingRules: "Conversion en cours...",
+    applyRulesSuccess: "{{count}} fichier(s) converti(s) avec succès",
+    applyRulesNone: "Aucun fichier convertible trouvé dans ce dossier",
 
     // Account Deletion
     dangerZone: "Zone de danger",

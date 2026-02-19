@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { X, FileType, Check, Settings2, Loader2 } from "lucide-react";
+import { X, FileType, Check, Settings2, Loader2, Wand2 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { FolderRules, DEFAULT_CONVERT_TO_PDF_RULE } from "@/types/folder-rules";
 
@@ -22,8 +22,11 @@ export function FolderRulesModal({
 }: FolderRulesModalProps) {
   const { t } = useTranslation();
   const [convertToPdfEnabled, setConvertToPdfEnabled] = useState(false);
+  const [savedConvertToPdfEnabled, setSavedConvertToPdfEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isApplying, setIsApplying] = useState(false);
+  const [applyResult, setApplyResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
 
@@ -39,11 +42,9 @@ export function FolderRulesModal({
           return res.json();
         })
         .then((data) => {
-          if (data.rules?.convertToPdf?.enabled) {
-            setConvertToPdfEnabled(true);
-          } else {
-            setConvertToPdfEnabled(false);
-          }
+          const enabled = !!data.rules?.convertToPdf?.enabled;
+          setConvertToPdfEnabled(enabled);
+          setSavedConvertToPdfEnabled(enabled);
           setHasLoaded(true);
         })
         .catch((err) => {
@@ -60,6 +61,7 @@ export function FolderRulesModal({
   useEffect(() => {
     if (!isOpen) {
       setHasLoaded(false);
+      setApplyResult(null);
     }
   }, [isOpen]);
 
@@ -89,6 +91,7 @@ export function FolderRulesModal({
         throw new Error("Failed to save rules");
       }
 
+      setSavedConvertToPdfEnabled(convertToPdfEnabled);
       onSave();
       onClose();
     } catch (err) {
@@ -98,6 +101,28 @@ export function FolderRulesModal({
       setIsSaving(false);
     }
   }, [convertToPdfEnabled, folderId, onClose, onSave]);
+
+  const handleApplyToExisting = useCallback(async () => {
+    setIsApplying(true);
+    setApplyResult(null);
+    setError(null);
+    try {
+      const res = await fetch(`/api/folders/${folderId}/apply-rules`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Erreur lors de la conversion");
+      } else if (data.converted === 0) {
+        setApplyResult(t("applyRulesNone"));
+      } else {
+        setApplyResult(t("applyRulesSuccess").replace("{{count}}", String(data.converted)));
+        onSave(); // refresh parent list
+      }
+    } catch {
+      setError("Erreur lors de la conversion");
+    } finally {
+      setIsApplying(false);
+    }
+  }, [folderId, onSave, t]);
 
   if (!isOpen) return null;
 
@@ -175,10 +200,36 @@ export function FolderRulesModal({
                   </button>
                 </div>
                 {convertToPdfEnabled && (
-                  <div className="mt-3 rounded-lg bg-violet-50 p-3 dark:bg-violet-500/10">
-                    <p className="text-xs text-violet-700 dark:text-violet-300">
-                      {t("convertToPdfDescription")}
-                    </p>
+                  <div className="mt-3 space-y-2">
+                    <div className="rounded-lg bg-violet-50 p-3 dark:bg-violet-500/10">
+                      <p className="text-xs text-violet-700 dark:text-violet-300">
+                        {t("convertToPdfDescription")}
+                      </p>
+                    </div>
+                    {savedConvertToPdfEnabled && (
+                      <button
+                        onClick={handleApplyToExisting}
+                        disabled={isApplying}
+                        className="flex w-full items-center justify-center gap-2 rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs font-medium text-violet-700 transition-all hover:bg-violet-50 active:scale-[0.98] disabled:opacity-50 dark:border-violet-500/30 dark:bg-neutral-800 dark:text-violet-400 dark:hover:bg-violet-500/10"
+                      >
+                        {isApplying ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            {t("applyingRules")}
+                          </>
+                        ) : (
+                          <>
+                            <Wand2 className="h-3.5 w-3.5" />
+                            {t("applyRulesToExisting")}
+                          </>
+                        )}
+                      </button>
+                    )}
+                    {applyResult && (
+                      <p className="text-center text-xs font-medium text-green-600 dark:text-green-400">
+                        {applyResult}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
