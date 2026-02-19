@@ -39,15 +39,19 @@ export function TrashSection() {
   const [purgingId, setPurgingId] = useState<string | null>(null);
   const [purgingAll, setPurgingAll] = useState(false);
   const [confirmPurgeAll, setConfirmPurgeAll] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
 
   const fetchTrash = useCallback(async () => {
     setLoading(true);
+    setFetchError(false);
     try {
       const res = await fetch("/api/documents/trash");
       if (res.ok) {
         const data = await res.json();
         setDocs(data.documents);
       }
+    } catch {
+      setFetchError(true);
     } finally {
       setLoading(false);
     }
@@ -143,6 +147,18 @@ export function TrashSection() {
         {loading ? (
           <div className="flex items-center justify-center py-10">
             <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
+          </div>
+        ) : fetchError ? (
+          <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
+            <p className="text-sm text-neutral-400 dark:text-neutral-500">
+              Impossible de charger la corbeille
+            </p>
+            <button
+              onClick={fetchTrash}
+              className="rounded-lg px-3 py-1.5 text-xs font-medium text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700"
+            >
+              Réessayer
+            </button>
           </div>
         ) : docs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-center">
