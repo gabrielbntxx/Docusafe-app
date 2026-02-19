@@ -28,7 +28,9 @@ export default async function MyFilesPage({
     include: {
       _count: {
         select: {
-          documents: true,
+          documents: {
+            where: { deletedAt: null },
+          },
           children: true,
         },
       },

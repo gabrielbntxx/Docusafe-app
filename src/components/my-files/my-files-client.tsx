@@ -321,6 +321,14 @@ export function MyFilesClient({
     }
   };
 
+  // Returns all descendant folder IDs (children, grandchildren, …)
+  const getDescendantFolderIds = (folderId: string, folders: FolderType[]): string[] => {
+    const children = folders.filter(f => f.parentId === folderId);
+    return children.reduce<string[]>((acc, child) => [
+      ...acc, child.id, ...getDescendantFolderIds(child.id, folders),
+    ], []);
+  };
+
   const handleDeleteFolder = async (folderId: string, folderName: string) => {
     if (!confirm(`${t("confirmDeleteFolder")} "${folderName}" ? ${t("documentsMovedToUncategorized")}.`)) {
       return;
@@ -333,8 +341,10 @@ export function MyFilesClient({
 
       if (response.ok) {
         const deletedFolder = localFolders.find(f => f.id === folderId);
-        // Optimistic update - remove folder
-        setLocalFolders(prev => prev.filter(f => f.id !== folderId));
+        // Remove folder AND all its descendants to avoid orphan entries
+        const descendantIds = getDescendantFolderIds(folderId, localFolders);
+        const allRemovedIds = new Set([folderId, ...descendantIds]);
+        setLocalFolders(prev => prev.filter(f => !allRemovedIds.has(f.id)));
         // Move documents to uncategorized
         setLocalDocuments(prev => prev.map(d =>
           d.folderId === folderId ? { ...d, folderId: null, folder: null } : d
@@ -629,9 +639,28 @@ export function MyFilesClient({
 
     setIsBulkDeleting(true);
     try {
-      // Optimistic update
       const docsToDelete = Array.from(selectedDocuments);
+
+      // Compute per-folder count decrements before removing
+      const folderCountUpdates: Record<string, number> = {};
+      docsToDelete.forEach(docId => {
+        const doc = localDocuments.find(d => d.id === docId);
+        if (doc?.folderId) {
+          folderCountUpdates[doc.folderId] = (folderCountUpdates[doc.folderId] || 0) + 1;
+        }
+      });
+
+      // Optimistic update
       setLocalDocuments(prev => prev.filter(d => !docsToDelete.includes(d.id)));
+
+      // Keep folder badges in sync
+      if (Object.keys(folderCountUpdates).length > 0) {
+        setLocalFolders(prev => prev.map(f =>
+          folderCountUpdates[f.id]
+            ? { ...f, documentCount: Math.max(0, f.documentCount - folderCountUpdates[f.id]) }
+            : f
+        ));
+      }
 
       const deletePromises = docsToDelete.map(docId =>
         fetch(`/api/documents/${docId}`, { method: "DELETE" })
