@@ -2,6 +2,10 @@
 const nextConfig = {
   // Use SWC minifier instead of Terser to handle modern JS syntax
   swcMinify: true,
+  // Prevent webpack from bundling these native/file-dependent packages.
+  // pdfkit needs its AFM font files to stay at their real node_modules path;
+  // sharp uses native binaries. Bundling either breaks them at runtime.
+  serverExternalPackages: ['pdfkit', 'sharp'],
   images: {
     unoptimized: true,
     remotePatterns: [
