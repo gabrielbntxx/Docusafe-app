@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { db } from "@/lib/db";
-import { sendWelcomeProEmail, sendCancellationEmail } from "@/lib/email";
+import {
+  sendWelcomeProEmail,
+  sendWelcomeBusinessEmail,
+  sendCancellationEmail,
+  sendPaymentFailedEmail,
+} from "@/lib/email";
 
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY)
@@ -189,8 +194,12 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   console.log(`[Stripe Webhook] User upgraded to ${planType}:`, maskEmail(user.email));
 
-  // Send welcome email
-  await sendWelcomeProEmail(user.email, user.name || undefined);
+  // Send plan-specific welcome email
+  if (planType === "BUSINESS") {
+    await sendWelcomeBusinessEmail(user.email, user.name || undefined);
+  } else {
+    await sendWelcomeProEmail(user.email, user.name || undefined);
+  }
 }
 
 /**
@@ -309,4 +318,7 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
   });
 
   console.log("[Stripe Webhook] User marked as past_due:", maskEmail(user.email));
+
+  // Notify user of payment failure
+  await sendPaymentFailedEmail(user.email, user.name || undefined);
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { db } from "@/lib/db";
 import { checkRateLimit, getClientIdentifier } from "@/lib/security";
+import { sendWelcomeFreeEmail } from "@/lib/email";
 
 export async function POST(req: Request) {
   try {
@@ -62,15 +63,21 @@ export async function POST(req: Request) {
     }
 
     // Mark user email as verified
-    await db.user.update({
+    const user = await db.user.update({
       where: { email: normalizedEmail },
       data: { emailVerified: new Date() },
+      select: { name: true },
     });
 
     // Clean up all tokens for this email
     await db.emailVerificationToken.deleteMany({
       where: { email: normalizedEmail },
     });
+
+    // Send welcome email (non-blocking — don't fail if email fails)
+    sendWelcomeFreeEmail(normalizedEmail, user.name ?? undefined).catch((err) =>
+      console.error("[verify-email] Failed to send welcome email:", err)
+    );
 
     return NextResponse.json({
       message: "Email vérifié avec succès",

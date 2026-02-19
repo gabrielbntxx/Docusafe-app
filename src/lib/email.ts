@@ -6,6 +6,13 @@ const resend = process.env.RESEND_API_KEY
   : null;
 
 const FROM_EMAIL = process.env.FROM_EMAIL || "DocuSafe <noreply@docusafe.online>";
+const APP_URL = process.env.NEXTAUTH_URL || "https://www.docusafe.online";
+
+// Anti-spam: List-Unsubscribe header for transactional emails
+const ANTI_SPAM_HEADERS = {
+  "List-Unsubscribe": `<mailto:contact@docusafe.online>`,
+  "X-Priority": "3",
+};
 
 /** Mask email for safe logging: user@example.com → u***@e***.com */
 function maskEmail(email: string): string {
@@ -33,6 +40,7 @@ export async function sendWelcomeProEmail(userEmail: string, userName?: string) 
       to: userEmail,
       subject: "Bienvenue dans DocuSafe Pro !",
       html: getWelcomeProEmailHtml(name),
+      headers: ANTI_SPAM_HEADERS,
     });
 
     if (error) {
@@ -65,6 +73,7 @@ export async function sendCancellationEmail(userEmail: string, userName?: string
       to: userEmail,
       subject: "Confirmation d'annulation - DocuSafe",
       html: getCancellationEmailHtml(name),
+      headers: ANTI_SPAM_HEADERS,
     });
 
     if (error) {
@@ -217,6 +226,7 @@ export async function sendPasswordResetEmail(userEmail: string, token: string, u
       to: userEmail,
       subject: "Réinitialisation de votre mot de passe - DocuSafe",
       html: getPasswordResetEmailHtml(name, resetUrl),
+      headers: ANTI_SPAM_HEADERS,
     });
 
     if (error) {
@@ -343,6 +353,7 @@ export async function sendVerificationCodeEmail(
       to: userEmail,
       subject: "Votre code de vérification - DocuSafe",
       html: getVerificationCodeEmailHtml(name, code),
+      headers: ANTI_SPAM_HEADERS,
     });
 
     if (error) {
@@ -866,6 +877,367 @@ function getExpiryAlertEmailHtml(
             </td>
           </tr>
 
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+}
+
+/**
+ * Send welcome email after email verification (free plan)
+ */
+export async function sendWelcomeFreeEmail(userEmail: string, userName?: string) {
+  if (!resend) return { success: false, error: "Email service not configured" };
+  const name = userName || "cher utilisateur";
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: userEmail,
+      subject: "Votre compte DocuSafe est prêt !",
+      html: getWelcomeFreeEmailHtml(name),
+      headers: ANTI_SPAM_HEADERS,
+    });
+    if (error) return { success: false, error };
+    console.log("[Email] Welcome free email sent to:", maskEmail(userEmail));
+    return { success: true, data };
+  } catch (error) {
+    console.error("[Email] Failed to send welcome free email:", error);
+    return { success: false, error };
+  }
+}
+
+/**
+ * Send welcome email for Business plan
+ */
+export async function sendWelcomeBusinessEmail(userEmail: string, userName?: string) {
+  if (!resend) return { success: false, error: "Email service not configured" };
+  const name = userName || "cher utilisateur";
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: userEmail,
+      subject: "Bienvenue dans DocuSafe Business !",
+      html: getWelcomeBusinessEmailHtml(name),
+      headers: ANTI_SPAM_HEADERS,
+    });
+    if (error) return { success: false, error };
+    console.log("[Email] Welcome Business email sent to:", maskEmail(userEmail));
+    return { success: true, data };
+  } catch (error) {
+    console.error("[Email] Failed to send welcome business email:", error);
+    return { success: false, error };
+  }
+}
+
+/**
+ * Send account deletion confirmation email
+ */
+export async function sendAccountDeletionEmail(userEmail: string, userName?: string) {
+  if (!resend) return { success: false, error: "Email service not configured" };
+  const name = userName || "cher utilisateur";
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: userEmail,
+      subject: "Votre compte DocuSafe a été supprimé",
+      html: getAccountDeletionEmailHtml(name),
+      headers: ANTI_SPAM_HEADERS,
+    });
+    if (error) return { success: false, error };
+    console.log("[Email] Account deletion email sent to:", maskEmail(userEmail));
+    return { success: true, data };
+  } catch (error) {
+    console.error("[Email] Failed to send account deletion email:", error);
+    return { success: false, error };
+  }
+}
+
+/**
+ * Send payment failed alert email
+ */
+export async function sendPaymentFailedEmail(userEmail: string, userName?: string) {
+  if (!resend) return { success: false, error: "Email service not configured" };
+  const name = userName || "cher utilisateur";
+  const billingUrl = `${APP_URL}/dashboard/subscription`;
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: userEmail,
+      subject: "Problème de paiement - Action requise",
+      html: getPaymentFailedEmailHtml(name, billingUrl),
+      headers: ANTI_SPAM_HEADERS,
+    });
+    if (error) return { success: false, error };
+    console.log("[Email] Payment failed email sent to:", maskEmail(userEmail));
+    return { success: true, data };
+  } catch (error) {
+    console.error("[Email] Failed to send payment failed email:", error);
+    return { success: false, error };
+  }
+}
+
+function getWelcomeFreeEmailHtml(name: string): string {
+  const dashboardUrl = `${APP_URL}/dashboard`;
+  return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bienvenue sur DocuSafe</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.07);">
+          <tr>
+            <td style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); padding: 40px 40px 30px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">DocuSafe</h1>
+              <p style="margin: 10px 0 0; color: rgba(255,255,255,0.9); font-size: 16px;">Votre espace documentaire sécurisé</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 40px;">
+              <h2 style="margin: 0 0 20px; color: #18181b; font-size: 22px;">Bienvenue ${name} !</h2>
+              <p style="margin: 0 0 20px; color: #52525b; font-size: 16px; line-height: 1.6;">
+                Votre compte est maintenant actif. Vous pouvez commencer à stocker et organiser vos documents en toute sécurité.
+              </p>
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #eff6ff; border-radius: 12px; margin: 0 0 28px;">
+                <tr>
+                  <td style="padding: 24px;">
+                    <p style="margin: 0 0 14px; color: #1e40af; font-size: 15px; font-weight: 600;">Ce que vous pouvez faire avec le plan gratuit :</p>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr><td style="padding: 5px 0; color: #3b82f6; font-size: 14px;">&#10003;&nbsp; Stocker jusqu'à 15 documents</td></tr>
+                      <tr><td style="padding: 5px 0; color: #3b82f6; font-size: 14px;">&#10003;&nbsp; 1 Go de stockage sécurisé</td></tr>
+                      <tr><td style="padding: 5px 0; color: #3b82f6; font-size: 14px;">&#10003;&nbsp; Organisation en dossiers</td></tr>
+                      <tr><td style="padding: 5px 0; color: #3b82f6; font-size: 14px;">&#10003;&nbsp; Chiffrement AES-256</td></tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center">
+                    <a href="${dashboardUrl}" style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 12px; font-size: 16px; font-weight: 600;">
+                      Accéder à mon espace
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color: #f4f4f5; padding: 24px 40px; text-align: center;">
+              <p style="margin: 0 0 6px; color: #71717a; font-size: 13px;">
+                Vous recevez cet email car vous venez de créer un compte sur DocuSafe.
+              </p>
+              <p style="margin: 0; color: #a1a1aa; font-size: 12px;">&copy; ${new Date().getFullYear()} DocuSafe. Tous droits réservés.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+}
+
+function getWelcomeBusinessEmailHtml(name: string): string {
+  const dashboardUrl = `${APP_URL}/dashboard`;
+  return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bienvenue dans DocuSafe Business</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.07);">
+          <tr>
+            <td style="background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%); padding: 40px 40px 30px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">DocuSafe Business</h1>
+              <p style="margin: 10px 0 0; color: rgba(255,255,255,0.9); font-size: 16px;">Merci pour votre confiance !</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 40px;">
+              <h2 style="margin: 0 0 20px; color: #18181b; font-size: 22px;">Bienvenue ${name} !</h2>
+              <p style="margin: 0 0 20px; color: #52525b; font-size: 16px; line-height: 1.6;">
+                Votre abonnement Business est actif. Vous avez maintenant accès à toutes les fonctionnalités avancées, y compris la gestion d'équipe.
+              </p>
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f3ff; border-radius: 12px; margin: 0 0 28px;">
+                <tr>
+                  <td style="padding: 24px;">
+                    <p style="margin: 0 0 14px; color: #5b21b6; font-size: 15px; font-weight: 600;">Vos avantages Business :</p>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr><td style="padding: 5px 0; color: #7c3aed; font-size: 14px;">&#10003;&nbsp; Documents et stockage illimités</td></tr>
+                      <tr><td style="padding: 5px 0; color: #7c3aed; font-size: 14px;">&#10003;&nbsp; Gestion d'équipe (invitations, rôles)</td></tr>
+                      <tr><td style="padding: 5px 0; color: #7c3aed; font-size: 14px;">&#10003;&nbsp; IA d'analyse illimitée</td></tr>
+                      <tr><td style="padding: 5px 0; color: #7c3aed; font-size: 14px;">&#10003;&nbsp; Dossiers et documents privés par membre</td></tr>
+                      <tr><td style="padding: 5px 0; color: #7c3aed; font-size: 14px;">&#10003;&nbsp; Support prioritaire</td></tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center">
+                    <a href="${dashboardUrl}" style="display: inline-block; background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 12px; font-size: 16px; font-weight: 600;">
+                      Accéder à mon espace
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color: #f4f4f5; padding: 24px 40px; text-align: center;">
+              <p style="margin: 0 0 6px; color: #71717a; font-size: 13px;">
+                Vous recevez cet email car vous venez de souscrire à DocuSafe Business.
+              </p>
+              <p style="margin: 0; color: #a1a1aa; font-size: 12px;">&copy; ${new Date().getFullYear()} DocuSafe. Tous droits réservés.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+}
+
+function getAccountDeletionEmailHtml(name: string): string {
+  return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Compte supprimé - DocuSafe</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.07);">
+          <tr>
+            <td style="background-color: #18181b; padding: 40px 40px 30px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">DocuSafe</h1>
+              <p style="margin: 10px 0 0; color: rgba(255,255,255,0.7); font-size: 16px;">Confirmation de suppression</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 40px;">
+              <h2 style="margin: 0 0 20px; color: #18181b; font-size: 22px;">Bonjour ${name},</h2>
+              <p style="margin: 0 0 20px; color: #52525b; font-size: 16px; line-height: 1.6;">
+                Nous confirmons que votre compte DocuSafe et toutes vos données ont été définitivement supprimés.
+              </p>
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; margin: 0 0 24px;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <p style="margin: 0 0 10px; color: #374151; font-size: 14px; font-weight: 600;">Ce qui a été supprimé :</p>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr><td style="padding: 4px 0; color: #6b7280; font-size: 14px;">&#10003;&nbsp; Votre compte et vos informations personnelles</td></tr>
+                      <tr><td style="padding: 4px 0; color: #6b7280; font-size: 14px;">&#10003;&nbsp; Tous vos documents et fichiers stockés</td></tr>
+                      <tr><td style="padding: 4px 0; color: #6b7280; font-size: 14px;">&#10003;&nbsp; Vos dossiers et paramètres</td></tr>
+                      <tr><td style="padding: 4px 0; color: #6b7280; font-size: 14px;">&#10003;&nbsp; Votre abonnement (si applicable)</td></tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin: 0 0 20px; color: #52525b; font-size: 15px; line-height: 1.6;">
+                Conformément au RGPD, toutes vos données ont été effacées de nos serveurs. Nous espérons vous revoir un jour !
+              </p>
+              <p style="margin: 0; color: #71717a; font-size: 14px; line-height: 1.6;">
+                Si vous n'avez pas demandé cette suppression ou si vous pensez que c'est une erreur, contactez-nous immédiatement à <a href="mailto:contact@docusafe.online" style="color: #3b82f6;">contact@docusafe.online</a>.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color: #f4f4f5; padding: 24px 40px; text-align: center;">
+              <p style="margin: 0; color: #a1a1aa; font-size: 12px;">&copy; ${new Date().getFullYear()} DocuSafe. Tous droits réservés.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+}
+
+function getPaymentFailedEmailHtml(name: string, billingUrl: string): string {
+  return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Problème de paiement - DocuSafe</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.07);">
+          <tr>
+            <td style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding: 40px 40px 30px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">DocuSafe</h1>
+              <p style="margin: 10px 0 0; color: rgba(255,255,255,0.9); font-size: 16px;">Action requise</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 40px;">
+              <h2 style="margin: 0 0 20px; color: #18181b; font-size: 22px;">Bonjour ${name},</h2>
+              <p style="margin: 0 0 20px; color: #52525b; font-size: 16px; line-height: 1.6;">
+                Nous n'avons pas pu traiter le paiement de votre abonnement DocuSafe.
+              </p>
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; margin: 0 0 28px;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <p style="margin: 0 0 8px; color: #991b1b; font-size: 15px; font-weight: 600;">Ce que vous devez faire :</p>
+                    <p style="margin: 0; color: #b91c1c; font-size: 14px; line-height: 1.6;">
+                      Vérifiez que votre carte bancaire est valide et que votre solde est suffisant. Mettez à jour vos informations de paiement pour éviter toute interruption de service.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin: 0 0 28px; color: #52525b; font-size: 15px; line-height: 1.6;">
+                Si le problème persiste, votre abonnement pourrait être suspendu. Mettez à jour votre moyen de paiement dès que possible.
+              </p>
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center">
+                    <a href="${billingUrl}" style="display: inline-block; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 12px; font-size: 16px; font-weight: 600;">
+                      Mettre à jour mon paiement
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin: 24px 0 0; color: #71717a; font-size: 14px; text-align: center; line-height: 1.6;">
+                Besoin d'aide ? Contactez-nous à <a href="mailto:contact@docusafe.online" style="color: #3b82f6;">contact@docusafe.online</a>
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color: #f4f4f5; padding: 24px 40px; text-align: center;">
+              <p style="margin: 0 0 6px; color: #71717a; font-size: 13px;">
+                Vous recevez cet email car vous avez un abonnement actif sur DocuSafe.
+              </p>
+              <p style="margin: 0; color: #a1a1aa; font-size: 12px;">&copy; ${new Date().getFullYear()} DocuSafe. Tous droits réservés.</p>
+            </td>
+          </tr>
         </table>
       </td>
     </tr>

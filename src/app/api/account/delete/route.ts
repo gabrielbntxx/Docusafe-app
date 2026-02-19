@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { deleteFromR2 } from "@/lib/storage";
+import { sendAccountDeletionEmail } from "@/lib/email";
 import Stripe from "stripe";
 
 const stripe = process.env.STRIPE_SECRET_KEY
@@ -25,6 +26,7 @@ export async function POST() {
       select: {
         id: true,
         email: true,
+        name: true,
         stripeSubscriptionId: true,
         stripeCustomerId: true,
       },
@@ -88,7 +90,13 @@ export async function POST() {
     // Delete document requests (RequestUpload cascades from DocumentRequest)
     await db.documentRequest.deleteMany({ where: { userId } });
 
-    // 6. Delete user (cascades: Account, Session, Folder, Document, Notification)
+    // 6. Send deletion confirmation email before removing the user
+    // (fire-and-forget — we proceed even if email fails)
+    sendAccountDeletionEmail(user.email, user.name ?? undefined).catch((err) =>
+      console.error("[AccountDelete] Failed to send deletion email:", err)
+    );
+
+    // 7. Delete user (cascades: Account, Session, Folder, Document, Notification)
     await db.user.delete({
       where: { id: userId },
     });
