@@ -497,6 +497,7 @@ export type AIAnalysisResult = {
   parentFolderId?: string;   // ID du parent si create_subfolder
   extractedData: {
     date?: string;
+    expiryDate?: string; // Date d'expiration/renouvellement (YYYY-MM-DD)
     amount?: string;
     issuer?: string;
     recipient?: string;
@@ -871,7 +872,7 @@ Tu dois créer des noms de dossiers PRÉCIS et CONTEXTUELS, jamais génériques!
 
 Réponds UNIQUEMENT avec ce JSON (PAS de \`\`\`, PAS de markdown):
 
-{"documentType":"type_exact","confidence":0.95,"suggestedName":"Nom fichier descriptif","suggestedFolder":"Nom Dossier Ultra Précis","folderAction":"use_existing|create_new|create_subfolder","targetFolderId":"id_du_dossier_existant_ou_null","parentFolderId":"id_du_parent_pour_sous_dossier_ou_null","extractedData":{"date":"2024-01-15","amount":"150.00€","issuer":"Émetteur","recipient":"Destinataire","reference":"REF123","subject":"Sujet principal détaillé","topic":"Matière/Thème précis","location":"Lieu","people":"Personnes","language":"Langue","duration":"Durée si applicable","genre":"Genre si musique/vidéo","description":"Description détaillée du contenu"}}
+{"documentType":"type_exact","confidence":0.95,"suggestedName":"Nom fichier descriptif","suggestedFolder":"Nom Dossier Ultra Précis","folderAction":"use_existing|create_new|create_subfolder","targetFolderId":"id_du_dossier_existant_ou_null","parentFolderId":"id_du_parent_pour_sous_dossier_ou_null","extractedData":{"date":"2024-01-15","expiryDate":"2034-01-15","amount":"150.00€","issuer":"Émetteur","recipient":"Destinataire","reference":"REF123","subject":"Sujet principal détaillé","topic":"Matière/Thème précis","location":"Lieu","people":"Personnes","language":"Langue","duration":"Durée si applicable","genre":"Genre si musique/vidéo","description":"Description détaillée du contenu"}}
 
 ## 🚨 RAPPELS CRITIQUES
 1. suggestedFolder doit être PRÉCIS: "Cours Informatique" pas "Études"
@@ -1377,6 +1378,7 @@ ${folderContext}`;
       parentFolderId,
       extractedData: {
         date: parsed.extractedData?.date || undefined,
+        expiryDate: parsed.extractedData?.expiryDate || undefined,
         amount: parsed.extractedData?.amount || undefined,
         issuer: parsed.extractedData?.issuer || undefined,
         recipient: parsed.extractedData?.recipient || undefined,

@@ -712,6 +712,169 @@ function getTeamInvitationEmailHtml(ownerName: string, inviteUrl: string): strin
   `;
 }
 
+/**
+ * Send document expiry alert email
+ */
+export async function sendExpiryAlertEmail(
+  userEmail: string,
+  userName: string | undefined,
+  documentName: string,
+  expiryDate: Date,
+  daysLeft: number
+) {
+  if (!resend) {
+    console.warn("[Email] Resend not configured, skipping expiry alert email");
+    return { success: false, error: "Email service not configured" };
+  }
+
+  const name = userName || "cher utilisateur";
+  const baseUrl = process.env.NEXTAUTH_URL || "https://www.docusafe.online";
+  const dashboardUrl = `${baseUrl}/dashboard/documents`;
+  const formattedDate = expiryDate.toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  const urgency =
+    daysLeft <= 7
+      ? { label: "URGENT", color: "#ef4444", bg: "#fef2f2", border: "#fecaca" }
+      : daysLeft <= 30
+      ? { label: "BIENTÔT", color: "#f59e0b", bg: "#fffbeb", border: "#fde68a" }
+      : { label: "À RENOUVELER", color: "#3b82f6", bg: "#eff6ff", border: "#bfdbfe" };
+
+  const subject =
+    daysLeft <= 1
+      ? `⚠️ Document expiré aujourd'hui : ${documentName}`
+      : `⏰ Rappel J-${daysLeft} : ${documentName} expire bientôt`;
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: userEmail,
+      subject,
+      html: getExpiryAlertEmailHtml(name, documentName, formattedDate, daysLeft, urgency, dashboardUrl),
+    });
+
+    if (error) {
+      console.error("[Email] Error sending expiry alert email:", error);
+      return { success: false, error };
+    }
+
+    console.log("[Email] Expiry alert sent to:", maskEmail(userEmail), "daysLeft:", daysLeft);
+    return { success: true, data };
+  } catch (error) {
+    console.error("[Email] Failed to send expiry alert email:", error);
+    return { success: false, error };
+  }
+}
+
+function getExpiryAlertEmailHtml(
+  name: string,
+  documentName: string,
+  formattedDate: string,
+  daysLeft: number,
+  urgency: { label: string; color: string; bg: string; border: string },
+  dashboardUrl: string
+): string {
+  const safeDocName = documentName.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const safeDate = formattedDate.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  const daysText =
+    daysLeft <= 0
+      ? "Ce document a expiré aujourd'hui."
+      : daysLeft === 1
+      ? "Ce document expire <strong>demain</strong>."
+      : `Ce document expire dans <strong>${daysLeft} jours</strong>.`;
+
+  return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rappel d'expiration - DocuSafe</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); padding: 40px 40px 30px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">DocuSafe</h1>
+              <p style="margin: 10px 0 0; color: rgba(255, 255, 255, 0.9); font-size: 16px;">Rappel de renouvellement</p>
+            </td>
+          </tr>
+
+          <!-- Main content -->
+          <tr>
+            <td style="padding: 40px;">
+              <h2 style="margin: 0 0 20px; color: #18181b; font-size: 24px;">Bonjour ${name},</h2>
+
+              <p style="margin: 0 0 24px; color: #52525b; font-size: 16px; line-height: 1.6;">
+                ${daysText}
+              </p>
+
+              <!-- Document card -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: ${urgency.bg}; border: 1px solid ${urgency.border}; border-radius: 12px; margin: 0 0 24px;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td>
+                          <span style="display: inline-block; background-color: ${urgency.color}; color: white; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; padding: 3px 10px; border-radius: 20px; margin-bottom: 12px;">${urgency.label}</span>
+                          <p style="margin: 0 0 6px; color: #18181b; font-size: 16px; font-weight: 600;">${safeDocName}</p>
+                          <p style="margin: 0; color: #71717a; font-size: 14px;">Date d'expiration : <strong style="color: ${urgency.color};">${safeDate}</strong></p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 0 0 30px; color: #52525b; font-size: 15px; line-height: 1.6;">
+                Pensez à renouveler ce document dès que possible pour éviter tout désagrément.
+                Vous pouvez retrouver ce document directement dans votre espace DocuSafe.
+              </p>
+
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center">
+                    <a href="${dashboardUrl}"
+                       style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 12px; font-size: 16px; font-weight: 600;">
+                      Voir mes documents
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f4f4f5; padding: 24px 40px; text-align: center;">
+              <p style="margin: 0 0 6px; color: #71717a; font-size: 13px;">
+                Vous recevez cet email car vous avez activé les alertes de renouvellement sur DocuSafe.
+              </p>
+              <p style="margin: 0; color: #a1a1aa; font-size: 12px;">
+                &copy; ${new Date().getFullYear()} DocuSafe. Tous droits réservés.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+}
+
 function getCancellationEmailHtml(name: string): string {
   return `
 <!DOCTYPE html>

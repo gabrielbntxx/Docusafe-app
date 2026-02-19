@@ -139,6 +139,10 @@ export async function POST(req: Request) {
         aiConfidence: analysis.result!.confidence,
         aiExtractedData: JSON.stringify(analysis.result!.extractedData),
         fileHash: calculateFileHash(fileBuffer),
+        // Save expiry date if AI detected one
+        ...(analysis.result!.extractedData.expiryDate && {
+          expiryDate: new Date(analysis.result!.extractedData.expiryDate),
+        }),
         // Update display name if suggested
         ...(analysis.result!.suggestedName && {
           displayName: analysis.result!.suggestedName,
@@ -254,6 +258,10 @@ export async function PUT(req: Request) {
         aiExtractedData: JSON.stringify(analysis.result.extractedData),
         fileHash: calculateFileHash(fileBuffer),
         ...(folderId && { folderId }), // Move to folder only if we got one
+        // Save expiry date if AI detected one
+        ...(analysis.result.extractedData.expiryDate && {
+          expiryDate: new Date(analysis.result.extractedData.expiryDate),
+        }),
         // Update display name if suggested
         ...(analysis.result.suggestedName && {
           displayName: analysis.result.suggestedName,

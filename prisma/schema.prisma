@@ -161,6 +161,10 @@ model Document {
   updatedAt       DateTime  @updatedAt
   deletedAt       DateTime? // Soft delete: set on user deletion, null = active doc
 
+  // Expiry tracking
+  expiryDate      DateTime? // Expiry/renewal date (AI-detected or set manually)
+  expiryNotified  String?   // JSON: thresholds already notified e.g. "[60,30,7]"
+
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   folder          Folder?   @relation(fields: [folderId], references: [id], onDelete: SetNull)
 
@@ -168,6 +172,7 @@ model Document {
   @@index([folderId])
   @@index([aiAnalyzed])
   @@index([deletedAt])
+  @@index([expiryDate])
 }
 
 model Notification {
