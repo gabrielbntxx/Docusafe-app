@@ -641,6 +641,48 @@ export async function getCachedAnalysis(
 
   if (!cached) return null;
 
+  // Re-parse rawResponse to recover the full extractedData (expiryDate, subject, topic, etc.)
+  // The DB schema only stores 3 fields, but rawResponse contains the complete Gemini JSON.
+  if (cached.rawResponse && !cached.rawResponse.startsWith("FALLBACK") && !cached.rawResponse.startsWith("ERROR")) {
+    try {
+      const parsed = parseGeminiJson(cached.rawResponse);
+      const documentType = parsed.documentType || cached.documentType;
+      const categoryKey = TYPE_TO_CATEGORY[documentType] || "AUTRE";
+      const category = DOCUMENT_CATEGORIES[categoryKey].name;
+
+      return {
+        documentType,
+        category,
+        confidence: parsed.confidence ?? cached.confidence,
+        suggestedName: parsed.suggestedName || cached.suggestedName || undefined,
+        suggestedFolder: parsed.suggestedFolder || undefined,
+        folderAction: parsed.folderAction || undefined,
+        targetFolderId: parsed.targetFolderId || undefined,
+        parentFolderId: parsed.parentFolderId || undefined,
+        extractedData: {
+          date: parsed.extractedData?.date || cached.extractedDate || undefined,
+          expiryDate: parsed.extractedData?.expiryDate || undefined,
+          amount: parsed.extractedData?.amount || cached.extractedAmount || undefined,
+          issuer: parsed.extractedData?.issuer || cached.extractedIssuer || undefined,
+          recipient: parsed.extractedData?.recipient || undefined,
+          reference: parsed.extractedData?.reference || undefined,
+          subject: parsed.extractedData?.subject || undefined,
+          topic: parsed.extractedData?.topic || undefined,
+          location: parsed.extractedData?.location || undefined,
+          people: parsed.extractedData?.people || undefined,
+          language: parsed.extractedData?.language || undefined,
+          duration: parsed.extractedData?.duration || undefined,
+          genre: parsed.extractedData?.genre || undefined,
+          description: parsed.extractedData?.description || undefined,
+        },
+        rawResponse: cached.rawResponse,
+      };
+    } catch {
+      // rawResponse malformed — fall through to basic cached result
+    }
+  }
+
+  // Fallback: return the 3 fields the DB schema stores
   return {
     documentType: cached.documentType,
     category: cached.category,
@@ -984,6 +1026,33 @@ function classifyMediaByFilename(
       description: `Classifié automatiquement basé sur le nom du fichier`,
     },
   };
+}
+
+/**
+ * Robustly extract and parse a JSON object from a Gemini text response.
+ * Handles markdown code fences and text before/after the JSON.
+ */
+function parseGeminiJson(text: string): Record<string, any> {
+  let s = text.trim();
+
+  // Strip ```json ... ``` or ``` ... ``` fences
+  if (s.startsWith("```json")) {
+    s = s.replace(/^```json\n?/, "").replace(/\n?```$/, "").trim();
+  } else if (s.startsWith("```")) {
+    s = s.replace(/^```\n?/, "").replace(/\n?```$/, "").trim();
+  }
+
+  // Try direct parse first
+  try {
+    return JSON.parse(s);
+  } catch {
+    // Fallback: extract the first {...} block in the response
+    const match = s.match(/\{[\s\S]*\}/);
+    if (match) {
+      return JSON.parse(match[0]);
+    }
+    throw new Error("No JSON object found in response");
+  }
 }
 
 // Maximum file size for inline base64 analysis (20MB)
@@ -1337,17 +1406,9 @@ ${folderContext}`;
       throw new Error("Empty response from Gemini");
     }
 
-    // Parse JSON from response
-    let jsonStr = textResponse.trim();
-    if (jsonStr.startsWith("```json")) {
-      jsonStr = jsonStr.replace(/^```json\n?/, "").replace(/\n?```$/, "");
-    } else if (jsonStr.startsWith("```")) {
-      jsonStr = jsonStr.replace(/^```\n?/, "").replace(/\n?```$/, "");
-    }
-    jsonStr = jsonStr.trim();
-    console.log("[AI Analysis] Cleaned JSON string:", jsonStr);
-
-    const parsed = JSON.parse(jsonStr);
+    // Parse JSON from response (robust: handles fences + text before/after)
+    console.log("[AI Analysis] Parsing JSON from response...");
+    const parsed = parseGeminiJson(textResponse);
     console.log("[AI Analysis] Parsed result:", parsed);
 
     // Map document type to category
