@@ -8,6 +8,7 @@
 
 import sharp from "sharp";
 import PDFDocument from "pdfkit";
+import { PDFDocument as PdfLib, StandardFonts, rgb } from "pdf-lib";
 
 /**
  * Image MIME types supported for conversion (sharp handles all of these)
@@ -164,8 +165,8 @@ export async function convertImageToPdf(
 }
 
 /**
- * Convert a text/code file buffer to PDF
- * Renders with monospace font, line numbers, and page footers.
+ * Convert a text/code file buffer to PDF using pdf-lib (pure JS, no AFM files needed).
+ * Renders with Courier monospace font, line numbers, and page footers.
  */
 export async function convertTextToPdf(
   textBuffer: Buffer,
@@ -173,92 +174,94 @@ export async function convertTextToPdf(
 ): Promise<{ pdfBuffer: Buffer; newFileName: string }> {
   console.log(`[PDFConverter] Converting text ${originalFileName} to PDF`);
 
-  // Decode UTF-8, replace characters that PDFKit's built-in Courier can't render
+  // Keep printable ASCII + common whitespace; replace everything else with '?'
   const rawText = textBuffer.toString("utf-8");
-  // Keep printable ASCII + common whitespace; replace the rest with '?'
   const text = rawText.replace(/[^\x09\x0A\x0D\x20-\x7E]/g, "?");
   const lines = text.split(/\r?\n/);
   const newFileName = originalFileName.replace(/\.[^.]+$/, ".pdf");
 
-  return new Promise((resolve, reject) => {
-    const margin = 50;
-    const fontSize = 8.5;
+  const pdfDoc = await PdfLib.create();
+  pdfDoc.setTitle(originalFileName);
+  pdfDoc.setCreator("DocuSafe");
+  pdfDoc.setProducer("DocuSafe PDF Converter");
 
-    const doc = new (PDFDocument as unknown as new (opts: Record<string, unknown>) => typeof PDFDocument.prototype)({
-      size: "A4",
-      margins: { top: margin, bottom: margin + 20, left: margin, right: margin },
-      bufferPages: true,
-      info: {
-        Title: originalFileName,
-        Creator: "DocuSafe",
-        Producer: "DocuSafe PDF Converter",
-      },
-    });
+  const font     = await pdfDoc.embedFont(StandardFonts.Courier);
+  const boldFont = await pdfDoc.embedFont(StandardFonts.CourierBold);
 
-    const chunks: Buffer[] = [];
-    doc.on("data", (chunk: Buffer) => chunks.push(chunk));
-    doc.on("end", () => {
-      console.log(`[PDFConverter] Text PDF generated: ${Buffer.concat(chunks).length} bytes`);
-      resolve({ pdfBuffer: Buffer.concat(chunks), newFileName });
-    });
-    doc.on("error", (error: Error) => {
-      console.error("[PDFConverter] Text PDF error:", error);
-      reject(error);
-    });
+  // A4 dimensions in points
+  const pageWidth  = 595.28;
+  const pageHeight = 841.89;
+  const margin     = 50;
+  const fontSize   = 8.5;
+  const lineHeight = fontSize * 1.35;
 
-    const pageWidth: number = doc.page.width;
-    const pageHeight: number = doc.page.height;
-    const contentWidth = pageWidth - margin * 2;
-    const lineNumWidth = String(lines.length).length;
-    const bottomBoundary = pageHeight - margin - 20;
+  const headerH   = 26; // height consumed by header + separator
+  const footerH   = 16; // height consumed by footer
+  const bodyTop   = pageHeight - margin - headerH;
+  const bodyBottom = margin + footerH;
+  const linesPerPage = Math.floor((bodyTop - bodyBottom) / lineHeight);
+
+  const lineNumWidth = String(lines.length).length;
+  const totalPages   = Math.max(1, Math.ceil(lines.length / linesPerPage));
+  const contentWidth = pageWidth - margin * 2;
+
+  for (let p = 0; p < totalPages; p++) {
+    const page = pdfDoc.addPage([pageWidth, pageHeight]);
 
     // ── Header ──────────────────────────────────────────────────────────────
-    doc.font("Courier-Bold").fontSize(10).fillColor("#333333")
-      .text(originalFileName, margin, margin, { width: contentWidth, lineBreak: false });
-
-    const headerBottom: number = doc.y + 6;
-    doc.moveTo(margin, headerBottom)
-      .lineTo(pageWidth - margin, headerBottom)
-      .strokeColor("#cccccc")
-      .lineWidth(0.5)
-      .stroke();
-
-    doc.y = headerBottom + 10;
+    page.drawText(originalFileName, {
+      x: margin,
+      y: pageHeight - margin - 10,
+      size: 10,
+      font: boldFont,
+      color: rgb(0.2, 0.2, 0.2),
+      maxWidth: contentWidth,
+    });
+    page.drawLine({
+      start: { x: margin, y: pageHeight - margin - 18 },
+      end:   { x: pageWidth - margin, y: pageHeight - margin - 18 },
+      thickness: 0.5,
+      color: rgb(0.8, 0.8, 0.8),
+    });
 
     // ── Code lines ──────────────────────────────────────────────────────────
-    doc.font("Courier").fontSize(fontSize).fillColor("#333333");
+    const startLine = p * linesPerPage;
+    const endLine   = Math.min(startLine + linesPerPage, lines.length);
 
-    for (let i = 0; i < lines.length; i++) {
-      if (doc.y >= bottomBoundary) {
-        doc.addPage();
-        doc.font("Courier").fontSize(fontSize).fillColor("#333333");
-      }
-
+    for (let i = startLine; i < endLine; i++) {
       const lineNum = String(i + 1).padStart(lineNumWidth, " ");
       const fullLine = `${lineNum}  ${lines[i] ?? ""}`;
 
-      doc.text(fullLine, margin, doc.y, {
-        width: contentWidth,
-        lineBreak: false,
-        ellipsis: true,
+      // Truncate lines that would overflow the page width (≈ 600px / 5.1pt per char at 8.5pt)
+      const maxChars = Math.floor(contentWidth / font.widthOfTextAtSize(" ", fontSize));
+      const displayLine = fullLine.length > maxChars
+        ? fullLine.slice(0, maxChars - 1) + "\u2026"
+        : fullLine;
+
+      page.drawText(displayLine, {
+        x: margin,
+        y: bodyTop - (i - startLine) * lineHeight,
+        size: fontSize,
+        font,
+        color: rgb(0.2, 0.2, 0.2),
       });
     }
 
-    // ── Page numbers ────────────────────────────────────────────────────────
-    const totalPages: number = doc.bufferedPageRange().count;
-    for (let p = 0; p < totalPages; p++) {
-      doc.switchToPage(p);
-      doc.font("Courier").fontSize(7).fillColor("#aaaaaa")
-        .text(
-          `${p + 1} / ${totalPages}`,
-          margin,
-          pageHeight - margin + 5,
-          { width: contentWidth, align: "right", lineBreak: false }
-        );
-    }
+    // ── Page footer ──────────────────────────────────────────────────────────
+    const label     = `${p + 1} / ${totalPages}`;
+    const labelW    = font.widthOfTextAtSize(label, 7);
+    page.drawText(label, {
+      x: pageWidth - margin - labelW,
+      y: margin - 5,
+      size: 7,
+      font,
+      color: rgb(0.67, 0.67, 0.67),
+    });
+  }
 
-    doc.end();
-  });
+  const pdfBytes = await pdfDoc.save();
+  console.log(`[PDFConverter] Text PDF generated: ${pdfBytes.length} bytes`);
+  return { pdfBuffer: Buffer.from(pdfBytes), newFileName };
 }
 
 /**
