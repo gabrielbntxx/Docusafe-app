@@ -62,40 +62,48 @@ export function HeroSection() {
 
       {/* ══ CLOUD A — large, left→right, floats slow ══ */}
       <div className="hero-cloud-a pointer-events-none absolute left-0" style={{ top: "7%" }}>
-        <div className="hero-float-slow" style={{ display: "flex", alignItems: "flex-end" }}>
-          <Puff w={148} h={98}  blur={18} opacity={0.80} />
-          <Puff w={224} h={152} blur={13} opacity={0.96} ml={-80} />
-          <Puff w={182} h={120} blur={15} opacity={0.88} ml={-92} />
-          <Puff w={130} h={88}  blur={20} opacity={0.74} ml={-56} />
-          <Puff w={200} h={132} blur={13} opacity={0.90} ml={-88} />
+        <div className="scale-[0.52] origin-left md:scale-100">
+          <div className="hero-float-slow" style={{ display: "flex", alignItems: "flex-end" }}>
+            <Puff w={148} h={98}  blur={18} opacity={0.80} />
+            <Puff w={224} h={152} blur={13} opacity={0.96} ml={-80} />
+            <Puff w={182} h={120} blur={15} opacity={0.88} ml={-92} />
+            <Puff w={130} h={88}  blur={20} opacity={0.74} ml={-56} />
+            <Puff w={200} h={132} blur={13} opacity={0.90} ml={-88} />
+          </div>
         </div>
       </div>
 
       {/* ══ CLOUD B — small, left→right slower, floats fast ══ */}
       <div className="hero-cloud-b pointer-events-none absolute left-0" style={{ top: "59%" }}>
-        <div className="hero-float-fast" style={{ display: "flex", alignItems: "flex-end" }}>
-          <Puff w={92}  h={60}  blur={20} opacity={0.60} />
-          <Puff w={148} h={96}  blur={16} opacity={0.70} ml={-40} />
-          <Puff w={105} h={68}  blur={20} opacity={0.60} ml={-52} />
+        <div className="scale-[0.52] origin-left md:scale-100">
+          <div className="hero-float-fast" style={{ display: "flex", alignItems: "flex-end" }}>
+            <Puff w={92}  h={60}  blur={20} opacity={0.60} />
+            <Puff w={148} h={96}  blur={16} opacity={0.70} ml={-40} />
+            <Puff w={105} h={68}  blur={20} opacity={0.60} ml={-52} />
+          </div>
         </div>
       </div>
 
       {/* ══ CLOUD C — medium, right→left, floats med ══ */}
       <div className="hero-cloud-c pointer-events-none absolute right-0" style={{ top: "19%" }}>
-        <div className="hero-float-med" style={{ display: "flex", alignItems: "flex-end" }}>
-          <Puff w={115} h={76}  blur={18} opacity={0.70} />
-          <Puff w={190} h={130} blur={13} opacity={0.88} ml={-60} />
-          <Puff w={155} h={104} blur={16} opacity={0.80} ml={-80} />
-          <Puff w={96}  h={64}  blur={20} opacity={0.66} ml={-42} />
+        <div className="scale-[0.52] origin-right md:scale-100">
+          <div className="hero-float-med" style={{ display: "flex", alignItems: "flex-end" }}>
+            <Puff w={115} h={76}  blur={18} opacity={0.70} />
+            <Puff w={190} h={130} blur={13} opacity={0.88} ml={-60} />
+            <Puff w={155} h={104} blur={16} opacity={0.80} ml={-80} />
+            <Puff w={96}  h={64}  blur={20} opacity={0.66} ml={-42} />
+          </div>
         </div>
       </div>
 
       {/* ══ CLOUD D — tiny, right→left very slow, background depth ══ */}
       <div className="hero-cloud-d pointer-events-none absolute right-0" style={{ top: "69%" }}>
-        <div style={{ display: "flex", alignItems: "flex-end" }}>
-          <Puff w={76}  h={46}  blur={22} opacity={0.42} />
-          <Puff w={108} h={66}  blur={18} opacity={0.50} ml={-26} />
-          <Puff w={76}  h={46}  blur={22} opacity={0.42} ml={-36} />
+        <div className="scale-[0.52] origin-right md:scale-100">
+          <div style={{ display: "flex", alignItems: "flex-end" }}>
+            <Puff w={76}  h={46}  blur={22} opacity={0.42} />
+            <Puff w={108} h={66}  blur={18} opacity={0.50} ml={-26} />
+            <Puff w={76}  h={46}  blur={22} opacity={0.42} ml={-36} />
+          </div>
         </div>
       </div>
 

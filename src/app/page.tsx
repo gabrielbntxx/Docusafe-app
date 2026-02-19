@@ -1,6 +1,5 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronRight } from "lucide-react";
 import { HeroSection } from "@/components/landing/hero-section";
 
 export default function Home() {
@@ -38,33 +37,6 @@ export default function Home() {
 
       {/* ─── Hero ─── */}
       <HeroSection />
-
-      {/* ─── Final CTA ─── */}
-      <section className="px-4 py-28 text-center md:px-6">
-        <div className="mx-auto max-w-2xl">
-          <h2 className="mb-4 text-4xl font-extrabold tracking-tight text-gray-900 md:text-5xl">
-            Prêt à passer à l&apos;action ?
-          </h2>
-          <p className="mb-10 text-xl text-gray-500">
-            Créez votre compte gratuitement en moins d&apos;une minute. Aucune carte bancaire requise.
-          </p>
-          <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            <Link
-              href="/register"
-              className="group flex items-center gap-2 rounded-full bg-blue-500 px-10 py-4 text-base font-semibold text-white shadow-lg shadow-blue-500/25 transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-600 hover:shadow-xl"
-            >
-              Créer mon compte gratuit
-              <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-            </Link>
-            <Link
-              href="/login"
-              className="rounded-full border-2 border-gray-200 bg-white px-8 py-4 text-base font-semibold text-gray-700 transition-all hover:border-gray-300 hover:shadow-sm"
-            >
-              Me connecter
-            </Link>
-          </div>
-        </div>
-      </section>
 
       {/* ─── Footer ─── */}
       <footer className="border-t border-gray-100 bg-white py-12 px-4 md:px-6">
