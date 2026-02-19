@@ -893,6 +893,7 @@ export async function validateFile(
 ): Promise<{
   valid: boolean;
   sanitizedName: string;
+  effectiveMimeType: string;
   errors: string[];
 }> {
   const errors: string[] = [];
@@ -924,7 +925,7 @@ export async function validateFile(
   // Skip further validation if type is not allowed
   if (errors.length > 0) {
     const sanitizedName = sanitizeFilename(file.name);
-    return { valid: false, sanitizedName, errors };
+    return { valid: false, sanitizedName, effectiveMimeType, errors };
   }
 
   // 2. Valider l'extension
@@ -960,6 +961,7 @@ export async function validateFile(
   return {
     valid: errors.length === 0,
     sanitizedName,
+    effectiveMimeType,
     errors,
   };
 }

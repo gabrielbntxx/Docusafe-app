@@ -161,11 +161,14 @@ export async function POST(req: Request) {
     }
 
     // Appliquer les règles du dossier (ex: conversion en PDF)
+    // Use effectiveMimeType (corrected from extension) instead of file.type
+    // because browsers often send empty string or application/octet-stream
+    // for code files (.c, .py, etc.)
     const processedFile = await applyFolderRules(
       folderId,
       buffer,
       fileValidation.sanitizedName,
-      file.type
+      fileValidation.effectiveMimeType
     );
 
     // Utiliser le fichier traité pour le reste de l'upload
