@@ -184,8 +184,7 @@ export async function convertTextToPdf(
     const margin = 50;
     const fontSize = 8.5;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const doc = new (PDFDocument as any)({
+    const doc = new (PDFDocument as unknown as new (opts: Record<string, unknown>) => typeof PDFDocument.prototype)({
       size: "A4",
       margins: { top: margin, bottom: margin + 20, left: margin, right: margin },
       bufferPages: true,
