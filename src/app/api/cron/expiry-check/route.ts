@@ -8,12 +8,17 @@ const THRESHOLDS = [60, 30, 7, 1];
 
 // GET /api/cron/expiry-check - Called daily by cron job (Railway cron / external service)
 export async function GET(request: Request) {
-  // Verify cron secret to prevent unauthorized calls
-  const authHeader = request.headers.get("authorization");
+  // Verify cron secret — accepts either Authorization header or ?secret= query param
   const cronSecret = process.env.CRON_SECRET;
-
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (cronSecret) {
+    const authHeader = request.headers.get("authorization");
+    const url = new URL(request.url);
+    const querySecret = url.searchParams.get("secret");
+    const validHeader = authHeader === `Bearer ${cronSecret}`;
+    const validQuery = querySecret === cronSecret;
+    if (!validHeader && !validQuery) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
   }
 
   const now = new Date();
