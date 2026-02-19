@@ -24,6 +24,9 @@ import {
   Loader2,
   CheckCheck,
   ArrowLeftRight,
+  AlertTriangle,
+  Clock,
+  CheckCircle,
 } from "lucide-react";
 import { DocumentPreviewModal } from "./document-preview-modal";
 import { DocumentTriage } from "./document-triage";
@@ -39,6 +42,10 @@ type Document = {
   storageUrl: string | null;
   aiAnalyzed?: number;
   aiCategory?: string | null;
+  aiDocumentType?: string | null;
+  aiConfidence?: number | null;
+  aiExtractedData?: string | null;
+  expiryDate?: string | null;
   uploadedAt: string;
   folder: {
     id: string;
@@ -166,6 +173,15 @@ export function DocumentsClient({
       year: "numeric",
       timeZone: "UTC",
     }).format(date);
+  };
+
+  const getExpiryStatus = (expiryDate: string | null | undefined) => {
+    if (!expiryDate) return null;
+    const daysLeft = Math.floor((new Date(expiryDate).getTime() - Date.now()) / 86400000);
+    if (daysLeft < 0) return { label: "Expiré", icon: AlertTriangle, bg: "bg-red-100 dark:bg-red-500/20", text: "text-red-600 dark:text-red-400", daysLeft };
+    if (daysLeft <= 30) return { label: `${daysLeft}j`, icon: AlertTriangle, bg: "bg-orange-100 dark:bg-orange-500/20", text: "text-orange-600 dark:text-orange-400", daysLeft };
+    if (daysLeft <= 90) return { label: `${daysLeft}j`, icon: Clock, bg: "bg-yellow-100 dark:bg-yellow-500/20", text: "text-yellow-600 dark:text-yellow-400", daysLeft };
+    return { label: `${daysLeft}j`, icon: CheckCircle, bg: "bg-green-100 dark:bg-green-500/20", text: "text-green-600 dark:text-green-400", daysLeft };
   };
 
   // Selection functions
@@ -516,6 +532,27 @@ export function DocumentsClient({
                     </div>
                   )}
 
+                  {/* Expiry + AI badges */}
+                  {(() => {
+                    const expiry = getExpiryStatus(doc.expiryDate);
+                    const ExpiryIcon = expiry?.icon;
+                    return (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {expiry && ExpiryIcon && (
+                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${expiry.bg} ${expiry.text}`}>
+                            <ExpiryIcon className="h-2.5 w-2.5" />
+                            {expiry.label}
+                          </span>
+                        )}
+                        {doc.aiCategory && doc.aiAnalyzed === 1 && (
+                          <span className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-600 dark:text-blue-400">
+                            {doc.aiCategory}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })()}
+
                   {/* Actions */}
                   {!isSelectionMode && (
                     <div className="mt-4 flex gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700/50">
@@ -592,9 +629,26 @@ export function DocumentsClient({
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <h3 className="truncate font-medium text-neutral-900 dark:text-white">
-                        {doc.displayName}
-                      </h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="truncate font-medium text-neutral-900 dark:text-white">
+                          {doc.displayName}
+                        </h3>
+                        {(() => {
+                          const expiry = getExpiryStatus(doc.expiryDate);
+                          const ExpiryIcon = expiry?.icon;
+                          return expiry && ExpiryIcon ? (
+                            <span className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${expiry.bg} ${expiry.text}`}>
+                              <ExpiryIcon className="h-2.5 w-2.5" />
+                              {expiry.label}
+                            </span>
+                          ) : null;
+                        })()}
+                        {doc.aiCategory && doc.aiAnalyzed === 1 && (
+                          <span className="hidden sm:inline-flex shrink-0 items-center rounded-full bg-blue-50 dark:bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-600 dark:text-blue-400">
+                            {doc.aiCategory}
+                          </span>
+                        )}
+                      </div>
                       <div className="mt-0.5 flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
                         <span>{formatFileSize(doc.sizeBytes)}</span>
                         <span className="text-neutral-300 dark:text-neutral-600">•</span>

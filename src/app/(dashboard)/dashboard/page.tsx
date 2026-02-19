@@ -12,8 +12,9 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  // Fetch user statistics, real storage, and recent documents in parallel
-  const [user, storageAgg, recentDocuments] = await Promise.all([
+  // Fetch user statistics, real storage, recent documents, and expiring documents in parallel
+  const in60Days = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
+  const [user, storageAgg, recentDocuments, expiringDocuments] = await Promise.all([
     db.user.findUnique({
       where: { id: session.user.id },
       include: {
@@ -43,6 +44,22 @@ export default async function DashboardPage() {
         },
       },
     }),
+    db.document.findMany({
+      where: {
+        userId: session.user.id,
+        deletedAt: null,
+        expiryDate: { not: null, lte: in60Days },
+      },
+      select: {
+        id: true,
+        displayName: true,
+        fileType: true,
+        aiCategory: true,
+        expiryDate: true,
+      },
+      orderBy: { expiryDate: "asc" },
+      take: 8,
+    }),
   ]);
 
   const stats = {
@@ -64,5 +81,13 @@ export default async function DashboardPage() {
     folder: doc.folder,
   }));
 
-  return <DashboardClient stats={stats} recentDocuments={serializedDocuments} />;
+  const serializedExpiring = expiringDocuments.map((doc) => ({
+    id: doc.id,
+    displayName: doc.displayName,
+    fileType: doc.fileType,
+    aiCategory: doc.aiCategory,
+    expiryDate: doc.expiryDate!.toISOString(),
+  }));
+
+  return <DashboardClient stats={stats} recentDocuments={serializedDocuments} expiringDocuments={serializedExpiring} />;
 }

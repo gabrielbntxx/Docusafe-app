@@ -1307,7 +1307,8 @@ export async function analyzeDocumentWithAI(
     let contentParts: Array<{ text: string } | { inline_data: { mime_type: string; data: string } } | { file_data: { mime_type: string; file_uri: string } }> = [];
 
     // Add the prompt first, with folder context if available
-    let fullPrompt = AI_CLASSIFICATION_PROMPT;
+    const today = new Date().toISOString().split("T")[0];
+    let fullPrompt = AI_CLASSIFICATION_PROMPT + `\n\n## 📅 DATE ACTUELLE\nAujourd'hui nous sommes le **${today}**. Utilise cette date pour :\n- Déterminer si des documents sont DÉJÀ EXPIRÉS (expiryDate < ${today})\n- Évaluer l'urgence de renouvellement (< 30 jours = urgent)\n- Contextualiser les dates relatives (\"en cours\", \"valide\", \"périmé\")\nMets toujours expiryDate au format YYYY-MM-DD.`;
     if (folderContext) {
       fullPrompt += `\n\n## 📂 DOSSIERS EXISTANTS DE L'UTILISATEUR
 Voici l'arborescence actuelle des dossiers de l'utilisateur. Tu DOIS choisir parmi ces 3 actions :

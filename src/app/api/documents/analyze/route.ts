@@ -143,8 +143,8 @@ export async function POST(req: Request) {
         ...(analysis.result!.extractedData.expiryDate && {
           expiryDate: new Date(analysis.result!.extractedData.expiryDate),
         }),
-        // Update display name if suggested
-        ...(analysis.result!.suggestedName && {
+        // Update display name only if AI is confident enough (≥ 75%)
+        ...(analysis.result!.suggestedName && (analysis.result!.confidence ?? 0) >= 0.75 && {
           displayName: analysis.result!.suggestedName,
         }),
       },
@@ -262,8 +262,8 @@ export async function PUT(req: Request) {
         ...(analysis.result.extractedData.expiryDate && {
           expiryDate: new Date(analysis.result.extractedData.expiryDate),
         }),
-        // Update display name if suggested
-        ...(analysis.result.suggestedName && {
+        // Update display name only if AI is confident enough (≥ 75%)
+        ...(analysis.result.suggestedName && (analysis.result.confidence ?? 0) >= 0.75 && {
           displayName: analysis.result.suggestedName,
         }),
       },

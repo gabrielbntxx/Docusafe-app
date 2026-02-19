@@ -73,6 +73,7 @@ export default async function DocumentsPage({
     sizeBytes: Number(doc.sizeBytes),
     uploadedAt: doc.uploadedAt.toISOString(),
     updatedAt: doc.updatedAt.toISOString(),
+    expiryDate: doc.expiryDate ? doc.expiryDate.toISOString() : null,
     addedBy: doc.addedById && teamMemberMap[doc.addedById]
       ? teamMemberMap[doc.addedById]
       : null,

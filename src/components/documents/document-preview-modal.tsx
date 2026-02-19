@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Download, FileText, Image as ImageIcon, File, AlertCircle, Loader2, Music, Video, FileCode } from "lucide-react";
+import { X, Download, FileText, Image as ImageIcon, File, AlertCircle, Loader2, Music, Video, FileCode, Sparkles, Calendar, Tag, User, DollarSign, Hash, AlertTriangle, Clock, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/useTranslation";
 
@@ -11,6 +11,12 @@ type Document = {
   fileType: string;
   mimeType: string;
   sizeBytes?: number;
+  aiAnalyzed?: number;
+  aiDocumentType?: string | null;
+  aiCategory?: string | null;
+  aiConfidence?: number | null;
+  aiExtractedData?: string | null;
+  expiryDate?: string | null;
 };
 
 // MIME types that can be displayed as text
@@ -171,6 +177,61 @@ export function DocumentPreviewModal({
             </Button>
           </div>
         </div>
+
+        {/* AI Metadata Strip */}
+        {document.aiAnalyzed === 1 && (() => {
+          let extracted: Record<string, string> = {};
+          if (document.aiExtractedData) {
+            try { extracted = JSON.parse(document.aiExtractedData); } catch {}
+          }
+          const daysLeft = document.expiryDate
+            ? Math.floor((new Date(document.expiryDate).getTime() - Date.now()) / 86400000)
+            : null;
+          const expiryLabel = daysLeft === null ? null
+            : daysLeft < 0 ? { text: "Expiré", cls: "bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400", Icon: AlertTriangle }
+            : daysLeft <= 30 ? { text: `Expire dans ${daysLeft}j`, cls: "bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400", Icon: AlertTriangle }
+            : daysLeft <= 90 ? { text: `${daysLeft}j restants`, cls: "bg-yellow-100 dark:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400", Icon: Clock }
+            : { text: `Valide ${daysLeft}j`, cls: "bg-green-100 dark:bg-green-500/20 text-green-600 dark:text-green-400", Icon: CheckCircle };
+
+          const chips: { Icon: React.ElementType; label: string; value: string }[] = [];
+          if (document.aiCategory) chips.push({ Icon: Tag, label: "Catégorie", value: document.aiCategory });
+          if (extracted.issuer) chips.push({ Icon: User, label: "Émetteur", value: extracted.issuer });
+          if (extracted.amount) chips.push({ Icon: DollarSign, label: "Montant", value: extracted.amount });
+          if (extracted.date) chips.push({ Icon: Calendar, label: "Date", value: extracted.date });
+          if (extracted.reference) chips.push({ Icon: Hash, label: "Référence", value: extracted.reference });
+          if (extracted.subject) chips.push({ Icon: FileText, label: "Sujet", value: extracted.subject });
+
+          if (chips.length === 0 && !expiryLabel) return null;
+
+          return (
+            <div className="border-t border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900/50 px-4 py-3 flex-shrink-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="flex items-center gap-1 text-[10px] font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wide mr-1">
+                  <Sparkles className="h-3 w-3" />
+                  IA
+                </span>
+                {expiryLabel && (
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${expiryLabel.cls}`}>
+                    <expiryLabel.Icon className="h-3 w-3" />
+                    {expiryLabel.text}
+                  </span>
+                )}
+                {chips.map((chip) => (
+                  <span key={chip.label} className="inline-flex items-center gap-1 rounded-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 px-2.5 py-1 text-xs text-neutral-700 dark:text-neutral-300 shadow-sm">
+                    <chip.Icon className="h-3 w-3 text-neutral-400 dark:text-neutral-500" />
+                    <span className="font-medium text-neutral-500 dark:text-neutral-400">{chip.label}:</span>
+                    <span className="truncate max-w-[120px]">{chip.value}</span>
+                  </span>
+                ))}
+                {document.aiConfidence != null && (
+                  <span className="ml-auto text-[10px] text-neutral-400 dark:text-neutral-500 tabular-nums">
+                    {Math.round(document.aiConfidence * 100)}% confiance
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Content */}
         <div className="relative flex-1 overflow-auto bg-neutral-100 dark:bg-neutral-950">

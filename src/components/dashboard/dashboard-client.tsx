@@ -20,6 +20,8 @@ import {
   Sparkles,
   Music,
   Video,
+  AlertTriangle,
+  Bell,
 } from "lucide-react";
 import { DocumentPreviewModal } from "@/components/documents/document-preview-modal";
 
@@ -45,12 +47,22 @@ type RecentDocument = {
   } | null;
 };
 
+type ExpiringDocument = {
+  id: string;
+  displayName: string;
+  fileType: string;
+  aiCategory: string | null;
+  expiryDate: string;
+};
+
 export function DashboardClient({
   stats,
   recentDocuments = [],
+  expiringDocuments = [],
 }: {
   stats: DashboardStats;
   recentDocuments?: RecentDocument[];
+  expiringDocuments?: ExpiringDocument[];
 }) {
   const { t } = useTranslation();
   const [previewDocument, setPreviewDocument] = useState<RecentDocument | null>(null);
@@ -208,6 +220,61 @@ export function DashboardClient({
           </div>
           <ArrowUpRight className="h-5 w-5 shrink-0 opacity-70 transition-all group-hover:opacity-100" />
         </Link>
+
+        {/* Expiring Documents Widget */}
+        {expiringDocuments.length > 0 && (
+          <div className="rounded-2xl lg:rounded-3xl bg-white p-4 lg:p-6 shadow-lg lg:shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
+            <div className="mb-4 lg:mb-5 flex items-center justify-between">
+              <div className="flex items-center gap-2 lg:gap-3">
+                <div className="flex h-8 w-8 lg:h-10 lg:w-10 items-center justify-center rounded-xl lg:rounded-2xl bg-orange-100 dark:bg-orange-500/20">
+                  <Bell className="h-4 w-4 lg:h-5 lg:w-5 text-orange-600 dark:text-orange-400" />
+                </div>
+                <div>
+                  <h2 className="text-base lg:text-lg font-semibold text-neutral-900 dark:text-white">
+                    À renouveler
+                  </h2>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">Dans les 60 prochains jours</p>
+                </div>
+              </div>
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-orange-500 text-[11px] font-bold text-white">
+                {expiringDocuments.length}
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              {expiringDocuments.map((doc) => {
+                const daysLeft = Math.floor((new Date(doc.expiryDate).getTime() - Date.now()) / 86400000);
+                const isExpired = daysLeft < 0;
+                const isUrgent = daysLeft >= 0 && daysLeft <= 30;
+                const badgeBg = isExpired ? "bg-red-100 dark:bg-red-500/20" : isUrgent ? "bg-orange-100 dark:bg-orange-500/20" : "bg-yellow-100 dark:bg-yellow-500/20";
+                const badgeText = isExpired ? "text-red-600 dark:text-red-400" : isUrgent ? "text-orange-600 dark:text-orange-400" : "text-yellow-600 dark:text-yellow-400";
+                const label = isExpired ? "Expiré" : `${daysLeft}j`;
+
+                return (
+                  <div
+                    key={doc.id}
+                    className="flex items-center gap-3 rounded-xl bg-neutral-50 dark:bg-neutral-800 p-3"
+                  >
+                    <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${isExpired ? "bg-red-100 dark:bg-red-500/20" : "bg-orange-100 dark:bg-orange-500/20"}`}>
+                      <AlertTriangle className={`h-4 w-4 ${isExpired ? "text-red-500" : "text-orange-500"}`} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-neutral-900 dark:text-white">
+                        {doc.displayName}
+                      </p>
+                      {doc.aiCategory && (
+                        <p className="text-xs text-neutral-400 dark:text-neutral-500">{doc.aiCategory}</p>
+                      )}
+                    </div>
+                    <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${badgeBg} ${badgeText}`}>
+                      {label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Quick Actions - Hidden on mobile since we have bottom nav */}
         <div className="hidden lg:block rounded-3xl bg-white p-6 shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
