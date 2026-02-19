@@ -52,12 +52,22 @@ export function SubscriptionClient({
     return `${mb.toFixed(2)} Mo`;
   };
 
+  // Returns max storage in MB for progress bar calculations
   const getMaxStorage = (plan: PlanType) => {
     switch (plan) {
-      case "STUDENT": return 100 * 1024;
-      case "PRO": return 200 * 1024;
-      case "BUSINESS": return Infinity;
-      default: return 1024; // 1 GB
+      case "STUDENT": return 1 * 1024 * 1024;       // 1 TB in MB
+      case "PRO":     return 2 * 1024 * 1024;       // 2 TB in MB
+      case "BUSINESS": return 4 * 1024 * 1024;      // 4 TB in MB
+      default: return 1024; // 1 GB fallback
+    }
+  };
+
+  const getStorageLabel = (plan: PlanType) => {
+    switch (plan) {
+      case "STUDENT": return "1 To";
+      case "PRO":     return "2 To";
+      case "BUSINESS": return "4 To";
+      default: return "1 Go";
     }
   };
 
@@ -84,7 +94,7 @@ export function SubscriptionClient({
       period: "/mois",
       description: "Pour les 18-25 ans",
       features: [
-        { icon: HardDrive, text: "100 Go de stockage", included: true },
+        { icon: HardDrive, text: "1 To de stockage", included: true },
         { icon: Zap, text: "Analyses IA illimitées", included: true },
         { icon: Cloud, text: "Import Drive & OneDrive", included: true },
         { icon: FileOutput, text: "Convertisseur PDF", included: true },
@@ -101,7 +111,7 @@ export function SubscriptionClient({
       period: "/mois",
       description: "Pour les utilisateurs avancés",
       features: [
-        { icon: HardDrive, text: "200 Go (extensible)", included: true },
+        { icon: HardDrive, text: "2 To de stockage", included: true },
         { icon: Zap, text: "IA illimitée", included: true },
         { icon: Bot, text: "DocuBot illimité", included: true },
         { icon: Cloud, text: "Import Drive & OneDrive", included: true },
@@ -123,7 +133,7 @@ export function SubscriptionClient({
       features: [
         { icon: Users, text: "5 utilisateurs (+)", included: true },
         { icon: Palette, text: "IA personnalisée", included: true },
-        { icon: HardDrive, text: "Stockage illimité", included: true },
+        { icon: HardDrive, text: "4 To de stockage", included: true },
         { icon: Share2, text: "Liens personnalisés", included: true },
         { icon: LayoutDashboard, text: "Dashboard partagé", included: true },
         { icon: FilePlus, text: "Création documents", included: true },
@@ -239,7 +249,7 @@ export function SubscriptionClient({
               <p className="mt-0.5 sm:mt-1 text-lg sm:text-3xl font-bold text-neutral-900 dark:text-white truncate">
                 <span className="text-sm sm:text-2xl">{formatStorage(storageUsedBytes)}</span>
                 <span className="text-xs sm:text-lg font-normal text-neutral-400">
-                  {" "}/ {maxStorage === Infinity ? "∞" : `${maxStorage / 1024} Go`}
+                  {" "}/ {maxStorage === Infinity ? "∞" : getStorageLabel(currentPlan)}
                 </span>
               </p>
             </div>

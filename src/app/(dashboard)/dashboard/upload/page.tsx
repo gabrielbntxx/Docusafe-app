@@ -865,24 +865,19 @@ export default function UploadPage() {
         </div>
       )}
 
-      {/* Info Card - Only show for FREE users */}
-      {aiStatus && aiStatus.planType !== "PRO" && (
+      {/* Info Card - Show upload limits for all plans */}
+      {aiStatus && (
         <div className="rounded-3xl bg-gradient-to-br from-violet-500 to-purple-600 p-6 text-white shadow-xl shadow-violet-500/20">
           <div className="flex items-start gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
               <Sparkles className="h-6 w-6" />
             </div>
             <div>
-              <h3 className="font-semibold">Limites du plan FREE</h3>
+              <h3 className="font-semibold">Formats acceptés</h3>
               <ul className="mt-3 space-y-1.5 text-sm text-violet-100">
-                <li>Formats: PDF, Images, MP3, MP4, WAV</li>
-                <li>Taille max: 100 MB par fichier</li>
-                <li>Maximum 15 fichiers</li>
-                <li>Stockage total: 1 GB</li>
+                <li>Formats : PDF, Images, MP3, MP4, WAV</li>
+                <li>Taille max : 100 MB par fichier</li>
               </ul>
-              <Link href="/dashboard/subscription" className="mt-4 inline-block rounded-xl bg-white/20 px-4 py-2 text-sm font-medium backdrop-blur-sm transition-colors hover:bg-white/30">
-                Passer à Pro
-              </Link>
             </div>
           </div>
         </div>

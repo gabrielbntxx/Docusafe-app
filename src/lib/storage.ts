@@ -8,12 +8,12 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 // Storage limits by plan (in bytes)
 export const STORAGE_LIMITS: Record<string, number> = {
-  STUDENT: 100 * 1024 * 1024 * 1024, // 100 GB
-  PRO: 200 * 1024 * 1024 * 1024, // 200 GB
-  BUSINESS: Infinity, // Unlimited
+  STUDENT: 1 * 1024 * 1024 * 1024 * 1024,  // 1 TB
+  PRO:     2 * 1024 * 1024 * 1024 * 1024,  // 2 TB
+  BUSINESS: 4 * 1024 * 1024 * 1024 * 1024, // 4 TB
 } as const;
 
-const DEFAULT_STORAGE_LIMIT = 1 * 1024 * 1024 * 1024; // 1 GB for non-subscribed users
+const DEFAULT_STORAGE_LIMIT = 1 * 1024 * 1024 * 1024; // 1 GB fallback (unsubscribed/canceled)
 
 // File size limits per upload (in bytes)
 const FILE_SIZE_LIMIT = 100 * 1024 * 1024; // 100 MB per file

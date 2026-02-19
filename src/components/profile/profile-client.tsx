@@ -59,8 +59,8 @@ const PLAN_CONFIG: Record<
   },
   STUDENT: {
     label: "Étudiant",
-    storageLimitBytes: 100 * 1024 * 1024 * 1024,
-    storageLabel: "100 Go",
+    storageLimitBytes: 1 * 1024 * 1024 * 1024 * 1024,
+    storageLabel: "1 To",
     docLimit: Infinity,
     docLabel: "∞",
     isPaid: true,
@@ -69,8 +69,8 @@ const PLAN_CONFIG: Record<
   },
   PRO: {
     label: "Pro",
-    storageLimitBytes: 200 * 1024 * 1024 * 1024,
-    storageLabel: "200 Go",
+    storageLimitBytes: 2 * 1024 * 1024 * 1024 * 1024,
+    storageLabel: "2 To",
     docLimit: Infinity,
     docLabel: "∞",
     isPaid: true,
@@ -79,8 +79,8 @@ const PLAN_CONFIG: Record<
   },
   BUSINESS: {
     label: "Business",
-    storageLimitBytes: Infinity,
-    storageLabel: "Illimité",
+    storageLimitBytes: 4 * 1024 * 1024 * 1024 * 1024,
+    storageLabel: "4 To",
     docLimit: Infinity,
     docLabel: "∞",
     isPaid: true,
@@ -452,19 +452,19 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
               <div className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-500/20">
                 <FileText className="h-3 w-3 text-violet-600 dark:text-violet-400" />
               </div>
-              <span className="text-sm">{t("unlimitedFiles")}</span>
+              <span className="text-sm">Documents illimités</span>
             </div>
             <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-300">
               <div className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-500/20">
                 <HardDrive className="h-3 w-3 text-violet-600 dark:text-violet-400" />
               </div>
-              <span className="text-sm">100 GB {t("storageLimit")}</span>
+              <span className="text-sm">Jusqu&apos;à 4 To de stockage</span>
             </div>
             <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-300">
               <div className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-500/20">
                 <Sparkles className="h-3 w-3 text-violet-600 dark:text-violet-400" />
               </div>
-              <span className="text-sm">{t("aiOcr")}</span>
+              <span className="text-sm">IA d&apos;analyse illimitée</span>
             </div>
           </div>
         )}

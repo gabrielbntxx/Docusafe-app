@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -24,7 +23,8 @@ async function getLayoutData() {
 
   if (!user) return { redirect: "/login" as const, session: null };
   if (!user.emailVerified) return { redirect: `/verify-email?email=${encodeURIComponent(user.email)}` as const, session: null };
-  if (user.planType === "FREE" && !user.onboardingCompleted && !user.teamOwnerId) return { redirect: "/onboarding" as const, session: null };
+  // FREE users (no active subscription, no team) must subscribe before accessing the dashboard
+  if (user.planType === "FREE" && !user.teamOwnerId) return { redirect: "/dashboard/subscription" as const, session: null };
 
   return { redirect: null, user, session };
 }
@@ -41,31 +41,18 @@ export default async function DashboardLayout({
   }
 
   const { user, session } = data as { user: NonNullable<typeof data["user"]>; session: NonNullable<typeof data["session"]> };
-  // Team members are not restricted even if their personal plan is FREE
-  const isRestricted = user.planType === "FREE" && !user.teamOwnerId;
 
   return (
     <SessionProvider session={session}>
       <ThemeProvider>
-        <SubscriptionProvider isRestricted={isRestricted} planType={user.planType}>
+        <SubscriptionProvider isRestricted={false} planType={user.planType}>
           <TutorialProvider>
             <div className="min-h-screen bg-neutral-100/50 dark:bg-neutral-950">
               <NavigationProgress />
-              {/* Restricted Mode Banner */}
-              {isRestricted && (
-                <div className="fixed top-0 left-0 right-0 z-[100] bg-gradient-to-r from-violet-600 to-blue-600 text-white text-center py-2 px-4 text-sm font-medium lg:pl-72">
-                  <Link href="/dashboard/subscription" className="flex items-center justify-center gap-2 hover:underline">
-                    Abonnez-vous pour débloquer toutes les fonctionnalités
-                    <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold backdrop-blur-sm">
-                      Voir les offres →
-                    </span>
-                  </Link>
-                </div>
-              )}
               <Sidebar />
               <MobileNav />
               <BottomNav />
-              <div className={`lg:ml-72 ${isRestricted ? "pt-24 lg:pt-10" : "pt-14 lg:pt-0"} pb-24 lg:pb-0`}>
+              <div className="lg:ml-72 pt-14 lg:pt-0 pb-24 lg:pb-0">
                 <Header />
                 <main className="p-4 sm:p-6 lg:p-8">{children}</main>
               </div>
