@@ -6,13 +6,26 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Mail, Lock, Loader2, CheckCircle } from "lucide-react";
 
+const OAUTH_ERROR_MESSAGES: Record<string, string> = {
+  OAuthAccountNotLinked: "Cet email est déjà utilisé avec un autre mode de connexion. Connectez-vous avec votre email et mot de passe.",
+  OAuthCallbackError: "Erreur lors de la connexion Google. Veuillez réessayer.",
+  OAuthSignin: "Impossible de démarrer la connexion Google. Vérifiez votre connexion.",
+  Callback: "Erreur lors du retour Google. Veuillez réessayer.",
+  AccessDenied: "Accès refusé. Vous avez annulé la connexion Google.",
+  Configuration: "Erreur de configuration du serveur. Contactez le support.",
+  Default: "Erreur lors de la connexion Google. Veuillez réessayer.",
+};
+
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const verified = searchParams.get("verified") === "true";
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const oauthError = searchParams.get("error");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(
+    oauthError ? (OAUTH_ERROR_MESSAGES[oauthError] ?? OAUTH_ERROR_MESSAGES.Default) : ""
+  );
   const [formData, setFormData] = useState({
     email: "",
     password: "",
