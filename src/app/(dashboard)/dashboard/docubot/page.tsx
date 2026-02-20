@@ -277,8 +277,15 @@ export default function DocuBotPage() {
   const hasHistory = messages.some((m) => m.id !== "welcome");
 
   return (
+    /*
+     * Mobile: position fixed, fills screen below MobileNav (top-14 = 56px = h-14).
+     * dvh (dynamic viewport height) shrinks when the keyboard opens on iOS 15.4+ and
+     * Android Chrome 108+, so the container and input bar stay above the keyboard.
+     * Desktop: reverts to normal in-flow layout via lg:static.
+     */
     <div
-      className="flex flex-col -mx-4 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-6 lg:-mt-8 h-[calc(100dvh-15.5rem)] lg:h-[calc(100vh-8rem)]"
+      className="fixed inset-x-0 top-14 flex flex-col bg-white dark:bg-neutral-950 lg:static lg:bg-transparent lg:-mx-8 lg:-mt-8 lg:h-[calc(100vh-8rem)]"
+      style={{ height: 'calc(100dvh - 3.5rem)' }}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
@@ -310,10 +317,19 @@ export default function DocuBotPage() {
       />
 
       {/* ── Chat header bar ── */}
-      <div className="shrink-0 flex items-center justify-between border-b border-neutral-100 bg-white/80 px-4 py-2 backdrop-blur-sm dark:border-neutral-800 dark:bg-neutral-950/80 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-2 text-xs font-medium text-neutral-500 dark:text-neutral-400">
-          <Bot className="h-3.5 w-3.5 text-blue-500" />
-          DocuBot
+      <div className="shrink-0 flex items-center justify-between border-b border-neutral-100 bg-white/90 px-4 py-2.5 backdrop-blur-sm dark:border-neutral-800 dark:bg-neutral-950/90 lg:px-8">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 shadow-sm shadow-blue-500/30">
+            <Bot className="h-4 w-4 text-white" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-neutral-900 dark:text-white leading-none">DocuBot</p>
+            <p className="text-[11px] text-neutral-400 dark:text-neutral-500 leading-tight mt-0.5">
+              {isLoading ? (
+                <span className="text-blue-500 dark:text-blue-400">En train d&apos;écrire…</span>
+              ) : "Assistant IA"}
+            </p>
+          </div>
         </div>
         {hasHistory && (
           <button
@@ -322,40 +338,41 @@ export default function DocuBotPage() {
             className="flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs font-medium text-neutral-500 transition-all hover:border-neutral-300 hover:bg-neutral-100 hover:text-neutral-700 active:scale-95 disabled:opacity-40 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:text-neutral-200"
           >
             <RotateCcw className="h-3 w-3" />
-            {t("docubotNewConversation")}
+            <span className="hidden sm:inline">{t("docubotNewConversation")}</span>
+            <span className="sm:hidden">Nouveau</span>
           </button>
         )}
       </div>
 
       {/* ── Messages (scrollable) ── */}
-      <div ref={messagesRef} className="flex-1 overflow-y-auto px-4 pt-4 pb-2 sm:px-6 lg:px-8">
-        <div className="flex flex-col gap-4">
+      <div ref={messagesRef} className="flex-1 overflow-y-auto px-4 py-4 lg:px-8">
+        <div className="flex flex-col gap-3">
           {messages.map((message) => (
             <div
               key={message.id}
-              className={`flex gap-2.5 ${message.role === "user" ? "flex-row-reverse" : "flex-row"}`}
+              className={`flex gap-2 ${message.role === "user" ? "flex-row-reverse" : "flex-row"}`}
             >
               {/* Avatar */}
               <div
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl ${
+                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-2xl self-end mb-0.5 ${
                   message.role === "user"
                     ? "bg-blue-500 text-white"
                     : "bg-gradient-to-br from-blue-500 to-violet-600 text-white"
                 }`}
               >
-                {message.role === "user" ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+                {message.role === "user" ? <User className="h-3.5 w-3.5" /> : <Bot className="h-3.5 w-3.5" />}
               </div>
 
               {/* Bubble */}
               <div
-                className={`max-w-[78%] rounded-2xl px-4 py-3 text-sm ${
+                className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
                   message.role === "user"
-                    ? "rounded-tr-sm bg-blue-500 text-white shadow-sm shadow-blue-500/20"
-                    : "rounded-tl-sm bg-white text-neutral-800 shadow-sm dark:bg-neutral-800 dark:text-neutral-100"
+                    ? "rounded-br-sm bg-blue-500 text-white shadow-sm shadow-blue-500/20"
+                    : "rounded-bl-sm bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-100"
                 }`}
               >
                 {message.isLoading ? <TypingDots /> : (
-                  <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                  <p className="whitespace-pre-wrap">{message.content}</p>
                 )}
               </div>
             </div>
@@ -363,19 +380,21 @@ export default function DocuBotPage() {
 
           {/* Quick actions — shown only when no history yet */}
           {!hasHistory && (
-            <div className="mt-2">
-              <p className="mb-3 flex items-center gap-1.5 text-xs font-medium text-neutral-400 dark:text-neutral-500">
+            <div className="mt-3">
+              <p className="mb-2.5 flex items-center gap-1.5 text-xs font-medium text-neutral-400 dark:text-neutral-500">
                 <Sparkles className="h-3 w-3" />
                 {t("docubotQuickActions")}
               </p>
-              <div className="grid grid-cols-2 gap-2">
+              {/* Mobile: horizontal scrollable chips / Desktop: 2-col grid */}
+              <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [-webkit-overflow-scrolling:touch] lg:grid lg:grid-cols-2 lg:overflow-visible lg:pb-0">
                 {quickActions.map((action) => (
                   <button
                     key={action.label}
                     onClick={() => handleSend(action.query)}
-                    className="flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-3 py-2.5 text-left text-xs font-medium text-neutral-700 transition-all hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 active:scale-95 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-blue-500/50 dark:hover:bg-blue-500/10 dark:hover:text-blue-300"
+                    className="flex shrink-0 items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-3.5 py-3 text-left text-xs font-medium text-neutral-700 transition-all hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 active:scale-95 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-blue-500/50 dark:hover:bg-blue-500/10 dark:hover:text-blue-300 lg:shrink"
+                    style={{ minWidth: '8.5rem' }}
                   >
-                    <action.icon className="h-3.5 w-3.5 shrink-0 text-blue-500 dark:text-blue-400" />
+                    <action.icon className="h-4 w-4 shrink-0 text-blue-500 dark:text-blue-400" />
                     <span className="leading-tight">{action.label}</span>
                   </button>
                 ))}
@@ -385,15 +404,18 @@ export default function DocuBotPage() {
         </div>
       </div>
 
-      {/* ── Input bar ── */}
-      <div className="shrink-0 border-t border-neutral-200/80 bg-white/95 px-3 py-3 backdrop-blur-xl dark:border-neutral-800 dark:bg-neutral-950/95 sm:px-6 lg:px-8">
+      {/* ── Input bar — stays above keyboard via dvh + safe-area ── */}
+      <div
+        className="shrink-0 border-t border-neutral-200/80 bg-white/95 px-3 py-3 backdrop-blur-xl dark:border-neutral-800 dark:bg-neutral-950/95 lg:px-8"
+        style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}
+      >
         <div className="mx-auto flex max-w-3xl items-end gap-2">
           {/* Paperclip */}
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isLoading}
+            aria-label="Analyser un fichier"
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-neutral-200 bg-neutral-50 text-neutral-500 transition-all hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 active:scale-95 disabled:opacity-40 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:border-blue-500/50 dark:hover:bg-blue-500/10 dark:hover:text-blue-400"
-            title="Analyser un fichier"
           >
             <Paperclip className="h-4 w-4" />
           </button>
@@ -406,13 +428,13 @@ export default function DocuBotPage() {
               onChange={(e) => {
                 setInput(e.target.value);
                 e.target.style.height = "auto";
-                e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+                e.target.style.height = Math.min(e.target.scrollHeight, 96) + "px";
               }}
               onKeyDown={handleKeyDown}
               placeholder={t("docubotPlaceholder")}
               disabled={isLoading}
               className="block w-full resize-none bg-transparent px-4 py-3 text-sm text-neutral-900 outline-none placeholder:text-neutral-400 disabled:opacity-60 dark:text-white dark:placeholder:text-neutral-500"
-              style={{ minHeight: "44px", maxHeight: "120px" }}
+              style={{ minHeight: "44px", maxHeight: "96px" }}
             />
           </div>
 

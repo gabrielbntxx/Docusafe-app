@@ -16,6 +16,9 @@ export function BottomNav() {
   const pathname = usePathname();
   const { isRestricted } = useSubscription();
 
+  // Hide on docubot — full-screen chat needs the keyboard space
+  if (pathname === "/dashboard/docubot") return null;
+
   const navItems = [
     { key: "dashboard", label: "Accueil", href: "/dashboard", icon: LayoutDashboard, tutorialId: "mobile-dashboard" },
     { key: "documents", label: "Documents", href: "/dashboard/documents", icon: FileText, tutorialId: "mobile-documents" },
