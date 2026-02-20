@@ -243,6 +243,11 @@ export const translations = {
     docubotExpiringAction: "Expiring docs",
     docubotQueryExpiring: "Which documents are expiring soon?",
     docubotUploadedFile: "Analyze this file",
+    docubotMyStats: "My stats",
+    docubotQueryStats: "Give me my library statistics",
+    docubotOrganize: "Organize docs",
+    docubotQueryOrganize: "Which documents should I better organize or classify?",
+    docubotNewConversation: "New conversation",
 
     // Email Import
     emailImport: "Email Import",
@@ -672,6 +677,11 @@ export const translations = {
     docubotExpiringAction: "Docs expirants",
     docubotQueryExpiring: "Quels documents expirent bientôt ?",
     docubotUploadedFile: "Analyse ce fichier",
+    docubotMyStats: "Mes stats",
+    docubotQueryStats: "Donne-moi les statistiques de ma bibliothèque",
+    docubotOrganize: "Organiser",
+    docubotQueryOrganize: "Quels documents devrais-je mieux organiser ou classer ?",
+    docubotNewConversation: "Nouvelle conversation",
 
     // Email Import
     emailImport: "Import par email",

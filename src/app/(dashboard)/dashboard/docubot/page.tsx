@@ -13,6 +13,9 @@ import {
   Paperclip,
   Upload,
   Clock,
+  BarChart2,
+  SlidersHorizontal,
+  RotateCcw,
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 
@@ -23,6 +26,8 @@ type Message = {
   timestamp: Date;
   isLoading?: boolean;
 };
+
+const STORAGE_KEY = "docubot-conversation";
 
 function TypingDots() {
   return (
@@ -65,28 +70,58 @@ export default function DocuBotPage() {
     timestamp: new Date(),
   }), [t]);
 
+  // All 6 quick actions (+ expiring dynamically prepended if relevant)
   const quickActions = useMemo(() => {
     const base = [
-      { label: t("docubotRecentDocs"), icon: FileSearch, query: t("docubotQueryRecentDocs") },
-      { label: t("docubotMyFolders"), icon: FolderOpen, query: t("docubotQueryFolders") },
-      { label: t("docubotSearchInvoice"), icon: Receipt, query: t("docubotQueryInvoices") },
-      { label: t("docubotSummarizeDoc"), icon: FileText, query: t("docubotQuerySummarize") },
+      { label: t("docubotRecentDocs"),   icon: FileSearch,        query: t("docubotQueryRecentDocs") },
+      { label: t("docubotMyFolders"),    icon: FolderOpen,        query: t("docubotQueryFolders") },
+      { label: t("docubotSearchInvoice"),icon: Receipt,           query: t("docubotQueryInvoices") },
+      { label: t("docubotSummarizeDoc"), icon: FileText,          query: t("docubotQuerySummarize") },
+      { label: t("docubotMyStats"),      icon: BarChart2,         query: t("docubotQueryStats") },
+      { label: t("docubotOrganize"),     icon: SlidersHorizontal, query: t("docubotQueryOrganize") },
     ];
     if (expiringCount > 0) {
       base.unshift({ label: t("docubotExpiringAction"), icon: Clock, query: t("docubotQueryExpiring") });
     }
-    return base.slice(0, 4);
+    // Show up to 6 in a 2-col grid (3 rows)
+    return base.slice(0, 6);
   }, [t, expiringCount]);
 
   const [messages, setMessages] = useState<Message[]>([welcomeMessage]);
 
+  // ── Load saved conversation from localStorage on mount ───────────────────
   useEffect(() => {
     fetch("/api/chat/context")
       .then((r) => r.json())
       .then((data) => setExpiringCount(data.expiringCount || 0))
       .catch(() => {});
+
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed: Message[] = JSON.parse(saved);
+        const restored = parsed.map((m) => ({ ...m, timestamp: new Date(m.timestamp) }));
+        if (restored.length > 1) {
+          setMessages(restored);
+          return;
+        }
+      }
+    } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Save conversation to localStorage whenever messages change ───────────
+  useEffect(() => {
+    try {
+      // Don't persist loading placeholders
+      const toSave = messages.filter((m) => !m.isLoading);
+      if (toSave.length > 1) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+      }
+    } catch {}
+  }, [messages]);
+
+  // Keep welcome message text in sync with language
   useEffect(() => {
     setMessages(prev => prev.map(m =>
       m.id === "welcome" ? { ...m, content: t("docubotWelcome") } : m
@@ -103,6 +138,14 @@ export default function DocuBotPage() {
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  // ── Reset conversation ───────────────────────────────────────────────────
+  const handleReset = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    setMessages([{ ...welcomeMessage, timestamp: new Date() }]);
+    setInput("");
+    inputRef.current?.focus();
+  };
 
   // ── Streaming reader helper ──────────────────────────────────────────────
   async function readStream(response: Response, loadingId: string) {
@@ -155,7 +198,7 @@ export default function DocuBotPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: userMessage.content,
-          history: messages.filter((m) => m.id !== "welcome").slice(-10),
+          history: messages.filter((m) => m.id !== "welcome" && !m.isLoading).slice(-10),
         }),
       });
       if (!response.ok || !response.body) throw new Error("API error");
@@ -231,20 +274,9 @@ export default function DocuBotPage() {
     }
   };
 
+  const hasHistory = messages.some((m) => m.id !== "welcome");
+
   return (
-    /*
-     * Full-height flex chat container.
-     * Heights account for the fixed top/bottom nav bars and header so that
-     * the messages area scrolls independently rather than pushing the page down.
-     *
-     * Mobile  : 100dvh − mobile-nav(h-14) − header(h-16) − bottom-nav(h-16) − main-padding(p-4×2) − outer-pb(pb-24 minus bottom-nav)
-     *           ≈ calc(100dvh - 15.5rem)
-     * Desktop : 100vh  − header(h-16) − main-padding(lg:p-8×2)
-     *           = calc(100vh - 8rem)
-     *
-     * Negative horizontal margins cancel out the main's px padding so the
-     * bubble list and input bar stretch edge-to-edge inside the panel.
-     */
     <div
       className="flex flex-col -mx-4 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-6 lg:-mt-8 h-[calc(100dvh-15.5rem)] lg:h-[calc(100vh-8rem)]"
       onDragEnter={handleDragEnter}
@@ -276,6 +308,24 @@ export default function DocuBotPage() {
           e.target.value = "";
         }}
       />
+
+      {/* ── Chat header bar ── */}
+      <div className="shrink-0 flex items-center justify-between border-b border-neutral-100 bg-white/80 px-4 py-2 backdrop-blur-sm dark:border-neutral-800 dark:bg-neutral-950/80 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-2 text-xs font-medium text-neutral-500 dark:text-neutral-400">
+          <Bot className="h-3.5 w-3.5 text-blue-500" />
+          DocuBot
+        </div>
+        {hasHistory && (
+          <button
+            onClick={handleReset}
+            disabled={isLoading}
+            className="flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs font-medium text-neutral-500 transition-all hover:border-neutral-300 hover:bg-neutral-100 hover:text-neutral-700 active:scale-95 disabled:opacity-40 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:text-neutral-200"
+          >
+            <RotateCcw className="h-3 w-3" />
+            {t("docubotNewConversation")}
+          </button>
+        )}
+      </div>
 
       {/* ── Messages (scrollable) ── */}
       <div ref={messagesRef} className="flex-1 overflow-y-auto px-4 pt-4 pb-2 sm:px-6 lg:px-8">
@@ -311,8 +361,8 @@ export default function DocuBotPage() {
             </div>
           ))}
 
-          {/* Quick actions — shown only at the start */}
-          {messages.length <= 2 && (
+          {/* Quick actions — shown only when no history yet */}
+          {!hasHistory && (
             <div className="mt-2">
               <p className="mb-3 flex items-center gap-1.5 text-xs font-medium text-neutral-400 dark:text-neutral-500">
                 <Sparkles className="h-3 w-3" />
@@ -335,7 +385,7 @@ export default function DocuBotPage() {
         </div>
       </div>
 
-      {/* ── Input bar (anchored at flex bottom, no longer fixed) ── */}
+      {/* ── Input bar ── */}
       <div className="shrink-0 border-t border-neutral-200/80 bg-white/95 px-3 py-3 backdrop-blur-xl dark:border-neutral-800 dark:bg-neutral-950/95 sm:px-6 lg:px-8">
         <div className="mx-auto flex max-w-3xl items-end gap-2">
           {/* Paperclip */}
