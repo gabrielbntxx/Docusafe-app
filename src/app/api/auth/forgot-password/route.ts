@@ -39,12 +39,7 @@ export async function POST(req: Request) {
       });
     }
 
-    // Check if user has a password (not OAuth-only account)
-    if (!user.password) {
-      return NextResponse.json({
-        message: "Si un compte existe avec cet email, vous recevrez un lien de réinitialisation.",
-      });
-    }
+    // OAuth-only accounts (no password yet) can use this flow to SET their first password
 
     // Delete any existing tokens for this email
     await db.passwordResetToken.deleteMany({

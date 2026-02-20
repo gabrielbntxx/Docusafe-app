@@ -4,7 +4,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Mail, Lock, Loader2, CheckCircle } from "lucide-react";
+import { Mail, Lock, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 
 const OAUTH_ERROR_MESSAGES: Record<string, string> = {
   OAuthAccountNotLinked: "Cet email est déjà utilisé avec un autre mode de connexion. Connectez-vous avec votre email et mot de passe.",
@@ -26,6 +26,7 @@ export function LoginForm() {
   const [error, setError] = useState(
     oauthError ? (OAUTH_ERROR_MESSAGES[oauthError] ?? OAUTH_ERROR_MESSAGES.Default) : ""
   );
+  const [isGoogleAccount, setIsGoogleAccount] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -35,6 +36,7 @@ export function LoginForm() {
     e.preventDefault();
     setIsLoading(true);
     setError("");
+    setIsGoogleAccount(false);
 
     try {
       // Step 1: Check credentials + email verification status
@@ -48,6 +50,12 @@ export function LoginForm() {
       });
 
       const checkData = await checkRes.json();
+
+      if (checkData.status === "google_account") {
+        setIsGoogleAccount(true);
+        setIsLoading(false);
+        return;
+      }
 
       if (checkData.status === "invalid_credentials") {
         setError("Email ou mot de passe incorrect");
@@ -115,6 +123,27 @@ export function LoginForm() {
           {error && (
             <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-600 text-sm text-center">
               {error}
+            </div>
+          )}
+
+          {isGoogleAccount && (
+            <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-800 text-sm">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-blue-500" />
+                <div>
+                  <p className="font-semibold mb-1">Ce compte utilise Google</p>
+                  <p className="text-blue-700">
+                    Connectez-vous avec Google, ou{" "}
+                    <Link
+                      href={`/forgot-password?email=${encodeURIComponent(formData.email)}`}
+                      className="underline font-semibold hover:text-blue-900"
+                    >
+                      définissez un mot de passe
+                    </Link>
+                    {" "}pour accéder aussi par email.
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 

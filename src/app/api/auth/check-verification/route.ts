@@ -35,10 +35,18 @@ export async function POST(req: Request) {
       where: { email: normalizedEmail },
     });
 
-    if (!user || !user.password) {
+    if (!user) {
       return NextResponse.json(
         { status: "invalid_credentials" },
         { status: 401 }
+      );
+    }
+
+    // User exists but has no password — registered via Google/Apple OAuth
+    if (!user.password) {
+      return NextResponse.json(
+        { status: "google_account" },
+        { status: 200 }
       );
     }
 
