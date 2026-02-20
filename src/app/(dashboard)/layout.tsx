@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -23,8 +24,14 @@ async function getLayoutData() {
 
   if (!user) return { redirect: "/login" as const, session: null };
   if (!user.emailVerified) return { redirect: `/verify-email?email=${encodeURIComponent(user.email)}` as const, session: null };
-  // FREE users (no active subscription, no team) must subscribe before accessing the dashboard
-  if (user.planType === "FREE" && !user.teamOwnerId) return { redirect: "/dashboard/subscription" as const, session: null };
+
+  // FREE users must subscribe — but allow /dashboard/subscription itself to avoid infinite loop
+  const headersList = headers();
+  const pathname = headersList.get("x-pathname") || "";
+  const isSubscriptionPage = pathname.startsWith("/dashboard/subscription");
+  if (user.planType === "FREE" && !user.teamOwnerId && !isSubscriptionPage) {
+    return { redirect: "/dashboard/subscription" as const, session: null };
+  }
 
   return { redirect: null, user, session };
 }

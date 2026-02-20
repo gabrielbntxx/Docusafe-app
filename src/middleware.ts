@@ -133,6 +133,8 @@ export function middleware(request: NextRequest) {
 
   // Headers de sécurité pour toutes les réponses
   const response = NextResponse.next();
+  // Expose pathname to server components (used in dashboard layout)
+  response.headers.set("x-pathname", pathname);
 
   // CORS headers for API routes
   if (pathname.startsWith("/api/")) {
