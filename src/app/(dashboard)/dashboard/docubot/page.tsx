@@ -112,15 +112,38 @@ export default function DocuBotPage() {
         }),
       });
 
-      const data = await response.json();
+      if (!response.ok || !response.body) throw new Error("API error");
 
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === loadingId
-            ? { ...m, content: data.response || t("docubotError"), isLoading: false }
-            : m
-        )
-      );
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = "";
+
+      // Switch from loading dots to streaming text on first chunk
+      let firstChunk = true;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        fullText += chunk;
+        if (firstChunk) {
+          firstChunk = false;
+          setIsLoading(false);
+        }
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === loadingId ? { ...m, content: fullText, isLoading: false } : m
+          )
+        );
+      }
+
+      if (!fullText) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === loadingId ? { ...m, content: t("docubotError"), isLoading: false } : m
+          )
+        );
+      }
     } catch {
       setMessages((prev) =>
         prev.map((m) =>

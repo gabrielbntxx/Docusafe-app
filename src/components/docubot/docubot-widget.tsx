@@ -126,20 +126,36 @@ export function DocuBotWidget() {
         }),
       });
 
-      const data = await response.json();
+      if (!response.ok || !response.body) throw new Error("API error");
 
-      // Replace loading message with actual response
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === loadingId
-            ? {
-                ...m,
-                content: data.response || t("docubotError"),
-                isLoading: false,
-              }
-            : m
-        )
-      );
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = "";
+      let firstChunk = true;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        fullText += chunk;
+        if (firstChunk) {
+          firstChunk = false;
+          setIsLoading(false);
+        }
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === loadingId ? { ...m, content: fullText, isLoading: false } : m
+          )
+        );
+      }
+
+      if (!fullText) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === loadingId ? { ...m, content: t("docubotError"), isLoading: false } : m
+          )
+        );
+      }
     } catch (error) {
       console.error("DocuBot error:", error);
       setMessages((prev) =>
