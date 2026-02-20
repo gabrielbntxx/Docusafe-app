@@ -1143,7 +1143,11 @@ async function getDocumentStats(userId: string) {
   const totalBytes = Number(storageAgg._sum.sizeBytes || 0);
   const totalMB = (totalBytes / 1024 / 1024).toFixed(1);
   const totalGB = (totalBytes / 1024 / 1024 / 1024).toFixed(2);
-  const storageDisplay = totalBytes > 1024 * 1024 * 1024 ? `${totalGB} GB` : `${totalMB} MB`;
+  const storageDisplay = totalBytes > 1024 * 1024 * 1024
+    ? `${totalGB} GB`
+    : totalBytes > 0
+      ? `${totalMB} MB`
+      : "non disponible (tailles non enregistrées)";
 
   return {
     success: true,
