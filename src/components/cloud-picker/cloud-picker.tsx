@@ -162,7 +162,7 @@ export function CloudPicker({ isOpen, onClose, onFilesSelected }: CloudPickerPro
       });
 
       console.log("[Google Drive] Requesting access token...");
-      tokenClient.requestAccessToken({ prompt: "consent" });
+      tokenClient.requestAccessToken({ prompt: "" });
     } catch (err: any) {
       console.error("[Google Drive] Error:", err);
       setError(`Impossible de se connecter à Google Drive: ${err.message || "erreur inconnue"}`);
