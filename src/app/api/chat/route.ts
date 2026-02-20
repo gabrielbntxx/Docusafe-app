@@ -1218,6 +1218,19 @@ async function executeFunction(
 // STREAMING HELPERS
 // ============================================================================
 
+// Remove markdown syntax so messages render as clean plain text in the chat UI.
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/\*\*([^*]+)\*\*/g, "$1")   // **bold** → bold
+    .replace(/\*([^*\n]+)\*/g, "$1")     // *italic* → italic
+    .replace(/^#{1,6}\s+/gm, "")         // ## headings → plain
+    .replace(/`([^`]+)`/g, "$1")         // `code` → code
+    .replace(/~~([^~]+)~~/g, "$1")       // ~~strike~~ → text
+    .replace(/^\s*[-*+]\s+/gm, "• ")     // - list → bullet
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // [link](url) → link text
+    .trim();
+}
+
 const STREAM_HEADERS = {
   "Content-Type": "text/plain; charset=utf-8",
   "X-Accel-Buffering": "no",   // Disable Nginx/Railway proxy buffering
@@ -1254,12 +1267,13 @@ async function streamGeminiCall(contents: any[], apiKey: string): Promise<Respon
   const data = await gemRes.json();
   const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || "Désolé, je n'ai pas pu répondre.";
 
-  const cleaned = raw
-    .replace(/\[ID:[^\]]+\]/g, "")
-    .replace(/\(ID:[^)]+\)/g, "")
-    .replace(/ID:\s*[a-z0-9]{20,}/gi, "")
-    .replace(/[ \t]{2,}/g, " ")
-    .trim();
+  const cleaned = stripMarkdown(
+    raw
+      .replace(/\[ID:[^\]]+\]/g, "")
+      .replace(/\(ID:[^)]+\)/g, "")
+      .replace(/ID:\s*[a-z0-9]{20,}/gi, "")
+      .replace(/[ \t]{2,}/g, " ")
+  );
 
   return streamText(cleaned);
 }
@@ -1562,13 +1576,13 @@ export async function POST(request: NextRequest) {
       ? "I didn't understand. Can you rephrase?"
       : "Je n'ai pas compris. Peux-tu reformuler ?";
 
-    let aiResponse = candidate?.content?.parts?.[0]?.text || fallbackMessage;
-    aiResponse = aiResponse
-      .replace(/\[ID:[^\]]+\]/g, "")
-      .replace(/\(ID:[^)]+\)/g, "")
-      .replace(/ID:\s*[a-z0-9]{20,}/gi, "")
-      .replace(/[ \t]{2,}/g, " ")
-      .trim();
+    let aiResponse = stripMarkdown(
+      (candidate?.content?.parts?.[0]?.text || fallbackMessage)
+        .replace(/\[ID:[^\]]+\]/g, "")
+        .replace(/\(ID:[^)]+\)/g, "")
+        .replace(/ID:\s*[a-z0-9]{20,}/gi, "")
+        .replace(/[ \t]{2,}/g, " ")
+    );
 
     return streamText(aiResponse);
   } catch (error) {
