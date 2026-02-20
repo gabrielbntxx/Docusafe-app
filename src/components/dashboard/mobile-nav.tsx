@@ -13,9 +13,7 @@ import {
   User,
   Bell,
   ChevronRight,
-  HelpCircle,
   Bot,
-  MessageCircle,
   FileUp,
   Lock,
 } from "lucide-react";
@@ -158,37 +156,6 @@ export function MobileNav() {
         {/* Footer Section - Fixed at bottom */}
         <div className="absolute bottom-0 left-0 right-0 z-10 border-t border-black/5 bg-neutral-50 dark:border-white/5 dark:bg-neutral-900" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
           <div className="p-3 space-y-1">
-            {/* Help */}
-            <Link
-              href="/dashboard/help"
-              prefetch={false}
-              onClick={closeMenu}
-              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-neutral-600 hover:bg-white active:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-white/5"
-            >
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-500/20">
-                <HelpCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-              </div>
-              <span className="flex-1 text-sm font-medium text-neutral-900 dark:text-white">Aide</span>
-              <ChevronRight className="h-4 w-4 text-neutral-300 dark:text-neutral-600" />
-            </Link>
-
-            {/* Support */}
-            <Link
-              href="/dashboard/support"
-              prefetch={false}
-              onClick={closeMenu}
-              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-neutral-600 hover:bg-white active:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-white/5"
-            >
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-100 dark:bg-cyan-500/20">
-                <MessageCircle className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
-              </div>
-              <span className="flex-1 text-sm font-medium text-neutral-900 dark:text-white">Support</span>
-              <ChevronRight className="h-4 w-4 text-neutral-300 dark:text-neutral-600" />
-            </Link>
-
-            {/* Divider */}
-            <div className="!my-2 border-t border-neutral-200 dark:border-neutral-800" />
-
             {/* Sign Out */}
             <button
               onClick={handleSignOut}
@@ -203,7 +170,7 @@ export function MobileNav() {
         </div>
 
         {/* Scrollable Content Area */}
-        <div className="h-full overflow-y-auto pt-14 pb-[220px]">
+        <div className="h-full overflow-y-auto pt-14 pb-[120px]">
           {/* User Profile Card */}
           <Link
             href="/dashboard/profile"

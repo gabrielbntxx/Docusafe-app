@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { TrashSection } from "@/components/settings/trash-section";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -18,6 +19,7 @@ import {
   Mail,
   Copy,
   HelpCircle,
+  MessageCircle,
   ChevronRight,
   Play,
   GraduationCap,
@@ -558,6 +560,50 @@ export function SettingsClient({
           </div>
         </div>
       )}
+
+      {/* Assistance Section */}
+      <div className="mt-3 sm:mt-4 lg:mt-6">
+        <div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-neutral-800/50 sm:rounded-3xl sm:shadow-xl sm:shadow-black/5 dark:sm:shadow-none">
+          <div className="flex items-center gap-3 border-b border-neutral-100 p-4 dark:border-neutral-700/50 sm:p-5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-400 shadow-md shadow-amber-500/20 sm:h-11 sm:w-11">
+              <HelpCircle className="h-5 w-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-[15px] font-semibold text-neutral-900 dark:text-white sm:text-base">
+                {t("help")} &amp; {t("support")}
+              </h2>
+            </div>
+          </div>
+          <div className="p-2 sm:p-3">
+            <Link
+              href="/dashboard/help"
+              prefetch={false}
+              className="flex w-full items-center gap-3 rounded-xl p-3 transition-all hover:bg-neutral-50 active:bg-neutral-100 dark:hover:bg-neutral-700/30"
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-500/20">
+                <HelpCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              </div>
+              <span className="flex-1 text-left text-sm font-medium text-neutral-900 dark:text-white">
+                {t("help")}
+              </span>
+              <ChevronRight className="h-4 w-4 text-neutral-300 dark:text-neutral-600" />
+            </Link>
+            <Link
+              href="/dashboard/support"
+              prefetch={false}
+              className="flex w-full items-center gap-3 rounded-xl p-3 transition-all hover:bg-neutral-50 active:bg-neutral-100 dark:hover:bg-neutral-700/30"
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-100 dark:bg-cyan-500/20">
+                <MessageCircle className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+              </div>
+              <span className="flex-1 text-left text-sm font-medium text-neutral-900 dark:text-white">
+                {t("support")}
+              </span>
+              <ChevronRight className="h-4 w-4 text-neutral-300 dark:text-neutral-600" />
+            </Link>
+          </div>
+        </div>
+      </div>
 
       {/* Danger Zone - Delete Account */}
       <div className="mt-3 sm:mt-4 lg:mt-6">

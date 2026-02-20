@@ -13,8 +13,6 @@ import {
   Search,
   CreditCard,
   Bot,
-  HelpCircle,
-  MessageCircle,
   FileUp,
   Lock,
   ArrowLeftRight,
@@ -122,34 +120,6 @@ export function Sidebar() {
 
       {/* Bottom Section - Fixed */}
       <div className="shrink-0 border-t border-black/5 px-3 py-3 space-y-1 dark:border-white/5">
-        {/* Assistance & Support */}
-        <Link
-          href="/dashboard/help"
-          prefetch={false}
-          data-tutorial="help-link"
-          className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200 ${
-            pathname === "/dashboard/help"
-              ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
-              : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/5 dark:hover:text-white"
-          }`}
-        >
-          <HelpCircle className={`h-5 w-5 ${pathname === "/dashboard/help" ? "text-blue-500" : ""}`} />
-          {t("help")}
-        </Link>
-        <Link
-          href="/dashboard/support"
-          prefetch={false}
-          className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200 ${
-            pathname === "/dashboard/support"
-              ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
-              : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/5 dark:hover:text-white"
-          }`}
-        >
-          <MessageCircle className={`h-5 w-5 ${pathname === "/dashboard/support" ? "text-blue-500" : ""}`} />
-          {t("support")}
-        </Link>
-
-        <div className="border-t border-black/5 pt-1 dark:border-white/5" />
 
         {bottomNavigation.map((item) => {
           const isActive = pathname === item.href;
