@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { X, FileText, File, Image as ImageIcon, FileCheck, Cloud, Sparkles, Wand2, FolderOpen, Loader2, Music, Video, FolderUp, Folder, FileCode, FileSpreadsheet, Presentation, Archive, CloudCog } from "lucide-react";
+import { X, FileText, File, Image as ImageIcon, FileCheck, Cloud, Sparkles, Wand2, FolderOpen, Loader2, Music, Video, FolderUp, Folder, FileCode, FileSpreadsheet, Presentation, Archive, CloudCog, Lock, CreditCard } from "lucide-react";
 import { CloudPicker } from "@/components/cloud-picker/cloud-picker";
+import { useSubscription } from "@/components/providers/subscription-provider";
 
 type AIStatus = {
   allowed: boolean;
@@ -27,6 +28,7 @@ type FolderStructure = {
 
 export default function UploadPage() {
   const router = useRouter();
+  const { isRestricted } = useSubscription();
   const [files, setFiles] = useState<File[]>([]);
   const [folderFiles, setFolderFiles] = useState<FileWithPath[]>([]);
   const [folderName, setFolderName] = useState<string | null>(null);
@@ -412,6 +414,31 @@ export default function UploadPage() {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i];
   };
+
+  if (isRestricted) {
+    return (
+      <div className="mx-auto max-w-4xl">
+        <div className="rounded-3xl bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-900 dark:to-neutral-800 border border-neutral-200 dark:border-neutral-700 p-12 text-center">
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-blue-500 to-violet-600 shadow-xl shadow-blue-500/25">
+            <Lock className="h-10 w-10 text-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
+            Fonctionnalité réservée aux abonnés
+          </h1>
+          <p className="mt-3 text-neutral-500 dark:text-neutral-400 max-w-sm mx-auto">
+            L&apos;ajout de documents nécessite un abonnement actif. Choisissez le plan qui vous convient pour commencer à stocker vos fichiers.
+          </p>
+          <Link
+            href="/dashboard/subscription"
+            className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-500 to-violet-600 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
+          >
+            <CreditCard className="h-4 w-4" />
+            Voir les abonnements
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-4xl space-y-4 lg:space-y-6">

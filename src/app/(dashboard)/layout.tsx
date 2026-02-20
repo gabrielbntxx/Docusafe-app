@@ -25,12 +25,17 @@ async function getLayoutData() {
   if (!user) return { redirect: "/login" as const, session: null };
   if (!user.emailVerified) return { redirect: `/verify-email?email=${encodeURIComponent(user.email)}` as const, session: null };
 
-  // FREE users must subscribe — but allow /dashboard/subscription itself to avoid infinite loop
+  // FREE users must complete onboarding then subscribe
   const headersList = headers();
   const pathname = headersList.get("x-pathname") || "";
   const isSubscriptionPage = pathname.startsWith("/dashboard/subscription");
-  if (user.planType === "FREE" && !user.teamOwnerId && !isSubscriptionPage) {
-    return { redirect: "/dashboard/subscription" as const, session: null };
+  if (user.planType === "FREE" && !user.teamOwnerId) {
+    if (!user.onboardingCompleted) {
+      return { redirect: "/onboarding" as const, session: null };
+    }
+    if (!isSubscriptionPage) {
+      return { redirect: "/dashboard/subscription" as const, session: null };
+    }
   }
 
   return { redirect: null, user, session };
@@ -52,7 +57,7 @@ export default async function DashboardLayout({
   return (
     <SessionProvider session={session}>
       <ThemeProvider>
-        <SubscriptionProvider isRestricted={false} planType={user.planType}>
+        <SubscriptionProvider isRestricted={user.planType === "FREE" && !user.teamOwnerId} planType={user.planType}>
           <TutorialProvider>
             <div className="min-h-screen bg-neutral-100/50 dark:bg-neutral-950">
               <NavigationProgress />

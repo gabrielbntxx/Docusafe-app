@@ -153,10 +153,6 @@ export function OnboardingFlow({ userEmail }: { userEmail: string }) {
     }
   };
 
-  const handleExplore = () => {
-    window.location.href = "/dashboard";
-  };
-
   const progress = ((step - 1) / 4) * 100;
 
   return (
@@ -223,7 +219,6 @@ export function OnboardingFlow({ userEmail }: { userEmail: string }) {
           <StepResult
             recommendedPlan={recommendedPlan}
             onSubscribe={handleSubscribe}
-            onExplore={handleExplore}
             showAllPlans={showAllPlans}
             onToggleAllPlans={() => setShowAllPlans(!showAllPlans)}
             userEmail={userEmail}
@@ -607,14 +602,12 @@ function StepPriority({
 function StepResult({
   recommendedPlan,
   onSubscribe,
-  onExplore,
   showAllPlans,
   onToggleAllPlans,
   userEmail,
 }: {
   recommendedPlan: string;
   onSubscribe: (planId: string) => void;
-  onExplore: () => void;
   showAllPlans: boolean;
   onToggleAllPlans: () => void;
   userEmail: string;
@@ -724,14 +717,6 @@ function StepResult({
           ))}
         </div>
       )}
-
-      {/* Explore Button */}
-      <button
-        onClick={onExplore}
-        className="w-full py-3 text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors"
-      >
-        Explorer l&apos;application d&apos;abord
-      </button>
 
       {/* Trust */}
       <p className="text-center text-xs text-gray-400 flex items-center justify-center gap-1.5">
