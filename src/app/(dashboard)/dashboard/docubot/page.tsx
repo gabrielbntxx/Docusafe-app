@@ -53,7 +53,7 @@ export default function DocuBotPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [expiringCount, setExpiringCount] = useState(0);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragCounter = useRef(0);
@@ -72,20 +72,14 @@ export default function DocuBotPage() {
       { label: t("docubotSearchInvoice"), icon: Receipt, query: t("docubotQueryInvoices") },
       { label: t("docubotSummarizeDoc"), icon: FileText, query: t("docubotQuerySummarize") },
     ];
-    // Feature 6: inject expiring action if user has expiring docs
     if (expiringCount > 0) {
-      base.unshift({
-        label: t("docubotExpiringAction"),
-        icon: Clock,
-        query: t("docubotQueryExpiring"),
-      });
+      base.unshift({ label: t("docubotExpiringAction"), icon: Clock, query: t("docubotQueryExpiring") });
     }
     return base.slice(0, 4);
   }, [t, expiringCount]);
 
   const [messages, setMessages] = useState<Message[]>([welcomeMessage]);
 
-  // Feature 6: fetch expiring count on mount for dynamic quick actions
   useEffect(() => {
     fetch("/api/chat/context")
       .then((r) => r.json())
@@ -99,8 +93,11 @@ export default function DocuBotPage() {
     ));
   }, [t]);
 
+  // Scroll to bottom whenever messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesRef.current) {
+      messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
+    }
   }, [messages]);
 
   useEffect(() => {
@@ -174,10 +171,9 @@ export default function DocuBotPage() {
     }
   };
 
-  // ── Feature 4: File upload ───────────────────────────────────────────────
+  // ── File upload ──────────────────────────────────────────────────────────
   const handleFileUpload = async (file: File) => {
     if (isLoading) return;
-
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
@@ -186,13 +182,11 @@ export default function DocuBotPage() {
     };
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
-
     const loadingId = (Date.now() + 1).toString();
     setMessages((prev) => [
       ...prev,
       { id: loadingId, role: "assistant", content: "", timestamp: new Date(), isLoading: true },
     ]);
-
     try {
       const formData = new FormData();
       formData.append("file", file);
@@ -210,7 +204,7 @@ export default function DocuBotPage() {
     }
   };
 
-  // ── Drag & Drop handlers ─────────────────────────────────────────────────
+  // ── Drag & Drop ──────────────────────────────────────────────────────────
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
     dragCounter.current++;
@@ -238,9 +232,21 @@ export default function DocuBotPage() {
   };
 
   return (
-    /* Extra bottom padding: bottom nav (64px) + input bar (~72px) + gap */
+    /*
+     * Full-height flex chat container.
+     * Heights account for the fixed top/bottom nav bars and header so that
+     * the messages area scrolls independently rather than pushing the page down.
+     *
+     * Mobile  : 100dvh − mobile-nav(h-14) − header(h-16) − bottom-nav(h-16) − main-padding(p-4×2) − outer-pb(pb-24 minus bottom-nav)
+     *           ≈ calc(100dvh - 15.5rem)
+     * Desktop : 100vh  − header(h-16) − main-padding(lg:p-8×2)
+     *           = calc(100vh - 8rem)
+     *
+     * Negative horizontal margins cancel out the main's px padding so the
+     * bubble list and input bar stretch edge-to-edge inside the panel.
+     */
     <div
-      className="relative pb-40 lg:pb-0"
+      className="flex flex-col -mx-4 sm:-mx-6 lg:-mx-8 -mt-4 sm:-mt-6 lg:-mt-8 h-[calc(100dvh-15.5rem)] lg:h-[calc(100vh-8rem)]"
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
@@ -271,71 +277,68 @@ export default function DocuBotPage() {
         }}
       />
 
-      {/* Messages */}
-      <div className="flex flex-col gap-4 px-4 pt-4">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex gap-2.5 ${message.role === "user" ? "flex-row-reverse" : "flex-row"}`}
-          >
-            {/* Avatar */}
+      {/* ── Messages (scrollable) ── */}
+      <div ref={messagesRef} className="flex-1 overflow-y-auto px-4 pt-4 pb-2 sm:px-6 lg:px-8">
+        <div className="flex flex-col gap-4">
+          {messages.map((message) => (
             <div
-              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl ${
-                message.role === "user"
-                  ? "bg-blue-500 text-white"
-                  : "bg-gradient-to-br from-blue-500 to-violet-600 text-white"
-              }`}
+              key={message.id}
+              className={`flex gap-2.5 ${message.role === "user" ? "flex-row-reverse" : "flex-row"}`}
             >
-              {message.role === "user"
-                ? <User className="h-4 w-4" />
-                : <Bot className="h-4 w-4" />
-              }
-            </div>
+              {/* Avatar */}
+              <div
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl ${
+                  message.role === "user"
+                    ? "bg-blue-500 text-white"
+                    : "bg-gradient-to-br from-blue-500 to-violet-600 text-white"
+                }`}
+              >
+                {message.role === "user" ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+              </div>
 
-            {/* Bubble */}
-            <div
-              className={`max-w-[78%] rounded-2xl px-4 py-3 text-sm ${
-                message.role === "user"
-                  ? "rounded-tr-sm bg-blue-500 text-white shadow-sm shadow-blue-500/20"
-                  : "rounded-tl-sm bg-white text-neutral-800 shadow-sm dark:bg-neutral-800 dark:text-neutral-100"
-              }`}
-            >
-              {message.isLoading ? <TypingDots /> : (
-                <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
-              )}
+              {/* Bubble */}
+              <div
+                className={`max-w-[78%] rounded-2xl px-4 py-3 text-sm ${
+                  message.role === "user"
+                    ? "rounded-tr-sm bg-blue-500 text-white shadow-sm shadow-blue-500/20"
+                    : "rounded-tl-sm bg-white text-neutral-800 shadow-sm dark:bg-neutral-800 dark:text-neutral-100"
+                }`}
+              >
+                {message.isLoading ? <TypingDots /> : (
+                  <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
 
-        {/* Quick actions — shown only at the start */}
-        {messages.length <= 2 && (
-          <div className="mt-2">
-            <p className="mb-3 flex items-center gap-1.5 text-xs font-medium text-neutral-400 dark:text-neutral-500">
-              <Sparkles className="h-3 w-3" />
-              {t("docubotQuickActions")}
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {quickActions.map((action) => (
-                <button
-                  key={action.label}
-                  onClick={() => handleSend(action.query)}
-                  className="flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-3 py-2.5 text-left text-xs font-medium text-neutral-700 transition-all hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 active:scale-95 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-blue-500/50 dark:hover:bg-blue-500/10 dark:hover:text-blue-300"
-                >
-                  <action.icon className="h-3.5 w-3.5 shrink-0 text-blue-500 dark:text-blue-400" />
-                  <span className="leading-tight">{action.label}</span>
-                </button>
-              ))}
+          {/* Quick actions — shown only at the start */}
+          {messages.length <= 2 && (
+            <div className="mt-2">
+              <p className="mb-3 flex items-center gap-1.5 text-xs font-medium text-neutral-400 dark:text-neutral-500">
+                <Sparkles className="h-3 w-3" />
+                {t("docubotQuickActions")}
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {quickActions.map((action) => (
+                  <button
+                    key={action.label}
+                    onClick={() => handleSend(action.query)}
+                    className="flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-3 py-2.5 text-left text-xs font-medium text-neutral-700 transition-all hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 active:scale-95 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-blue-500/50 dark:hover:bg-blue-500/10 dark:hover:text-blue-300"
+                  >
+                    <action.icon className="h-3.5 w-3.5 shrink-0 text-blue-500 dark:text-blue-400" />
+                    <span className="leading-tight">{action.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
-
-        <div ref={messagesEndRef} />
+          )}
+        </div>
       </div>
 
-      {/* Input bar — fixed above bottom nav */}
-      <div className="fixed bottom-16 left-0 right-0 z-30 border-t border-neutral-200/80 bg-white/95 px-3 py-3 backdrop-blur-xl dark:border-neutral-800 dark:bg-neutral-950/95 lg:bottom-0 lg:left-72">
+      {/* ── Input bar (anchored at flex bottom, no longer fixed) ── */}
+      <div className="shrink-0 border-t border-neutral-200/80 bg-white/95 px-3 py-3 backdrop-blur-xl dark:border-neutral-800 dark:bg-neutral-950/95 sm:px-6 lg:px-8">
         <div className="mx-auto flex max-w-3xl items-end gap-2">
-          {/* Paperclip — upload a file for instant analysis */}
+          {/* Paperclip */}
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isLoading}
@@ -362,6 +365,7 @@ export default function DocuBotPage() {
               style={{ minHeight: "44px", maxHeight: "120px" }}
             />
           </div>
+
           <button
             onClick={() => handleSend()}
             disabled={!input.trim() || isLoading}

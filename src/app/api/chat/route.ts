@@ -1261,22 +1261,7 @@ async function streamGeminiCall(contents: any[], apiKey: string): Promise<Respon
     .replace(/[ \t]{2,}/g, " ")
     .trim();
 
-  // Split preserving whitespace/newlines as separate tokens
-  const tokens = cleaned.split(/(\s+)/);
-  const encoder = new TextEncoder();
-
-  const stream = new ReadableStream({
-    async start(controller) {
-      for (const token of tokens) {
-        controller.enqueue(encoder.encode(token));
-        // ~18ms per token ≈ 55 tokens/s — feels natural, not too fast or slow
-        await new Promise((r) => setTimeout(r, 18));
-      }
-      controller.close();
-    },
-  });
-
-  return new Response(stream, { headers: STREAM_HEADERS });
+  return streamText(cleaned);
 }
 
 // ============================================================================
