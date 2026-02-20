@@ -46,7 +46,10 @@ export function useProfileImage(initialImage: string | null | undefined) {
       }
     };
 
-    fetchImageUrl();
+    fetchImageUrl().catch((err) => {
+      console.error("Unhandled error in fetchImageUrl:", err);
+      setIsLoading(false);
+    });
   }, [initialImage]);
 
   const refresh = async () => {
