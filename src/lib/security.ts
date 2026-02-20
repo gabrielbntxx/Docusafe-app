@@ -353,9 +353,9 @@ const RATE_LIMIT_CONFIG = {
     blockDurationMs: 60 * 60 * 1000, // 1 hour block
   },
   upload: {
-    maxAttempts: 20,
-    windowMs: 60 * 1000, // 1 minute
-    blockDurationMs: 5 * 60 * 1000, // 5 minutes block
+    maxAttempts: 150,               // supports batches of 100+ files
+    windowMs: 5 * 60 * 1000,       // 5-minute window
+    blockDurationMs: 2 * 60 * 1000, // 2-minute block (shorter, less penalizing)
   },
   api: {
     maxAttempts: 100,

@@ -26,6 +26,9 @@ import {
 import { applyFolderRules } from "@/lib/folder-rules";
 import { getEffectiveUserId } from "@/lib/team";
 
+// Allow up to 120 seconds per upload (large files + encryption + R2 PUT)
+export const maxDuration = 120;
+
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);

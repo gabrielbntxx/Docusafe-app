@@ -43,6 +43,7 @@ export default function UploadPage() {
   const [aiSortingEnabled, setAiSortingEnabled] = useState(false);
   const [aiStatus, setAiStatus] = useState<AIStatus | null>(null);
   const [aiResults, setAiResults] = useState<{ [key: string]: { category: string; type: string } }>({});
+  const [uploadedCount, setUploadedCount] = useState(0);
 
   // Destination folder selector (for individual file uploads)
   const [availableFolders, setAvailableFolders] = useState<Array<{ id: string; name: string; color: string | null }>>([]);
@@ -231,6 +232,7 @@ export default function UploadPage() {
     setError(null);
     setFileErrors({});
     setAiResults({});
+    setUploadedCount(0);
 
     let hasError = false;
     const folderIdMap: FolderStructure = {}; // Maps folder path -> folder ID
@@ -284,86 +286,111 @@ export default function UploadPage() {
         }))
       : files.map(f => ({ file: f, name: f.name, folderId: selectedDestinationFolderId }));
 
-    for (const { file, name, folderId } of filesToUpload) {
-      const formData = new FormData();
-      formData.append("file", file);
-      if (folderId) {
-        formData.append("folderId", folderId);
-      }
+    // ── Parallel upload with concurrency=4 and auto-retry ───────────────────
+    const CONCURRENCY = 4;
+    const MAX_RETRIES = 2;
+    let fatalError = false;
+    let completedCount = 0;
 
-      try {
-        // Step 1: Upload the file
-        const response = await fetch("/api/documents/upload", {
-          method: "POST",
-          body: formData,
-        });
+    const uploadOne = async ({ file, name, folderId }: { file: File; name: string; folderId: string | null }) => {
+      if (fatalError) return;
 
-        if (response.ok) {
-          const uploadData = await response.json();
-          setUploadProgress(prev => ({ ...prev, [name]: aiSortingEnabled && !folderId ? 50 : 100 }));
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        if (fatalError) return;
 
-          // Step 2: If AI sorting is enabled and NOT uploading to a specific folder, analyze and sort
-          if (aiSortingEnabled && !folderId && uploadData.document?.id) {
-            try {
-              console.log("[Upload] Starting AI analysis for:", name, "type:", file.type);
-              const analyzeResponse = await fetch("/api/documents/analyze", {
-                method: "PUT", // PUT for auto-sort
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ documentId: uploadData.document.id }),
-              });
+        const fd = new FormData();
+        fd.append("file", file);
+        if (folderId) fd.append("folderId", folderId);
 
-              const analyzeData = await analyzeResponse.json();
-              console.log("[Upload] AI analysis response:", analyzeData);
+        try {
+          const res = await fetch("/api/documents/upload", {
+            method: "POST",
+            body: fd,
+            signal: AbortSignal.timeout(120_000), // 2-min per-file timeout
+          });
 
-              if (analyzeResponse.ok && analyzeData.success) {
+          if (res.ok) {
+            const data = await res.json();
+            setUploadProgress(prev => ({ ...prev, [name]: aiSortingEnabled && !folderId ? 50 : 100 }));
+
+            // AI sorting after successful upload
+            if (aiSortingEnabled && !folderId && data.document?.id) {
+              try {
+                const ar = await fetch("/api/documents/analyze", {
+                  method: "PUT",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ documentId: data.document.id }),
+                });
+                const ad = await ar.json();
                 setAiResults(prev => ({
                   ...prev,
-                  [name]: {
-                    category: analyzeData.result?.category || "Autres",
-                    type: analyzeData.result?.documentType || "autre",
-                  },
+                  [name]: ar.ok && ad.success
+                    ? { category: ad.result?.category || "Autres", type: ad.result?.documentType || "autre" }
+                    : { category: "Analyse échouée", type: ad.error || "Erreur" },
                 }));
-              } else {
-                // Show AI error but don't fail the upload
-                console.error("[Upload] AI analysis failed:", analyzeData.error);
-                setAiResults(prev => ({
-                  ...prev,
-                  [name]: {
-                    category: "Analyse échouée",
-                    type: analyzeData.error || "Erreur inconnue",
-                  },
-                }));
+              } catch {
+                setAiResults(prev => ({ ...prev, [name]: { category: "Erreur", type: "Erreur réseau" } }));
               }
-            } catch (aiError) {
-              console.error("[Upload] AI analysis error:", aiError);
-              setAiResults(prev => ({
-                ...prev,
-                [name]: {
-                  category: "Erreur",
-                  type: "Erreur réseau lors de l'analyse",
-                },
-              }));
             }
+
+            setUploadProgress(prev => ({ ...prev, [name]: 100 }));
+            completedCount++;
+            setUploadedCount(completedCount);
+            return; // success
           }
 
-          setUploadProgress(prev => ({ ...prev, [name]: 100 }));
-        } else {
-          const errorData = await response.json();
-          const errorMessage = errorData.error || "Erreur lors de l'upload";
-          setFileErrors(prev => ({ ...prev, [name]: errorMessage }));
+          // Parse error
+          const errData = await res.json().catch(() => ({}));
+          const errMsg = (errData as { error?: string }).error || "Erreur lors de l'upload";
+
+          if (res.status === 403) {
+            fatalError = true;
+            hasError = true;
+            setError(errMsg);
+            setFileErrors(prev => ({ ...prev, [name]: errMsg }));
+            return;
+          }
+
+          if (res.status === 400) {
+            // Validation error: don't retry
+            hasError = true;
+            setFileErrors(prev => ({ ...prev, [name]: errMsg }));
+            return;
+          }
+
+          // 429 / 5xx: retryable
+          if (attempt < MAX_RETRIES) {
+            await new Promise<void>(r => setTimeout(r, 1500 * (attempt + 1)));
+            continue;
+          }
+
           hasError = true;
-
-          if (response.status === 403) {
-            setError(errorMessage);
-            break;
+          setFileErrors(prev => ({ ...prev, [name]: errMsg }));
+        } catch {
+          // Network error: retryable
+          if (attempt < MAX_RETRIES) {
+            await new Promise<void>(r => setTimeout(r, 1500 * (attempt + 1)));
+            continue;
           }
+          hasError = true;
+          setFileErrors(prev => ({ ...prev, [name]: "Erreur réseau" }));
         }
-      } catch (error) {
-        console.error("Upload error:", error);
-        setFileErrors(prev => ({ ...prev, [name]: "Erreur réseau" }));
-        hasError = true;
+        break;
       }
-    }
+    };
+
+    // Worker pool: CONCURRENCY workers each pull from the queue until empty
+    const uploadQueue = [...filesToUpload];
+    const workers = Array.from(
+      { length: Math.min(CONCURRENCY, filesToUpload.length) },
+      async () => {
+        while (uploadQueue.length > 0 && !fatalError) {
+          const item = uploadQueue.shift();
+          if (item) await uploadOne(item);
+        }
+      }
+    );
+    await Promise.all(workers);
 
     setIsUploading(false);
 
@@ -915,7 +942,7 @@ export default function UploadPage() {
               }`}
             >
               {isUploading
-                ? "Upload en cours..."
+                ? `${uploadedCount} / ${files.length || folderFiles.length} fichiers importés…`
                 : folderFiles.length > 0
                 ? `Importer le dossier (${folderFiles.length} fichiers)`
                 : `Uploader ${files.length} fichier${files.length > 1 ? "s" : ""}`}
@@ -950,8 +977,9 @@ export default function UploadPage() {
             <div>
               <h3 className="font-semibold">Formats acceptés</h3>
               <ul className="mt-3 space-y-1.5 text-sm text-violet-100">
-                <li>Formats : PDF, Images, MP3, MP4, WAV</li>
-                <li>Taille max : 100 MB par fichier</li>
+                <li>PDF, Images, Audio, Vidéo, Office, Code, Archives</li>
+                <li>Taille max : 100 MB (vidéos 1 GB, archives 500 MB)</li>
+                <li>Jusqu'à 100 fichiers en parallèle</li>
               </ul>
             </div>
           </div>
