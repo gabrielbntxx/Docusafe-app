@@ -12,10 +12,10 @@ export default async function ProfilePage() {
   }
 
   let user = null;
-  let storageAgg = { _sum: { sizeBytes: null } };
+  let storageUsedBytes = 0;
 
   try {
-    [user, storageAgg] = await Promise.all([
+    const [userResult, storageAgg] = await Promise.all([
       db.user.findUnique({
         where: { id: session.user.id },
         select: {
@@ -35,6 +35,8 @@ export default async function ProfilePage() {
         _sum: { sizeBytes: true },
       }),
     ]);
+    user = userResult;
+    storageUsedBytes = Number(storageAgg._sum.sizeBytes) || 0;
   } catch {
     // DB error — redirect to dashboard rather than crashing
     redirect("/dashboard");
@@ -53,7 +55,7 @@ export default async function ProfilePage() {
         image: user.image,
         planType: user.planType,
         documentsCount: user._count.documents,
-        storageUsedBytes: Number(storageAgg._sum.sizeBytes) || 0,
+        storageUsedBytes,
         createdAt: user.createdAt.toISOString(),
       }}
     />
