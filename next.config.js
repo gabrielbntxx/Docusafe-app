@@ -1,5 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "docusafe.online" }],
+        destination: "https://www.docusafe.online/:path*",
+        permanent: true,
+      },
+    ];
+  },
   // Use SWC minifier instead of Terser to handle modern JS syntax
   swcMinify: true,
   // Prevent webpack from bundling these native/file-dependent packages.
