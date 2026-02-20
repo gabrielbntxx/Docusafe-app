@@ -106,7 +106,6 @@ export function MobileNav() {
         <div className="flex items-center gap-2">
           <Link
             href="/dashboard/notifications"
-            prefetch={false}
             className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-neutral-100/80 text-neutral-600 transition-colors hover:bg-neutral-200/80 dark:bg-white/5 dark:text-neutral-400 dark:hover:bg-white/10"
           >
             <Bell className="h-4 w-4" />
@@ -174,13 +173,12 @@ export function MobileNav() {
           {/* User Profile Card */}
           <Link
             href="/dashboard/profile"
-            prefetch={false}
             onClick={closeMenu}
             className="mx-3 mt-3 flex items-center gap-3 rounded-2xl bg-gradient-to-r from-blue-50 to-violet-50 p-3 dark:from-blue-500/10 dark:to-violet-500/10"
           >
             <div className="flex h-12 w-12 items-center justify-center rounded-xl overflow-hidden bg-gradient-to-br from-blue-500 to-blue-600 text-lg font-bold text-white shadow-lg shadow-blue-500/25">
               {profileImageUrl ? (
-                <img src={profileImageUrl} alt="Profile" className="h-12 w-12 object-cover" />
+                <Image src={profileImageUrl} alt="Profile" width={48} height={48} className="h-12 w-12 object-cover" />
               ) : (
                 session?.user?.name?.charAt(0).toUpperCase() || "U"
               )}
@@ -207,7 +205,6 @@ export function MobileNav() {
                   <Link
                     key={item.nameKey}
                     href={href}
-                    prefetch={false}
                     onClick={closeMenu}
                     className={`flex items-center gap-3 rounded-xl px-3 py-3 transition-all ${
                       isLocked

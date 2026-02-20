@@ -98,7 +98,6 @@ export function Sidebar() {
               <Link
                 key={item.nameKey}
                 href={isLocked ? "/dashboard/subscription" : item.href}
-                prefetch={false}
                 data-tutorial={item.tutorialId}
                 className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
                   isLocked
@@ -128,7 +127,6 @@ export function Sidebar() {
             <Link
               key={item.nameKey}
               href={isLocked ? "/dashboard/subscription" : item.href}
-              prefetch={false}
               data-tutorial={item.tutorialId}
               className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200 ${
                 isLocked

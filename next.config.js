@@ -17,7 +17,6 @@ const nextConfig = {
     serverComponentsExternalPackages: ['pdfkit', 'sharp'],
   },
   images: {
-    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
@@ -26,6 +25,10 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: '**.r2.cloudflarestorage.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
       },
     ],
   },
