@@ -414,13 +414,13 @@ export default function UploadPage() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="mx-auto max-w-4xl space-y-4 lg:space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
+        <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white">
           Ajouter des documents
         </h1>
-        <p className="mt-1 text-neutral-500 dark:text-neutral-400">
+        <p className="hidden sm:block mt-1 text-neutral-500 dark:text-neutral-400">
           Glissez-déposez vos fichiers ou cliquez pour les sélectionner
         </p>
       </div>
@@ -447,13 +447,13 @@ export default function UploadPage() {
       )}
 
       {/* Upload Options Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
         {/* Drop Zone - Files */}
         <div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`relative overflow-hidden rounded-3xl border-2 border-dashed p-8 text-center transition-all ${
+          className={`relative overflow-hidden rounded-2xl sm:rounded-3xl border-2 border-dashed p-5 sm:p-8 text-center transition-all ${
             isDragging
               ? "border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-500/10"
               : "border-neutral-300 bg-white hover:border-blue-400 hover:bg-blue-50/50 dark:border-neutral-700 dark:bg-neutral-800/50 dark:hover:border-blue-500/50 dark:hover:bg-blue-500/5"
@@ -467,21 +467,21 @@ export default function UploadPage() {
             className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
           />
 
-          <div className="pointer-events-none space-y-3">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-xl shadow-blue-500/25">
-              <Cloud className="h-8 w-8 text-white" />
+          <div className="pointer-events-none space-y-2 sm:space-y-3">
+            <div className="mx-auto flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-xl shadow-blue-500/25">
+              <Cloud className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
             </div>
 
             <div>
-              <p className="text-lg font-semibold text-neutral-900 dark:text-white">
+              <p className="text-sm sm:text-lg font-semibold text-neutral-900 dark:text-white">
                 Fichiers
               </p>
-              <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+              <p className="hidden sm:block mt-1 text-sm text-neutral-500 dark:text-neutral-400">
                 Glissez ou cliquez pour sélectionner
               </p>
             </div>
 
-            <div className="flex flex-wrap justify-center gap-1.5">
+            <div className="hidden sm:flex flex-wrap justify-center gap-1.5">
               <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-[10px] font-medium text-red-600 dark:bg-red-500/20 dark:text-red-400">PDF</span>
               <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-[10px] font-medium text-green-600 dark:bg-green-500/20 dark:text-green-400">Images</span>
               <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-[10px] font-medium text-blue-600 dark:bg-blue-500/20 dark:text-blue-400">Office</span>
@@ -493,7 +493,7 @@ export default function UploadPage() {
 
         {/* Drop Zone - Folder */}
         <div
-          className="relative overflow-hidden rounded-3xl border-2 border-dashed p-8 text-center transition-all border-violet-300 bg-white hover:border-violet-400 hover:bg-violet-50/50 dark:border-violet-500/30 dark:bg-neutral-800/50 dark:hover:border-violet-500/50 dark:hover:bg-violet-500/5"
+          className="relative overflow-hidden rounded-2xl sm:rounded-3xl border-2 border-dashed p-5 sm:p-8 text-center transition-all border-violet-300 bg-white hover:border-violet-400 hover:bg-violet-50/50 dark:border-violet-500/30 dark:bg-neutral-800/50 dark:hover:border-violet-500/50 dark:hover:bg-violet-500/5"
         >
           <input
             ref={folderInputRef}
@@ -507,21 +507,21 @@ export default function UploadPage() {
             className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
           />
 
-          <div className="pointer-events-none space-y-3">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-xl shadow-violet-500/25">
-              <FolderUp className="h-8 w-8 text-white" />
+          <div className="pointer-events-none space-y-2 sm:space-y-3">
+            <div className="mx-auto flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-xl shadow-violet-500/25">
+              <FolderUp className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
             </div>
 
             <div>
-              <p className="text-lg font-semibold text-neutral-900 dark:text-white">
+              <p className="text-sm sm:text-lg font-semibold text-neutral-900 dark:text-white">
                 Dossier complet
               </p>
-              <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+              <p className="hidden sm:block mt-1 text-sm text-neutral-500 dark:text-neutral-400">
                 Importez un dossier avec son contenu
               </p>
             </div>
 
-            <div className="flex justify-center">
+            <div className="hidden sm:flex justify-center">
               <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-600 dark:bg-violet-500/20 dark:text-violet-400">
                 Crée automatiquement le dossier
               </span>
@@ -532,23 +532,23 @@ export default function UploadPage() {
         {/* Cloud Import Button */}
         <button
           onClick={() => setIsCloudPickerOpen(true)}
-          className="relative overflow-hidden rounded-3xl border-2 border-dashed p-8 text-center transition-all border-emerald-300 bg-white hover:border-emerald-400 hover:bg-emerald-50/50 dark:border-emerald-500/30 dark:bg-neutral-800/50 dark:hover:border-emerald-500/50 dark:hover:bg-emerald-500/5"
+          className="relative overflow-hidden rounded-2xl sm:rounded-3xl border-2 border-dashed p-5 sm:p-8 text-center transition-all border-emerald-300 bg-white hover:border-emerald-400 hover:bg-emerald-50/50 dark:border-emerald-500/30 dark:bg-neutral-800/50 dark:hover:border-emerald-500/50 dark:hover:bg-emerald-500/5"
         >
-          <div className="space-y-3">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-xl shadow-emerald-500/25">
-              <CloudCog className="h-8 w-8 text-white" />
+          <div className="space-y-2 sm:space-y-3">
+            <div className="mx-auto flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-xl shadow-emerald-500/25">
+              <CloudCog className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
             </div>
 
             <div>
-              <p className="text-lg font-semibold text-neutral-900 dark:text-white">
+              <p className="text-sm sm:text-lg font-semibold text-neutral-900 dark:text-white">
                 Depuis le cloud
               </p>
-              <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+              <p className="hidden sm:block mt-1 text-sm text-neutral-500 dark:text-neutral-400">
                 Google Drive, OneDrive
               </p>
             </div>
 
-            <div className="flex justify-center gap-2">
+            <div className="hidden sm:flex justify-center gap-2">
               <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-medium text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
                 Google Drive
               </span>

@@ -136,7 +136,7 @@ export function DashboardClient({
         onClose={() => setPreviewDocument(null)}
       />
 
-      <div className="mx-auto max-w-6xl space-y-6 lg:space-y-8">
+      <div className="mx-auto max-w-6xl space-y-4 lg:space-y-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-2 gap-3 lg:gap-4 lg:grid-cols-4">
           {/* Documents */}

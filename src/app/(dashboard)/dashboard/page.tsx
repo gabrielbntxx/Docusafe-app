@@ -33,7 +33,7 @@ export default async function DashboardPage() {
     db.document.findMany({
       where: { userId: session.user.id, deletedAt: null },
       orderBy: { uploadedAt: "desc" },
-      take: 5,
+      take: 3,
       include: {
         folder: {
           select: {

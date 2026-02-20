@@ -284,27 +284,28 @@ export function DocumentsClient({
           }}
         />
       ) : (
-      <div className="mx-auto max-w-6xl space-y-6">
+      <div className="mx-auto max-w-6xl space-y-4 lg:space-y-6">
         {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
+            <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white">
               {t("myDocuments")}
             </h1>
-            <p className="mt-1 text-neutral-500 dark:text-neutral-400">
+            <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">
               {documents.length} {documents.length === 1 ? "document" : "documents"}
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             {documents.length > 0 && (
               <>
                 <button
                   onClick={() => setIsTriageMode(true)}
-                  className="flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-medium bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600 transition-all"
+                  className="flex items-center gap-1.5 rounded-xl px-3 py-2 sm:px-4 sm:py-2.5 text-sm font-medium bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600 transition-all"
+                  title={t("triageMode")}
                 >
                   <ArrowLeftRight className="h-4 w-4" />
-                  {t("triageMode")}
+                  <span className="hidden sm:inline">{t("triageMode")}</span>
                 </button>
                 <button
                   onClick={() => {
@@ -314,23 +315,23 @@ export function DocumentsClient({
                       setIsSelectionMode(true);
                     }
                   }}
-                  className={`flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-medium transition-all ${
+                  className={`flex items-center gap-1.5 rounded-xl px-3 py-2 sm:px-4 sm:py-2.5 text-sm font-medium transition-all ${
                     isSelectionMode
                       ? "bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400"
                       : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600"
                   }`}
                 >
                   <CheckSquare className="h-4 w-4" />
-                  {isSelectionMode ? "Annuler" : "Sélectionner"}
+                  <span className="hidden sm:inline">{isSelectionMode ? "Annuler" : "Sélectionner"}</span>
                 </button>
               </>
             )}
             <Link
               href="/dashboard/upload"
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl hover:shadow-blue-500/30 active:scale-[0.98]"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 px-3 py-2 sm:px-5 sm:py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl hover:shadow-blue-500/30 active:scale-[0.98]"
             >
               <Plus className="h-4 w-4" />
-              {t("addDocument")}
+              <span className="hidden sm:inline">{t("addDocument")}</span>
             </Link>
           </div>
         </div>
@@ -457,7 +458,7 @@ export function DocumentsClient({
             )}
           </div>
         ) : viewMode === "grid" ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid gap-3 grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredDocuments.map((doc) => {
               const Icon = getFileIcon(doc.fileType);
               const isSelected = selectedDocuments.has(doc.id);
@@ -465,7 +466,7 @@ export function DocumentsClient({
                 <div
                   key={doc.id}
                   onClick={() => isSelectionMode && toggleDocumentSelection(doc.id)}
-                  className={`group relative overflow-hidden rounded-2xl bg-white p-4 shadow-xl shadow-black/5 transition-all hover:shadow-2xl dark:bg-neutral-800/50 dark:shadow-none ${
+                  className={`group relative overflow-hidden rounded-2xl bg-white p-3 sm:p-4 shadow-xl shadow-black/5 transition-all hover:shadow-2xl dark:bg-neutral-800/50 dark:shadow-none ${
                     isSelected ? "ring-2 ring-blue-500" : ""
                   } ${isSelectionMode ? "cursor-pointer" : ""}`}
                 >
@@ -496,16 +497,16 @@ export function DocumentsClient({
                         handleView(doc);
                       }
                     }}
-                    className="mb-4 flex h-36 cursor-pointer items-center justify-center rounded-xl bg-gradient-to-br from-blue-50 to-violet-50 transition-transform group-hover:scale-[1.02] dark:from-blue-500/10 dark:to-violet-500/10"
+                    className="mb-3 flex h-24 sm:h-32 cursor-pointer items-center justify-center rounded-xl bg-gradient-to-br from-blue-50 to-violet-50 transition-transform group-hover:scale-[1.02] dark:from-blue-500/10 dark:to-violet-500/10"
                   >
-                    <Icon className="h-14 w-14 text-blue-500 dark:text-blue-400" />
+                    <Icon className="h-10 w-10 sm:h-12 sm:w-12 text-blue-500 dark:text-blue-400" />
                   </div>
 
                   {/* Info */}
-                  <h3 className="truncate font-medium text-neutral-900 dark:text-white">
+                  <h3 className="truncate text-sm font-medium text-neutral-900 dark:text-white">
                     {doc.displayName}
                   </h3>
-                  <div className="mt-1 flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+                  <div className="mt-1 flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400 flex-wrap">
                     <span>{formatFileSize(doc.sizeBytes)}</span>
                     <span className="text-neutral-300 dark:text-neutral-600">•</span>
                     <span>{formatDate(doc.uploadedAt)}</span>
@@ -514,16 +515,16 @@ export function DocumentsClient({
                         <span className="text-neutral-300 dark:text-neutral-600">•</span>
                         <span className="flex items-center gap-1" title={`Ajouté par ${doc.addedBy.name}`}>
                           <span className="inline-block h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: doc.addedBy.color }} />
-                          <span className="truncate max-w-[60px]">{doc.addedBy.name.split(' ')[0]}</span>
+                          <span className="truncate max-w-[50px]">{doc.addedBy.name.split(' ')[0]}</span>
                         </span>
                       </>
                     )}
                   </div>
 
                   {doc.folder && (
-                    <div className="mt-2 flex items-center gap-1.5 text-xs">
+                    <div className="mt-1.5 flex items-center gap-1.5 text-xs">
                       <div
-                        className="h-2 w-2 rounded-full"
+                        className="h-2 w-2 rounded-full flex-shrink-0"
                         style={{ backgroundColor: doc.folder.color || "#6366f1" }}
                       />
                       <span className="truncate text-neutral-500 dark:text-neutral-400">
@@ -555,17 +556,17 @@ export function DocumentsClient({
 
                   {/* Actions */}
                   {!isSelectionMode && (
-                    <div className="mt-4 flex gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700/50">
+                    <div className="mt-3 flex gap-1.5 border-t border-neutral-100 pt-3 dark:border-neutral-700/50">
                       <button
                         onClick={() => handleView(doc)}
-                        className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-blue-50 py-2 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20"
+                        className="flex flex-1 items-center justify-center gap-1 rounded-xl bg-blue-50 py-1.5 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20"
                       >
-                        <Eye className="h-3.5 w-3.5" />
-                        {t("view")}
+                        <Eye className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        <span>{t("view")}</span>
                       </button>
                       <button
                         onClick={() => handleDownload(doc.id)}
-                        className="flex h-8 w-8 items-center justify-center rounded-xl bg-neutral-100 text-neutral-600 transition-colors hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600"
+                        className="hidden sm:flex h-8 w-8 items-center justify-center rounded-xl bg-neutral-100 text-neutral-600 transition-colors hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600"
                       >
                         <Download className="h-3.5 w-3.5" />
                       </button>
@@ -573,7 +574,7 @@ export function DocumentsClient({
                         onClick={() => handleDelete(doc.id, doc.displayName)}
                         className="flex h-8 w-8 items-center justify-center rounded-xl bg-neutral-100 text-neutral-600 transition-colors hover:bg-red-100 hover:text-red-600 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-red-500/20 dark:hover:text-red-400"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                       </button>
                     </div>
                   )}
