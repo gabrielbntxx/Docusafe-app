@@ -12,6 +12,10 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "DocuSafe - Your smart digital safe",
   description: "All your supporting documents in the right place, at the right time, automatically.",
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({
