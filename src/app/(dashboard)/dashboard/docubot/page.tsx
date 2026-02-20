@@ -10,6 +10,9 @@ import {
   FileText,
   Receipt,
   Sparkles,
+  Paperclip,
+  Upload,
+  Clock,
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 
@@ -48,8 +51,12 @@ export default function DocuBotPage() {
   const { t } = useTranslation();
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [expiringCount, setExpiringCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragCounter = useRef(0);
 
   const welcomeMessage: Message = useMemo(() => ({
     id: "welcome",
@@ -58,14 +65,33 @@ export default function DocuBotPage() {
     timestamp: new Date(),
   }), [t]);
 
-  const quickActions = useMemo(() => [
-    { label: t("docubotRecentDocs"), icon: FileSearch, query: t("docubotQueryRecentDocs") },
-    { label: t("docubotMyFolders"), icon: FolderOpen, query: t("docubotQueryFolders") },
-    { label: t("docubotSearchInvoice"), icon: Receipt, query: t("docubotQueryInvoices") },
-    { label: t("docubotSummarizeDoc"), icon: FileText, query: t("docubotQuerySummarize") },
-  ], [t]);
+  const quickActions = useMemo(() => {
+    const base = [
+      { label: t("docubotRecentDocs"), icon: FileSearch, query: t("docubotQueryRecentDocs") },
+      { label: t("docubotMyFolders"), icon: FolderOpen, query: t("docubotQueryFolders") },
+      { label: t("docubotSearchInvoice"), icon: Receipt, query: t("docubotQueryInvoices") },
+      { label: t("docubotSummarizeDoc"), icon: FileText, query: t("docubotQuerySummarize") },
+    ];
+    // Feature 6: inject expiring action if user has expiring docs
+    if (expiringCount > 0) {
+      base.unshift({
+        label: t("docubotExpiringAction"),
+        icon: Clock,
+        query: t("docubotQueryExpiring"),
+      });
+    }
+    return base.slice(0, 4);
+  }, [t, expiringCount]);
 
   const [messages, setMessages] = useState<Message[]>([welcomeMessage]);
+
+  // Feature 6: fetch expiring count on mount for dynamic quick actions
+  useEffect(() => {
+    fetch("/api/chat/context")
+      .then((r) => r.json())
+      .then((data) => setExpiringCount(data.expiringCount || 0))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     setMessages(prev => prev.map(m =>
@@ -81,6 +107,30 @@ export default function DocuBotPage() {
     inputRef.current?.focus();
   }, []);
 
+  // ── Streaming reader helper ──────────────────────────────────────────────
+  async function readStream(response: Response, loadingId: string) {
+    if (!response.body) throw new Error("No body");
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = "";
+    let firstChunk = true;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      fullText += decoder.decode(value, { stream: true });
+      if (firstChunk) { firstChunk = false; setIsLoading(false); }
+      setMessages((prev) =>
+        prev.map((m) => m.id === loadingId ? { ...m, content: fullText, isLoading: false } : m)
+      );
+    }
+    if (!fullText) {
+      setMessages((prev) =>
+        prev.map((m) => m.id === loadingId ? { ...m, content: t("docubotError"), isLoading: false } : m)
+      );
+    }
+  }
+
+  // ── Send text message ────────────────────────────────────────────────────
   const handleSend = async (directMessage?: string) => {
     const messageToSend = directMessage || input.trim();
     if (!messageToSend || isLoading) return;
@@ -111,50 +161,73 @@ export default function DocuBotPage() {
           history: messages.filter((m) => m.id !== "welcome").slice(-10),
         }),
       });
-
       if (!response.ok || !response.body) throw new Error("API error");
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let fullText = "";
-
-      // Switch from loading dots to streaming text on first chunk
-      let firstChunk = true;
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        fullText += chunk;
-        if (firstChunk) {
-          firstChunk = false;
-          setIsLoading(false);
-        }
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === loadingId ? { ...m, content: fullText, isLoading: false } : m
-          )
-        );
-      }
-
-      if (!fullText) {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === loadingId ? { ...m, content: t("docubotError"), isLoading: false } : m
-          )
-        );
-      }
+      await readStream(response, loadingId);
     } catch {
       setMessages((prev) =>
         prev.map((m) =>
-          m.id === loadingId
-            ? { ...m, content: t("docubotErrorGeneric"), isLoading: false }
-            : m
+          m.id === loadingId ? { ...m, content: t("docubotErrorGeneric"), isLoading: false } : m
         )
       );
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // ── Feature 4: File upload ───────────────────────────────────────────────
+  const handleFileUpload = async (file: File) => {
+    if (isLoading) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: "user",
+      content: `📎 ${file.name}`,
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, userMessage]);
+    setIsLoading(true);
+
+    const loadingId = (Date.now() + 1).toString();
+    setMessages((prev) => [
+      ...prev,
+      { id: loadingId, role: "assistant", content: "", timestamp: new Date(), isLoading: true },
+    ]);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("/api/chat", { method: "POST", body: formData });
+      if (!response.ok || !response.body) throw new Error("API error");
+      await readStream(response, loadingId);
+    } catch {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === loadingId ? { ...m, content: t("docubotErrorGeneric"), isLoading: false } : m
+        )
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ── Drag & Drop handlers ─────────────────────────────────────────────────
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounter.current++;
+    if (dragCounter.current === 1) setIsDragging(true);
+  };
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounter.current--;
+    if (dragCounter.current === 0) setIsDragging(false);
+  };
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); };
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounter.current = 0;
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFileUpload(file);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -166,7 +239,38 @@ export default function DocuBotPage() {
 
   return (
     /* Extra bottom padding: bottom nav (64px) + input bar (~72px) + gap */
-    <div className="pb-40 lg:pb-0">
+    <div
+      className="relative pb-40 lg:pb-0"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {/* Drag overlay */}
+      {isDragging && (
+        <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center rounded-2xl border-2 border-dashed border-blue-400 bg-blue-500/10 backdrop-blur-sm">
+          <div className="text-center">
+            <Upload className="mx-auto mb-2 h-10 w-10 text-blue-500" />
+            <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+              {t("docubotDropHint")}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*,application/pdf,.doc,.docx,.txt"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleFileUpload(file);
+          e.target.value = "";
+        }}
+      />
+
       {/* Messages */}
       <div className="flex flex-col gap-4 px-4 pt-4">
         {messages.map((message) => (
@@ -231,6 +335,16 @@ export default function DocuBotPage() {
       {/* Input bar — fixed above bottom nav */}
       <div className="fixed bottom-16 left-0 right-0 z-30 border-t border-neutral-200/80 bg-white/95 px-3 py-3 backdrop-blur-xl dark:border-neutral-800 dark:bg-neutral-950/95 lg:bottom-0 lg:left-72">
         <div className="mx-auto flex max-w-3xl items-end gap-2">
+          {/* Paperclip — upload a file for instant analysis */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isLoading}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-neutral-200 bg-neutral-50 text-neutral-500 transition-all hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 active:scale-95 disabled:opacity-40 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:border-blue-500/50 dark:hover:bg-blue-500/10 dark:hover:text-blue-400"
+            title="Analyser un fichier"
+          >
+            <Paperclip className="h-4 w-4" />
+          </button>
+
           <div className="flex-1 overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400/20 dark:border-neutral-700 dark:bg-neutral-800/60 dark:focus-within:border-blue-500">
             <textarea
               ref={inputRef}

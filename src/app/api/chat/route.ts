@@ -1280,6 +1280,26 @@ async function streamGeminiCall(contents: any[], apiKey: string): Promise<Respon
 }
 
 // ============================================================================
+// KEYWORD EXTRACTION (Feature 5 — smarter context)
+// ============================================================================
+const STOP_WORDS = new Set([
+  "pour", "dans", "avec", "les", "des", "que", "qui", "une", "est", "mon",
+  "mes", "tes", "ton", "sur", "mais", "par", "pas", "plus", "aussi", "bien",
+  "tout", "moi", "lui", "quoi", "comment", "quand", "quel", "quels", "quelles",
+  "the", "and", "for", "with", "that", "this", "are", "have", "not", "from",
+  "your", "what", "when", "how", "can", "show", "find", "get", "list",
+]);
+
+function extractKeywords(message: string): string[] {
+  return message
+    .toLowerCase()
+    .replace(/[^\w\sàâäéèêëîïôùûü]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length > 3 && !STOP_WORDS.has(w))
+    .slice(0, 5);
+}
+
+// ============================================================================
 // MAIN API HANDLER
 // ============================================================================
 export async function POST(request: NextRequest) {
@@ -1301,17 +1321,63 @@ export async function POST(request: NextRequest) {
       return new Response("Votre abonnement est expiré. Veuillez renouveler votre paiement.", { status: 403 });
     }
 
+    // Use effective workspace userId for team members
+    const userId = await getEffectiveUserId(session.user.id);
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return streamText("Service temporairement indisponible.");
+    }
+
+    // ── Feature 4: File upload via drag & drop ──────────────────────────────
+    const contentType = request.headers.get("content-type") || "";
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await request.formData();
+      const file = formData.get("file") as File | null;
+      if (!file) return streamText("Aucun fichier reçu.");
+
+      const arrayBuffer = await file.arrayBuffer();
+      const base64Data = Buffer.from(arrayBuffer).toString("base64");
+      const mimeType = file.type || "application/octet-stream";
+
+      const gemRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { text: `Tu es DocuBot, l'assistant IA de DocuSafe. Analyse ce document en français et résume les informations importantes de façon claire et structurée. Extrait : type de document, dates clés, montants, personnes ou organisations mentionnées, et les 3-5 points essentiels à retenir. Sois concis et utile.` },
+                { inline_data: { mime_type: mimeType, data: base64Data } },
+              ],
+            }],
+            generationConfig: { temperature: 0.3, maxOutputTokens: 1000 },
+          }),
+        }
+      );
+
+      if (!gemRes.ok) return streamText("Erreur lors de l'analyse du fichier.");
+      const gemData = await gemRes.json();
+      const raw = gemData.candidates?.[0]?.content?.parts?.[0]?.text || "Impossible d'analyser ce fichier.";
+      return streamGeminiCall(
+        [{ role: "user", parts: [{ text: `Reformule cette analyse de façon amicale et lisible, comme si tu étais DocuBot:\n\n${raw}` }] }],
+        apiKey
+      );
+    }
+    // ────────────────────────────────────────────────────────────────────────
+
     const { message, history } = await request.json();
 
     if (!message || typeof message !== "string") {
       return new Response("Message requis", { status: 400 });
     }
 
-    // Use effective workspace userId for team members
-    const userId = await getEffectiveUserId(session.user.id);
+    // Feature 5: extract keywords for smarter context injection
+    const msgKeywords = extractKeywords(message);
 
     // Get user context and language preference
-    const [folders, recentDocs, userSettings, expiringDocs] = await Promise.all([
+    const [folders, recentDocs, userSettings, expiringDocs, relevantDocs] = await Promise.all([
       db.folder.findMany({
         where: { userId },
         select: { id: true, name: true, _count: { select: { documents: true } } },
@@ -1340,6 +1406,29 @@ export async function POST(request: NextRequest) {
         orderBy: { expiryDate: "asc" },
         take: 5,
       }),
+      // Feature 5: semantic-ish search — docs relevant to this specific question
+      msgKeywords.length > 0
+        ? db.document.findMany({
+            where: {
+              userId,
+              OR: msgKeywords.flatMap((k) => [
+                { displayName: { contains: k, mode: "insensitive" } },
+                { aiCategory: { contains: k, mode: "insensitive" } },
+                { aiDocumentType: { contains: k, mode: "insensitive" } },
+              ]),
+            },
+            select: {
+              id: true,
+              displayName: true,
+              aiCategory: true,
+              aiDocumentType: true,
+              uploadedAt: true,
+              folder: { select: { name: true } },
+            },
+            orderBy: { uploadedAt: "desc" },
+            take: 8,
+          })
+        : Promise.resolve([]),
     ]);
 
     // Determine user language (default to French)
@@ -1393,9 +1482,19 @@ export async function POST(request: NextRequest) {
         }).join("\n")
       : "";
 
+    // Feature 5: inject relevant docs if they differ from recentDocs
+    const recentIds = new Set(recentDocs.map((d) => d.id));
+    const extraRelevant = relevantDocs.filter((d) => !recentIds.has(d.id));
+    const relevantContext = extraRelevant.length
+      ? "\n\n" + (isEnglish ? "DOCUMENTS RELEVANT TO THIS QUESTION:" : "DOCUMENTS PERTINENTS À CETTE QUESTION:") + "\n" +
+        extraRelevant.map((d) =>
+          `• "${d.displayName}" | ${d.aiCategory || d.aiDocumentType || "Document"} | ${isEnglish ? "Folder" : "Dossier"}: ${d.folder?.name || (isEnglish ? "uncategorized" : "non classé")} [ID:${d.id}]`
+        ).join("\n")
+      : "";
+
     const context = isEnglish
-      ? `AVAILABLE FOLDERS:\n${foldersContext}\n\nDOCUMENTS (1 = most recent = "latest document"):\n${docsContext}${expiringContext}\n\nREMINDER: Position 1 = most recent document. When the user says "my latest document", use the one at position 1.`
-      : `DOSSIERS DISPONIBLES:\n${foldersContext}\n\nDOCUMENTS (1 = le plus récent = "dernier document"):\n${docsContext}${expiringContext}\n\nRAPPEL: Position 1 = document le plus récent. Quand l'utilisateur dit "mon dernier document", utilise celui en position 1.`;
+      ? `AVAILABLE FOLDERS:\n${foldersContext}\n\nDOCUMENTS (1 = most recent = "latest document"):\n${docsContext}${expiringContext}${relevantContext}\n\nREMINDER: Position 1 = most recent document. When the user says "my latest document", use the one at position 1.`
+      : `DOSSIERS DISPONIBLES:\n${foldersContext}\n\nDOCUMENTS (1 = le plus récent = "dernier document"):\n${docsContext}${expiringContext}${relevantContext}\n\nRAPPEL: Position 1 = document le plus récent. Quand l'utilisateur dit "mon dernier document", utilise celui en position 1.`;
 
     const basePrompt = isEnglish ? DOCUBOT_SYSTEM_PROMPT_EN : DOCUBOT_SYSTEM_PROMPT_FR;
     const systemPrompt = basePrompt.replace("{context}", context);
@@ -1405,11 +1504,6 @@ export async function POST(request: NextRequest) {
       role: msg.role === "user" ? "user" : "model",
       parts: [{ text: msg.content }],
     }));
-
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return streamText(isEnglish ? "Service temporarily unavailable." : "Service temporairement indisponible.");
-    }
 
     // Model acknowledgment message based on language
     const modelAck = isEnglish

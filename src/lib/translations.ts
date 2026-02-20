@@ -239,6 +239,10 @@ export const translations = {
     docubotSmartAssistant: "Smart assistant",
     docubotError: "Sorry, I couldn't process your request.",
     docubotErrorGeneric: "Oops, something went wrong. Try again!",
+    docubotDropHint: "Drop a file to analyze it instantly",
+    docubotExpiringAction: "Expiring docs",
+    docubotQueryExpiring: "Which documents are expiring soon?",
+    docubotUploadedFile: "Analyze this file",
 
     // Email Import
     emailImport: "Email Import",
@@ -664,6 +668,10 @@ export const translations = {
     docubotSmartAssistant: "Assistant intelligent",
     docubotError: "Désolé, je n'ai pas pu traiter ta demande.",
     docubotErrorGeneric: "Oups, une erreur s'est produite. Réessaie !",
+    docubotDropHint: "Déposez un fichier pour l'analyser instantanément",
+    docubotExpiringAction: "Docs expirants",
+    docubotQueryExpiring: "Quels documents expirent bientôt ?",
+    docubotUploadedFile: "Analyse ce fichier",
 
     // Email Import
     emailImport: "Import par email",
