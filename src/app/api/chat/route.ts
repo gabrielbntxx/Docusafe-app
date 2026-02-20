@@ -1217,6 +1217,14 @@ async function executeFunction(
 // ============================================================================
 // STREAMING HELPERS
 // ============================================================================
+
+const STREAM_HEADERS = {
+  "Content-Type": "text/plain; charset=utf-8",
+  "X-Accel-Buffering": "no",   // Disable Nginx/Railway proxy buffering
+  "Cache-Control": "no-cache, no-transform",
+  "Connection": "keep-alive",
+};
+
 function streamText(text: string): Response {
   const encoder = new TextEncoder();
   return new Response(
@@ -1226,58 +1234,49 @@ function streamText(text: string): Response {
         controller.close();
       },
     }),
-    { headers: { "Content-Type": "text/plain; charset=utf-8" } }
+    { headers: STREAM_HEADERS }
   );
 }
 
+// Streams text word-by-word with a small delay to produce a ChatGPT-like effect.
+// Uses a regular generateContent call (not SSE) then simulates streaming server-side,
+// which avoids all proxy-buffering issues with Railway/Nginx.
 async function streamGeminiCall(contents: any[], apiKey: string): Promise<Response> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?key=${apiKey}&alt=sse`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
   const gemRes = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ contents, generationConfig: { temperature: 0.7, maxOutputTokens: 1024 } }),
   });
 
-  if (!gemRes.ok || !gemRes.body) return streamText("Désolé, je n'ai pas pu répondre.");
+  if (!gemRes.ok) return streamText("Désolé, je n'ai pas pu répondre.");
 
-  const decoder = new TextDecoder();
+  const data = await gemRes.json();
+  const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || "Désolé, je n'ai pas pu répondre.";
+
+  const cleaned = raw
+    .replace(/\[ID:[^\]]+\]/g, "")
+    .replace(/\(ID:[^)]+\)/g, "")
+    .replace(/ID:\s*[a-z0-9]{20,}/gi, "")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+
+  // Split preserving whitespace/newlines as separate tokens
+  const tokens = cleaned.split(/(\s+)/);
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({
     async start(controller) {
-      const reader = gemRes.body!.getReader();
-      let buffer = "";
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() || "";
-          for (const line of lines) {
-            if (!line.startsWith("data: ")) continue;
-            const data = line.slice(6).trim();
-            if (!data || data === "[DONE]") continue;
-            try {
-              const parsed = JSON.parse(data);
-              const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
-              if (text) {
-                const cleaned = text
-                  .replace(/\[ID:[^\]]+\]/g, "")
-                  .replace(/\(ID:[^)]+\)/g, "")
-                  .replace(/ID:\s*[a-z0-9]{20,}/gi, "");
-                if (cleaned) controller.enqueue(encoder.encode(cleaned));
-              }
-            } catch {}
-          }
-        }
-      } finally {
-        controller.close();
+      for (const token of tokens) {
+        controller.enqueue(encoder.encode(token));
+        // ~18ms per token ≈ 55 tokens/s — feels natural, not too fast or slow
+        await new Promise((r) => setTimeout(r, 18));
       }
+      controller.close();
     },
   });
 
-  return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+  return new Response(stream, { headers: STREAM_HEADERS });
 }
 
 // ============================================================================
