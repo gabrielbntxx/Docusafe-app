@@ -1,0 +1,16 @@
+{
+  "name": "DocuSafe",
+  "short_name": "DocuSafe",
+  "description": "All your supporting documents in the right place, at the right time, automatically.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "any",
+      "type": "image/png"
+    }
+  ]
+}

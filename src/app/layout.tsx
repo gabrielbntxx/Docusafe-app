@@ -29,6 +29,8 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/logo.png" type="image/png" />
         <link rel="apple-touch-icon" href="/logo.png" />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="application-name" content="DocuSafe" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
