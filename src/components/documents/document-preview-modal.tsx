@@ -130,7 +130,7 @@ export function DocumentPreviewModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-0 sm:p-4"
+      className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-0 sm:p-4 lg:pl-72"
       onClick={handleBackdropClick}
     >
       <div className="relative w-full h-[95vh] sm:h-auto sm:max-h-[90vh] sm:max-w-6xl rounded-t-3xl sm:rounded-2xl bg-white dark:bg-neutral-900 shadow-2xl overflow-hidden flex flex-col">
