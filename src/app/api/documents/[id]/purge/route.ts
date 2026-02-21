@@ -19,7 +19,7 @@ export async function DELETE(
 
     const document = await db.document.findUnique({
       where: { id },
-      select: { id: true, userId: true, storageKey: true, deletedAt: true },
+      select: { id: true, userId: true, storageKey: true, deletedAt: true, sizeBytes: true },
     });
 
     if (!document || document.userId !== session.user.id) {
@@ -39,6 +39,15 @@ export async function DELETE(
     }
 
     await db.document.delete({ where: { id } });
+
+    // Update user counters
+    await db.user.update({
+      where: { id: document.userId },
+      data: {
+        documentsCount: { decrement: 1 },
+        storageUsedBytes: { decrement: Number(document.sizeBytes) || 0 },
+      },
+    });
 
     return NextResponse.json({ message: "Document supprimé définitivement" });
   } catch (error) {

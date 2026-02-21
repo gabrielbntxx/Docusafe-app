@@ -26,12 +26,12 @@ export default async function ProfilePage() {
           planType: true,
           createdAt: true,
           _count: {
-            select: { documents: true },
+            select: { documents: { where: { deletedAt: null } } },
           },
         },
       }),
       db.document.aggregate({
-        where: { userId: session.user.id },
+        where: { userId: session.user.id, deletedAt: null },
         _sum: { sizeBytes: true },
       }),
     ]);

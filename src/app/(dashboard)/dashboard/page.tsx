@@ -20,7 +20,7 @@ export default async function DashboardPage() {
       include: {
         _count: {
           select: {
-            documents: true,
+            documents: { where: { deletedAt: null } },
             folders: true,
           },
         },

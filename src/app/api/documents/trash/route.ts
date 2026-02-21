@@ -69,7 +69,7 @@ export async function DELETE() {
 
     const trashed = await db.document.findMany({
       where: { userId: session.user.id, deletedAt: { not: null } },
-      select: { id: true, storageKey: true },
+      select: { id: true, storageKey: true, sizeBytes: true },
     });
 
     // Delete from R2 in parallel, ignore individual errors
@@ -79,6 +79,18 @@ export async function DELETE() {
     await db.document.deleteMany({
       where: { userId: session.user.id, deletedAt: { not: null } },
     });
+
+    // Update user counters
+    if (trashed.length > 0) {
+      const totalBytes = trashed.reduce((sum, d) => sum + Number(d.sizeBytes), 0);
+      await db.user.update({
+        where: { id: session.user.id },
+        data: {
+          documentsCount: { decrement: trashed.length },
+          storageUsedBytes: { decrement: totalBytes },
+        },
+      });
+    }
 
     return NextResponse.json({ deleted: trashed.length });
   } catch (error) {
