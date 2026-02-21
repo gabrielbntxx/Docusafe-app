@@ -787,15 +787,23 @@ async function moveMultipleDocuments(userId: string, documentIds: string[], fold
 async function deleteDocument(userId: string, documentId: string) {
   const document = await db.document.findFirst({
     where: { id: documentId, userId },
-    select: { id: true, displayName: true, storageKey: true },
+    select: { id: true, displayName: true, storageKey: true, sizeBytes: true },
   });
 
   if (!document) {
     return { success: false, error: "Document non trouvé" };
   }
 
-  // Delete from database
   await db.document.delete({ where: { id: documentId } });
+
+  // Update user stats
+  await db.user.update({
+    where: { id: userId },
+    data: {
+      documentsCount: { decrement: 1 },
+      storageUsedBytes: { decrement: Number(document.sizeBytes) || 0 },
+    },
+  });
 
   return {
     success: true,
@@ -808,15 +816,26 @@ async function deleteDocument(userId: string, documentId: string) {
 async function deleteMultipleDocuments(userId: string, documentIds: string[]) {
   const documents = await db.document.findMany({
     where: { id: { in: documentIds }, userId },
-    select: { id: true, displayName: true },
+    select: { id: true, displayName: true, sizeBytes: true },
   });
 
   if (documents.length === 0) {
     return { success: false, error: "Aucun document trouvé" };
   }
 
+  const totalBytes = documents.reduce((sum, d) => sum + Number(d.sizeBytes), 0);
+
   await db.document.deleteMany({
     where: { id: { in: documentIds }, userId },
+  });
+
+  // Update user stats
+  await db.user.update({
+    where: { id: userId },
+    data: {
+      documentsCount: { decrement: documents.length },
+      storageUsedBytes: { decrement: totalBytes },
+    },
   });
 
   return {
@@ -1529,7 +1548,7 @@ export async function POST(request: NextRequest) {
     const [folders, recentDocs, userSettings, expiringDocs, relevantDocs] = await Promise.all([
       db.folder.findMany({
         where: { userId },
-        select: { id: true, name: true, _count: { select: { documents: true } } },
+        select: { id: true, name: true, parentId: true, _count: { select: { documents: true } } },
         orderBy: { name: "asc" },
       }),
       db.document.findMany({
@@ -1584,9 +1603,17 @@ export async function POST(request: NextRequest) {
     const userLang = userSettings?.language || "fr";
     const isEnglish = userLang === "en";
 
-    // Build smart context with numbered documents and helpful info
+    // Build hierarchical folder context (root folders with indented children)
+    const folderById = new Map(folders.map((f) => [f.id, f]));
+    const rootFolders = folders.filter((f) => !f.parentId);
+    function buildFolderContextLines(fId: string, indent: string): string[] {
+      const f = folderById.get(fId)!;
+      const line = `${indent}• ${f.name} (${f._count.documents} docs) [ID:${f.id}]`;
+      const children = folders.filter((c) => c.parentId === fId);
+      return [line, ...children.flatMap((c) => buildFolderContextLines(c.id, indent + "  "))];
+    }
     const foldersContext = folders.length
-      ? folders.map((f) => `• ${f.name} (${f._count.documents} docs) [ID:${f.id}]`).join("\n")
+      ? rootFolders.flatMap((f) => buildFolderContextLines(f.id, "")).join("\n")
       : isEnglish ? "No folders" : "Aucun dossier";
 
     // Format date in friendly way based on language
@@ -1659,24 +1686,28 @@ export async function POST(request: NextRequest) {
       ? "Got it! I'm DocuBot, ready to help you with your documents."
       : "Compris ! Je suis DocuBot, prêt à t'aider avec tes documents.";
 
+    const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const GEMINI_HEADERS = { "Content-Type": "application/json" };
+    const generationConfig = { temperature: 0.7, maxOutputTokens: 1024 };
+
+    // Build initial conversation
+    const geminiContents: any[] = [
+      { role: "user", parts: [{ text: systemPrompt }] },
+      { role: "model", parts: [{ text: modelAck }] },
+      ...conversationHistory,
+      { role: "user", parts: [{ text: message }] },
+    ];
+
     // First call to Gemini with function declarations
-    let response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            { role: "user", parts: [{ text: systemPrompt }] },
-            { role: "model", parts: [{ text: modelAck }] },
-            ...conversationHistory,
-            { role: "user", parts: [{ text: message }] },
-          ],
-          tools: [{ functionDeclarations: FUNCTION_DECLARATIONS }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
-        }),
-      }
-    );
+    let response = await fetch(GEMINI_URL, {
+      method: "POST",
+      headers: GEMINI_HEADERS,
+      body: JSON.stringify({
+        contents: geminiContents,
+        tools: [{ functionDeclarations: FUNCTION_DECLARATIONS }],
+        generationConfig,
+      }),
+    });
 
     if (!response.ok) {
       console.error("Gemini API error:", await response.text());
@@ -1686,48 +1717,62 @@ export async function POST(request: NextRequest) {
     let data = await response.json();
     let candidate = data.candidates?.[0];
 
-    // Check if there's a function call
-    const functionCall = candidate?.content?.parts?.[0]?.functionCall;
+    // Multi-turn function call loop — Gemini can chain up to 4 function calls per message
+    const MAX_FUNCTION_CALLS = 4;
+    let callCount = 0;
 
-    if (functionCall) {
-      console.log("[DocuBot] Function call:", functionCall.name, functionCall.args);
+    while (callCount < MAX_FUNCTION_CALLS) {
+      const functionCall = candidate?.content?.parts?.find((p: any) => p.functionCall)?.functionCall;
+      if (!functionCall) break;
+
+      callCount++;
+      console.log(`[DocuBot] Function call ${callCount}:`, functionCall.name, functionCall.args);
+
+      // Add model's turn (with the function call) to conversation
+      geminiContents.push({ role: "model", parts: candidate.content.parts });
 
       // Execute the function
       const functionResult = await executeFunction(userId, functionCall.name, functionCall.args || {});
+      console.log(`[DocuBot] Function result:`, functionResult);
 
-      console.log("[DocuBot] Function result:", functionResult);
+      // Add function result to conversation
+      geminiContents.push({
+        role: "function",
+        parts: [{ functionResponse: { name: functionCall.name, response: functionResult } }],
+      });
 
-      // Short model acknowledgment for second call
-      const modelAckShort = isEnglish ? "Got it! I'm DocuBot." : "Compris ! Je suis DocuBot.";
-
-      const secondContents = [
-        { role: "user", parts: [{ text: systemPrompt }] },
-        { role: "model", parts: [{ text: modelAckShort }] },
-        ...conversationHistory,
-        { role: "user", parts: [{ text: message }] },
-        { role: "model", parts: [{ functionCall }] },
-        {
-          role: "function",
-          parts: [{ functionResponse: { name: functionCall.name, response: functionResult } }],
-        },
-      ];
-
-      // Try streaming second call; fall back to formatted text if function failed
       if (!functionResult.success) {
         const defaultError = isEnglish ? "Sorry, I couldn't do that. Try again?" : "Désolé, je n'ai pas réussi. Réessaie ?";
         return streamText(`❌ ${functionResult.error || defaultError}`);
       }
 
-      return streamGeminiCall(secondContents, apiKey);
+      // Next Gemini call with updated conversation
+      const nextRes = await fetch(GEMINI_URL, {
+        method: "POST",
+        headers: GEMINI_HEADERS,
+        body: JSON.stringify({
+          contents: geminiContents,
+          tools: [{ functionDeclarations: FUNCTION_DECLARATIONS }],
+          generationConfig,
+        }),
+      });
+
+      if (!nextRes.ok) {
+        return streamText(isEnglish ? "Sorry, I couldn't process your request." : "Désolé, je n'ai pas pu traiter ta demande.");
+      }
+
+      const nextData = await nextRes.json();
+      candidate = nextData.candidates?.[0];
     }
 
-    // No function call — stream the first call's response
+    // Stream the final text response
     const fallbackMessage = isEnglish
       ? "I didn't understand. Can you rephrase?"
       : "Je n'ai pas compris. Peux-tu reformuler ?";
 
-    let aiResponse = stripMarkdown(
-      (candidate?.content?.parts?.[0]?.text || fallbackMessage)
+    const finalText = candidate?.content?.parts?.find((p: any) => p.text)?.text || fallbackMessage;
+    const aiResponse = stripMarkdown(
+      finalText
         .replace(/\[ID:[^\]]+\]/g, "")
         .replace(/\(ID:[^)]+\)/g, "")
         .replace(/ID:\s*[a-z0-9]{20,}/gi, "")
