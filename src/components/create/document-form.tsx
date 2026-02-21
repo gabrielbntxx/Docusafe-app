@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 
+// ─── Types ─────────────────────────────────────────────────────────────────────
+
 export type DocType =
   | "facture"
   | "devis"
@@ -43,6 +45,98 @@ type LineItem = {
 
 const today = () => new Date().toISOString().split("T")[0];
 
+// ─── Field components — defined OUTSIDE to avoid remount on each keystroke ─────
+
+const inputClass =
+  "w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition dark:border-neutral-700 dark:bg-neutral-800 dark:text-white";
+
+interface FieldProps {
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+  type?: string;
+  placeholder?: string;
+  required?: boolean;
+  optional?: boolean;
+  className?: string;
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+  type = "text",
+  placeholder = "",
+  required = false,
+  optional = false,
+  className = "",
+}: FieldProps) {
+  return (
+    <div className={className}>
+      <label className="mb-1 flex items-center gap-1 text-xs font-medium text-neutral-500 dark:text-neutral-400">
+        {label}
+        {required && <span className="text-red-400">*</span>}
+        {optional && (
+          <span className="font-normal text-neutral-400">(optionnel)</span>
+        )}
+      </label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className={inputClass}
+      />
+    </div>
+  );
+}
+
+interface TextAreaProps {
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+  placeholder?: string;
+  rows?: number;
+  optional?: boolean;
+}
+
+function TextArea({
+  label,
+  value,
+  onChange,
+  placeholder = "",
+  rows = 3,
+  optional = false,
+}: TextAreaProps) {
+  return (
+    <div>
+      <label className="mb-1 flex items-center gap-1 text-xs font-medium text-neutral-500 dark:text-neutral-400">
+        {label}
+        {optional && (
+          <span className="font-normal text-neutral-400">(optionnel)</span>
+        )}
+      </label>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        rows={rows}
+        className={`${inputClass} resize-none`}
+      />
+    </div>
+  );
+}
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="mb-3 mt-6 border-b border-neutral-100 pb-2 text-xs font-semibold uppercase tracking-wider text-neutral-400 first:mt-0 dark:border-neutral-800 dark:text-neutral-500">
+      {children}
+    </h3>
+  );
+}
+
+// ─── Main component ────────────────────────────────────────────────────────────
+
 interface DocumentFormProps {
   type: DocType;
 }
@@ -57,6 +151,7 @@ export function DocumentForm({ type }: DocumentFormProps) {
     senderAddress: "",
     senderCity: "",
     senderSiret: "",
+    senderVatNumber: "", // Numéro TVA intracommunautaire
     senderEmail: "",
     senderPhone: "",
     // Client / Recipient
@@ -64,11 +159,14 @@ export function DocumentForm({ type }: DocumentFormProps) {
     clientAddress: "",
     clientCity: "",
     clientEmail: "",
+    clientVatNumber: "", // TVA client (B2B)
     // Invoice
     invoiceNumber: "",
     invoiceDate: today(),
     dueDate: "",
-    paymentTerms: "Virement bancaire sous 30 jours",
+    paymentTerms: "Virement bancaire sous 30 jours à compter de la date de facturation.",
+    latePaymentPenalty:
+      "En cas de retard de paiement, pénalités au taux légal en vigueur + indemnité forfaitaire pour frais de recouvrement : 40 €.",
     // Quote
     quoteNumber: "",
     quoteDate: today(),
@@ -98,6 +196,7 @@ export function DocumentForm({ type }: DocumentFormProps) {
     deliveryTerms: "",
     // Letter
     recipientName: "",
+    recipientTitle: "", // M. / Mme / Dr. etc.
     recipientAddress: "",
     recipientCity: "",
     city: "",
@@ -122,7 +221,7 @@ export function DocumentForm({ type }: DocumentFormProps) {
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ─── AI assist state ────────────────────────────────────────────────────────
+  // AI assist state
   const [showAiHelper, setShowAiHelper] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -152,7 +251,9 @@ export function DocumentForm({ type }: DocumentFormProps) {
           clientEmail: form.clientEmail || undefined,
           items,
           notes: form.notes || undefined,
-          paymentTerms: form.paymentTerms || undefined,
+          paymentTerms: [form.paymentTerms, form.latePaymentPenalty]
+            .filter(Boolean)
+            .join("\n"),
         };
       case "devis":
         return {
@@ -248,6 +349,7 @@ export function DocumentForm({ type }: DocumentFormProps) {
       setPdfBlob(blob);
       setPdfUrl(url);
       setSavedSuccess(false);
+      setShowPreview(true);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -294,7 +396,7 @@ export function DocumentForm({ type }: DocumentFormProps) {
     }
   };
 
-  // ─── AI assist ────────────────────────────────────────────────────────────
+  // ─── AI assist ─────────────────────────────────────────────────────────────
 
   const handleAiAssist = async () => {
     if (!aiPrompt.trim()) return;
@@ -311,12 +413,8 @@ export function DocumentForm({ type }: DocumentFormProps) {
         throw new Error(err.error || "Erreur IA");
       }
       const { fields, items: aiItems } = await res.json();
-      // Merge returned fields into form state
       setForm((f) => ({ ...f, ...fields }));
-      // Replace items if AI returned some
-      if (aiItems && aiItems.length > 0) {
-        setItems(aiItems);
-      }
+      if (aiItems && aiItems.length > 0) setItems(aiItems);
       setShowAiHelper(false);
       setAiPrompt("");
     } catch (e: any) {
@@ -326,72 +424,6 @@ export function DocumentForm({ type }: DocumentFormProps) {
     }
   };
 
-  // ─── Reusable field components ─────────────────────────────────────────────
-
-  const inputClass =
-    "w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition dark:border-neutral-700 dark:bg-neutral-800 dark:text-white";
-
-  const Field = ({
-    label,
-    field,
-    type: inputType = "text",
-    placeholder = "",
-    required = false,
-    className = "",
-  }: {
-    label: string;
-    field: string;
-    type?: string;
-    placeholder?: string;
-    required?: boolean;
-    className?: string;
-  }) => (
-    <div className={className}>
-      <label className="mb-1 block text-xs font-medium text-neutral-500 dark:text-neutral-400">
-        {label}
-        {required && <span className="ml-0.5 text-red-400">*</span>}
-      </label>
-      <input
-        type={inputType}
-        value={(form as any)[field]}
-        onChange={(e) => set(field, e.target.value)}
-        placeholder={placeholder}
-        className={inputClass}
-      />
-    </div>
-  );
-
-  const TextArea = ({
-    label,
-    field,
-    placeholder = "",
-    rows = 3,
-  }: {
-    label: string;
-    field: string;
-    placeholder?: string;
-    rows?: number;
-  }) => (
-    <div>
-      <label className="mb-1 block text-xs font-medium text-neutral-500 dark:text-neutral-400">
-        {label}
-      </label>
-      <textarea
-        value={(form as any)[field]}
-        onChange={(e) => set(field, e.target.value)}
-        placeholder={placeholder}
-        rows={rows}
-        className={`${inputClass} resize-none`}
-      />
-    </div>
-  );
-
-  const SectionTitle = ({ children }: { children: React.ReactNode }) => (
-    <h3 className="mb-3 mt-6 text-xs font-semibold uppercase tracking-wider text-neutral-400 first:mt-0 dark:text-neutral-500">
-      {children}
-    </h3>
-  );
-
   // ─── Line items ────────────────────────────────────────────────────────────
 
   const showItems =
@@ -400,15 +432,17 @@ export function DocumentForm({ type }: DocumentFormProps) {
   const showVat = type !== "bon-de-commande";
 
   const addItem = () =>
-    setItems([
-      ...items,
+    setItems((prev) => [
+      ...prev,
       { description: "", quantity: 1, unitPrice: 0, vatRate: 20 },
     ]);
+
   const removeItem = (i: number) =>
-    setItems(items.filter((_, idx) => idx !== i));
-  const updateItem = (i: number, field: string, value: string | number) =>
-    setItems(
-      items.map((item, idx) => (idx === i ? { ...item, [field]: value } : item))
+    setItems((prev) => prev.filter((_, idx) => idx !== i));
+
+  const updateItem = (i: number, field: keyof LineItem, value: string | number) =>
+    setItems((prev) =>
+      prev.map((item, idx) => (idx === i ? { ...item, [field]: value } : item))
     );
 
   const cellClass =
@@ -421,19 +455,55 @@ export function DocumentForm({ type }: DocumentFormProps) {
       <SectionTitle>{title}</SectionTitle>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Field
-          label="Nom / Entreprise"
-          field="senderName"
+          label="Nom / Raison sociale"
+          value={form.senderName}
+          onChange={(v) => set("senderName", v)}
           required
           className="sm:col-span-2"
+          placeholder="Ex : Jean Dupont ou SAS MonEntreprise"
         />
-        <Field label="Adresse" field="senderAddress" required />
-        <Field label="Ville, Code postal" field="senderCity" required />
-        <Field label="SIRET" field="senderSiret" placeholder="123 456 789 00012" />
-        <Field label="Email" field="senderEmail" type="email" />
+        <Field
+          label="Adresse"
+          value={form.senderAddress}
+          onChange={(v) => set("senderAddress", v)}
+          required
+          placeholder="12 rue de la Paix"
+        />
+        <Field
+          label="Code postal et ville"
+          value={form.senderCity}
+          onChange={(v) => set("senderCity", v)}
+          required
+          placeholder="75001 Paris"
+        />
+        <Field
+          label="N° SIRET"
+          value={form.senderSiret}
+          onChange={(v) => set("senderSiret", v)}
+          optional
+          placeholder="123 456 789 00012"
+        />
+        <Field
+          label="N° TVA intracommunautaire"
+          value={form.senderVatNumber}
+          onChange={(v) => set("senderVatNumber", v)}
+          optional
+          placeholder="FR 12 345678901"
+        />
+        <Field
+          label="Email"
+          value={form.senderEmail}
+          onChange={(v) => set("senderEmail", v)}
+          type="email"
+          optional
+          placeholder="contact@entreprise.fr"
+        />
         <Field
           label="Téléphone"
-          field="senderPhone"
-          placeholder="+33 6 00 00 00 00"
+          value={form.senderPhone}
+          onChange={(v) => set("senderPhone", v)}
+          optional
+          placeholder="+33 1 23 45 67 89"
         />
       </div>
     </>
@@ -444,14 +514,42 @@ export function DocumentForm({ type }: DocumentFormProps) {
       <SectionTitle>{title}</SectionTitle>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Field
-          label="Nom / Entreprise"
-          field="clientName"
+          label="Nom / Raison sociale"
+          value={form.clientName}
+          onChange={(v) => set("clientName", v)}
           required
           className="sm:col-span-2"
+          placeholder="Ex : ACME SAS"
         />
-        <Field label="Adresse" field="clientAddress" required />
-        <Field label="Ville, Code postal" field="clientCity" required />
-        <Field label="Email" field="clientEmail" type="email" />
+        <Field
+          label="Adresse"
+          value={form.clientAddress}
+          onChange={(v) => set("clientAddress", v)}
+          required
+          placeholder="5 avenue des Champs-Élysées"
+        />
+        <Field
+          label="Code postal et ville"
+          value={form.clientCity}
+          onChange={(v) => set("clientCity", v)}
+          required
+          placeholder="75008 Paris"
+        />
+        <Field
+          label="Email"
+          value={form.clientEmail}
+          onChange={(v) => set("clientEmail", v)}
+          type="email"
+          optional
+          placeholder="compta@client.fr"
+        />
+        <Field
+          label="N° TVA intracommunautaire"
+          value={form.clientVatNumber}
+          onChange={(v) => set("clientVatNumber", v)}
+          optional
+          placeholder="FR 98 765432109"
+        />
       </div>
     </>
   );
@@ -460,12 +558,21 @@ export function DocumentForm({ type }: DocumentFormProps) {
     <>
       <SectionTitle>{t("lineItems")}</SectionTitle>
       <div className="space-y-2">
+        {/* Column headers */}
+        <div className={`hidden gap-2 text-xs font-medium text-neutral-400 sm:grid ${showVat ? "grid-cols-[1fr_60px_90px_70px_28px]" : "grid-cols-[1fr_60px_90px_28px]"}`}>
+          <span>Description</span>
+          <span className="text-center">Qté</span>
+          <span className="text-right">P.U. HT (€)</span>
+          {showVat && <span className="text-center">TVA %</span>}
+          <span />
+        </div>
+
         {items.map((item, i) => (
           <div
             key={i}
-            className="flex items-start gap-2 rounded-xl bg-neutral-50 p-3 dark:bg-neutral-800/60"
+            className="flex items-start gap-2 rounded-xl bg-neutral-50 p-2.5 dark:bg-neutral-800/60"
           >
-            <div className="grid flex-1 grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className={`grid flex-1 gap-2 ${showVat ? "grid-cols-2 sm:grid-cols-[1fr_60px_90px_70px]" : "grid-cols-2 sm:grid-cols-[1fr_60px_90px]"}`}>
               {showReference && (
                 <input
                   value={item.reference ?? ""}
@@ -477,16 +584,15 @@ export function DocumentForm({ type }: DocumentFormProps) {
               <input
                 value={item.description}
                 onChange={(e) => updateItem(i, "description", e.target.value)}
-                placeholder="Description"
-                className={`${showReference ? "col-span-2 sm:col-span-3" : "col-span-2"} ${cellClass}`}
+                placeholder="Désignation / prestation"
+                className={`${showReference ? "col-span-2 sm:col-span-3" : "col-span-2 sm:col-span-1"} ${cellClass}`}
               />
               <input
                 type="number"
-                min="1"
+                min="0.01"
+                step="0.01"
                 value={item.quantity}
-                onChange={(e) =>
-                  updateItem(i, "quantity", Number(e.target.value))
-                }
+                onChange={(e) => updateItem(i, "quantity", Number(e.target.value))}
                 placeholder="Qté"
                 className={cellClass}
               />
@@ -495,10 +601,8 @@ export function DocumentForm({ type }: DocumentFormProps) {
                 min="0"
                 step="0.01"
                 value={item.unitPrice}
-                onChange={(e) =>
-                  updateItem(i, "unitPrice", Number(e.target.value))
-                }
-                placeholder="P.U. HT (€)"
+                onChange={(e) => updateItem(i, "unitPrice", Number(e.target.value))}
+                placeholder="Prix HT"
                 className={cellClass}
               />
               {showVat && (
@@ -506,10 +610,9 @@ export function DocumentForm({ type }: DocumentFormProps) {
                   type="number"
                   min="0"
                   max="100"
+                  step="0.1"
                   value={item.vatRate}
-                  onChange={(e) =>
-                    updateItem(i, "vatRate", Number(e.target.value))
-                  }
+                  onChange={(e) => updateItem(i, "vatRate", Number(e.target.value))}
                   placeholder="TVA %"
                   className={cellClass}
                 />
@@ -524,6 +627,7 @@ export function DocumentForm({ type }: DocumentFormProps) {
             </button>
           </div>
         ))}
+
         <button
           onClick={addItem}
           className="flex items-center gap-2 text-sm font-medium text-blue-500 transition hover:text-blue-600"
@@ -539,105 +643,154 @@ export function DocumentForm({ type }: DocumentFormProps) {
 
   const renderForm = () => {
     switch (type) {
+      // ── Facture ──────────────────────────────────────────────────────────
       case "facture":
         return (
           <>
-            <SectionTitle>Détails de la facture</SectionTitle>
+            <SectionTitle>Références de la facture</SectionTitle>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <Field
-                label="N° Facture"
-                field="invoiceNumber"
+                label="N° de facture"
+                value={form.invoiceNumber}
+                onChange={(v) => set("invoiceNumber", v)}
                 placeholder="FAC-2024-001"
                 required
               />
-              <Field label="Date" field="invoiceDate" type="date" required />
+              <Field
+                label="Date d'émission"
+                value={form.invoiceDate}
+                onChange={(v) => set("invoiceDate", v)}
+                type="date"
+                required
+              />
               <Field
                 label="Date d'échéance"
-                field="dueDate"
+                value={form.dueDate}
+                onChange={(v) => set("dueDate", v)}
                 type="date"
                 required
               />
             </div>
-            {renderSenderSection("De")}
-            {renderClientSection("Facturé à")}
+            {renderSenderSection("Émetteur (vendeur / prestataire)")}
+            {renderClientSection("Destinataire (acheteur / client)")}
             {renderLineItems()}
-            <SectionTitle>Notes</SectionTitle>
+            <SectionTitle>Conditions de règlement</SectionTitle>
             <div className="grid gap-3">
-              <TextArea
-                label="Notes"
-                field="notes"
-                placeholder="Informations complémentaires..."
+              <Field
+                label="Modalités de paiement"
+                value={form.paymentTerms}
+                onChange={(v) => set("paymentTerms", v)}
+                placeholder="Virement bancaire sous 30 jours..."
               />
               <Field
-                label="Conditions de paiement"
-                field="paymentTerms"
-                placeholder="Virement bancaire sous 30 jours"
+                label="Clause de pénalités de retard"
+                value={form.latePaymentPenalty}
+                onChange={(v) => set("latePaymentPenalty", v)}
+                optional
+                placeholder="En cas de retard, pénalités au taux légal + 40 € forfaitaire..."
+              />
+              <TextArea
+                label="Notes / Mentions légales"
+                value={form.notes}
+                onChange={(v) => set("notes", v)}
+                optional
+                placeholder="Ex : TVA non applicable, art. 293 B du CGI (auto-entrepreneur)"
               />
             </div>
           </>
         );
 
+      // ── Devis ─────────────────────────────────────────────────────────────
       case "devis":
         return (
           <>
-            <SectionTitle>Détails du devis</SectionTitle>
+            <SectionTitle>Références du devis</SectionTitle>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <Field
-                label="N° Devis"
-                field="quoteNumber"
+                label="N° de devis"
+                value={form.quoteNumber}
+                onChange={(v) => set("quoteNumber", v)}
                 placeholder="DEV-2024-001"
                 required
               />
-              <Field label="Date" field="quoteDate" type="date" required />
+              <Field
+                label="Date d'émission"
+                value={form.quoteDate}
+                onChange={(v) => set("quoteDate", v)}
+                type="date"
+                required
+              />
               <Field
                 label="Valable jusqu'au"
-                field="validUntil"
+                value={form.validUntil}
+                onChange={(v) => set("validUntil", v)}
                 type="date"
                 required
               />
             </div>
-            {renderSenderSection("Prestataire")}
-            {renderClientSection("Client")}
+            {renderSenderSection("Prestataire / Émetteur")}
+            {renderClientSection("Client / Prospect")}
             {renderLineItems()}
-            <SectionTitle>Notes</SectionTitle>
+            <SectionTitle>Conditions particulières</SectionTitle>
             <TextArea
-              label="Notes"
-              field="notes"
-              placeholder="Conditions particulières..."
+              label="Notes et conditions"
+              value={form.notes}
+              onChange={(v) => set("notes", v)}
+              optional
+              placeholder="Ex : Délai d'exécution, conditions de révision du prix, acompte requis..."
             />
           </>
         );
 
+      // ── Contrat ───────────────────────────────────────────────────────────
       case "contrat":
         return (
           <>
-            {renderSenderSection("Prestataire")}
-            {renderClientSection("Client")}
-            <SectionTitle>Mission</SectionTitle>
+            {renderSenderSection("Le prestataire")}
+            {renderClientSection("Le client / donneur d'ordre")}
+
+            <SectionTitle>Objet de la mission</SectionTitle>
             <div className="grid gap-3">
               <Field
-                label="Titre de la mission"
-                field="missionTitle"
-                placeholder="Développement d'une application web"
+                label="Intitulé de la mission"
+                value={form.missionTitle}
+                onChange={(v) => set("missionTitle", v)}
+                placeholder="Ex : Développement d'une application web"
                 required
               />
               <TextArea
-                label="Description"
-                field="missionDescription"
-                placeholder="Décrire les livrables attendus..."
+                label="Description et livrables attendus"
+                value={form.missionDescription}
+                onChange={(v) => set("missionDescription", v)}
+                optional
+                placeholder="Décrire précisément les prestations, les livrables, les modalités d'exécution..."
                 rows={4}
               />
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Date de début" field="startDate" type="date" required />
-                <Field label="Date de fin" field="endDate" type="date" required />
+                <Field
+                  label="Date de début"
+                  value={form.startDate}
+                  onChange={(v) => set("startDate", v)}
+                  type="date"
+                  required
+                />
+                <Field
+                  label="Date de fin prévue"
+                  value={form.endDate}
+                  onChange={(v) => set("endDate", v)}
+                  type="date"
+                  required
+                />
               </div>
             </div>
+
             <SectionTitle>Rémunération</SectionTitle>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <Field
-                label="Montant (€)"
-                field="rate"
-                placeholder="5000"
+                label="Montant HT (€)"
+                value={form.rate}
+                onChange={(v) => set("rate", v)}
+                placeholder="5 000"
                 required
               />
               <div>
@@ -649,128 +802,229 @@ export function DocumentForm({ type }: DocumentFormProps) {
                   onChange={(e) => set("rateType", e.target.value)}
                   className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
                 >
-                  <option value="fixed">Forfait</option>
-                  <option value="daily">Journalier (TJM)</option>
-                  <option value="hourly">Horaire</option>
+                  <option value="fixed">Forfait global</option>
+                  <option value="daily">Taux journalier (TJM)</option>
+                  <option value="hourly">Taux horaire</option>
                 </select>
               </div>
               <Field
                 label="Modalités de paiement"
-                field="paymentSchedule"
+                value={form.paymentSchedule}
+                onChange={(v) => set("paymentSchedule", v)}
+                optional
                 placeholder="50% à la commande, 50% à la livraison"
               />
             </div>
-            <SectionTitle>Clauses optionnelles</SectionTitle>
+
+            <SectionTitle>Clauses contractuelles</SectionTitle>
             <div className="grid gap-3">
               <TextArea
                 label="Obligations des parties"
-                field="obligations"
-                placeholder="Décrire les obligations de chaque partie..."
+                value={form.obligations}
+                onChange={(v) => set("obligations", v)}
+                optional
+                placeholder="Préciser les obligations respectives du prestataire et du client..."
               />
               <TextArea
-                label="Clause de résiliation (vide = clause par défaut)"
-                field="terminationClause"
-                placeholder="Chaque partie peut résilier..."
+                label="Clause de résiliation"
+                value={form.terminationClause}
+                onChange={(v) => set("terminationClause", v)}
+                optional
+                placeholder="Laisser vide pour appliquer la clause par défaut (préavis 30 jours)."
               />
             </div>
           </>
         );
 
+      // ── Bon de commande ───────────────────────────────────────────────────
       case "bon-de-commande":
         return (
           <>
-            <SectionTitle>Détails de la commande</SectionTitle>
+            <SectionTitle>Références de la commande</SectionTitle>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <Field
-                label="N° Commande"
-                field="orderNumber"
+                label="N° de commande"
+                value={form.orderNumber}
+                onChange={(v) => set("orderNumber", v)}
                 placeholder="CMD-2024-001"
                 required
               />
-              <Field label="Date" field="orderDate" type="date" required />
               <Field
-                label="Date de livraison souhaitée"
-                field="deliveryDate"
+                label="Date de commande"
+                value={form.orderDate}
+                onChange={(v) => set("orderDate", v)}
                 type="date"
+                required
+              />
+              <Field
+                label="Livraison souhaitée le"
+                value={form.deliveryDate}
+                onChange={(v) => set("deliveryDate", v)}
+                type="date"
+                optional
               />
             </div>
+
             <SectionTitle>Acheteur</SectionTitle>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field
-                label="Nom / Entreprise"
-                field="buyerName"
+                label="Nom / Raison sociale"
+                value={form.buyerName}
+                onChange={(v) => set("buyerName", v)}
                 required
                 className="sm:col-span-2"
               />
-              <Field label="Adresse" field="buyerAddress" required />
-              <Field label="Ville, Code postal" field="buyerCity" required />
-              <Field label="Email" field="buyerEmail" type="email" />
+              <Field
+                label="Adresse"
+                value={form.buyerAddress}
+                onChange={(v) => set("buyerAddress", v)}
+                required
+              />
+              <Field
+                label="Code postal et ville"
+                value={form.buyerCity}
+                onChange={(v) => set("buyerCity", v)}
+                required
+              />
+              <Field
+                label="Email"
+                value={form.buyerEmail}
+                onChange={(v) => set("buyerEmail", v)}
+                type="email"
+                optional
+              />
             </div>
+
             <SectionTitle>Fournisseur</SectionTitle>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field
-                label="Nom / Entreprise"
-                field="vendorName"
+                label="Nom / Raison sociale"
+                value={form.vendorName}
+                onChange={(v) => set("vendorName", v)}
                 required
                 className="sm:col-span-2"
               />
-              <Field label="Adresse" field="vendorAddress" required />
-              <Field label="Ville, Code postal" field="vendorCity" required />
-              <Field label="Email" field="vendorEmail" type="email" />
+              <Field
+                label="Adresse"
+                value={form.vendorAddress}
+                onChange={(v) => set("vendorAddress", v)}
+                required
+              />
+              <Field
+                label="Code postal et ville"
+                value={form.vendorCity}
+                onChange={(v) => set("vendorCity", v)}
+                required
+              />
+              <Field
+                label="Email"
+                value={form.vendorEmail}
+                onChange={(v) => set("vendorEmail", v)}
+                type="email"
+                optional
+              />
             </div>
+
             {renderLineItems()}
-            <SectionTitle>Informations complémentaires</SectionTitle>
+
+            <SectionTitle>Conditions</SectionTitle>
             <div className="grid gap-3">
               <Field
-                label="Conditions de livraison"
-                field="deliveryTerms"
-                placeholder="Franco de port à l'adresse de l'acheteur"
+                label="Conditions de livraison (Incoterms)"
+                value={form.deliveryTerms}
+                onChange={(v) => set("deliveryTerms", v)}
+                optional
+                placeholder="Ex : DAP – Livraison à l'adresse de l'acheteur, port inclus"
               />
               <TextArea
                 label="Notes"
-                field="notes"
-                placeholder="Informations complémentaires..."
+                value={form.notes}
+                onChange={(v) => set("notes", v)}
+                optional
+                placeholder="Conditions générales d'achat, références contractuelles..."
               />
             </div>
           </>
         );
 
+      // ── Lettre formelle ───────────────────────────────────────────────────
       case "lettre":
         return (
           <>
             {renderSenderSection("Expéditeur")}
+
             <SectionTitle>Destinataire</SectionTitle>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field
-                label="Nom / Entreprise"
-                field="recipientName"
-                required
-                className="sm:col-span-2"
+                label="Civilité"
+                value={form.recipientTitle}
+                onChange={(v) => set("recipientTitle", v)}
+                optional
+                placeholder="M. / Mme / Dr. / Me"
               />
-              <Field label="Adresse" field="recipientAddress" required />
-              <Field label="Ville, Code postal" field="recipientCity" required />
+              <Field
+                label="Nom / Raison sociale"
+                value={form.recipientName}
+                onChange={(v) => set("recipientName", v)}
+                required
+                placeholder="Ex : Madame Martin ou Direction des Ressources Humaines"
+              />
+              <Field
+                label="Adresse"
+                value={form.recipientAddress}
+                onChange={(v) => set("recipientAddress", v)}
+                required
+                placeholder="10 place Vendôme"
+              />
+              <Field
+                label="Code postal et ville"
+                value={form.recipientCity}
+                onChange={(v) => set("recipientCity", v)}
+                required
+                placeholder="75001 Paris"
+              />
             </div>
-            <SectionTitle>En-tête</SectionTitle>
+
+            <SectionTitle>En-tête de la lettre</SectionTitle>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Field label="Lieu" field="city" placeholder="Paris" required />
-              <Field label="Date" field="date" type="date" required />
+              <Field
+                label="Lieu d'émission"
+                value={form.city}
+                onChange={(v) => set("city", v)}
+                required
+                placeholder="Paris"
+              />
+              <Field
+                label="Date"
+                value={form.date}
+                onChange={(v) => set("date", v)}
+                type="date"
+                required
+              />
               <Field
                 label="Objet"
-                field="subject"
+                value={form.subject}
+                onChange={(v) => set("subject", v)}
                 required
                 className="sm:col-span-2"
-                placeholder="Candidature / Résiliation / Demande de..."
+                placeholder="Ex : Résiliation de contrat / Candidature au poste de... / Demande de..."
               />
             </div>
+
             <SectionTitle>Corps de la lettre</SectionTitle>
             <TextArea
               label="Contenu"
-              field="body"
+              value={form.body}
+              onChange={(v) => set("body", v)}
               rows={10}
               placeholder={"Madame, Monsieur,\n\nJe me permets de vous contacter au sujet de..."}
             />
             <div className="mt-3">
-              <Field label="Formule de politesse" field="closing" />
+              <Field
+                label="Formule de politesse"
+                value={form.closing}
+                onChange={(v) => set("closing", v)}
+              />
             </div>
           </>
         );
@@ -785,11 +1039,11 @@ export function DocumentForm({ type }: DocumentFormProps) {
       <div className="flex items-center gap-4">
         <button
           onClick={() => router.push("/dashboard/create")}
-          className="flex h-9 w-9 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-500 shadow-sm transition hover:text-neutral-900 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:text-white"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-500 shadow-sm transition hover:text-neutral-900 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:text-white"
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <h1 className="text-lg font-semibold text-neutral-900 dark:text-white">
             {TYPE_LABELS[type]}
           </h1>
@@ -797,10 +1051,12 @@ export function DocumentForm({ type }: DocumentFormProps) {
             Remplissez les champs puis générez votre document
           </p>
         </div>
-        {/* AI helper toggle */}
         <button
-          onClick={() => { setShowAiHelper((v) => !v); setAiError(null); }}
-          className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition ${
+          onClick={() => {
+            setShowAiHelper((v) => !v);
+            setAiError(null);
+          }}
+          className={`flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition ${
             showAiHelper
               ? "bg-violet-100 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400"
               : "border border-neutral-200 bg-white text-neutral-600 hover:border-violet-300 hover:text-violet-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:text-violet-400"
@@ -824,21 +1080,22 @@ export function DocumentForm({ type }: DocumentFormProps) {
             value={aiPrompt}
             onChange={(e) => setAiPrompt(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleAiAssist();
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey))
+                handleAiAssist();
             }}
             placeholder={
               type === "facture"
-                ? "Ex : Je facture Acme Corp pour 3 jours de développement à 800€/jour, TVA 20%, paiement sous 30 jours."
+                ? "Ex : Je facture Acme Corp pour 3 jours de développement à 800 € /jour, TVA 20%, paiement sous 30 jours."
                 : type === "devis"
-                ? "Ex : Devis pour la création d'un logo pour la startup TechNow, 1500€ HT, valable 1 mois."
+                ? "Ex : Devis pour la création d'un logo pour la startup TechNow, 1 500 € HT, valable 1 mois."
                 : type === "contrat"
-                ? "Ex : Contrat de prestation avec Dupont SAS pour une mission de conseil en marketing du 1er mars au 30 juin 2024, forfait 8000€."
+                ? "Ex : Contrat avec Dupont SAS pour une mission de conseil en marketing du 1er mars au 30 juin 2024, forfait 8 000 €."
                 : type === "bon-de-commande"
-                ? "Ex : Commander 10 licences logicielles à 200€/unité au fournisseur SoftCo, livraison souhaitée le 15 mars."
+                ? "Ex : Commander 10 licences logicielles à 200 €/unité au fournisseur SoftCo, livraison le 15 mars."
                 : "Ex : Lettre de résiliation de contrat d'abonnement adressée à Orange, pour le contrat n°123456."
             }
             rows={3}
-            className="w-full rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 transition dark:border-violet-500/30 dark:bg-neutral-800 dark:text-white resize-none"
+            className="w-full resize-none rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 transition dark:border-violet-500/30 dark:bg-neutral-800 dark:text-white"
           />
           {aiError && (
             <p className="mt-2 flex items-center gap-1.5 text-xs text-red-500">
@@ -853,19 +1110,30 @@ export function DocumentForm({ type }: DocumentFormProps) {
               className="flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isAiLoading ? (
-                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Analyse en cours...</>
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Analyse en
+                  cours...
+                </>
               ) : (
-                <><Sparkles className="h-3.5 w-3.5" /> Remplir le formulaire</>
+                <>
+                  <Sparkles className="h-3.5 w-3.5" /> Remplir le formulaire
+                </>
               )}
             </button>
             <button
-              onClick={() => { setShowAiHelper(false); setAiPrompt(""); setAiError(null); }}
+              onClick={() => {
+                setShowAiHelper(false);
+                setAiPrompt("");
+                setAiError(null);
+              }}
               className="flex items-center gap-1 rounded-xl px-3 py-2 text-sm text-neutral-500 transition hover:text-neutral-700 dark:hover:text-neutral-300"
             >
               <X className="h-3.5 w-3.5" />
               Fermer
             </button>
-            <span className="ml-auto text-xs text-neutral-400 hidden sm:block">⌘↵ pour envoyer</span>
+            <span className="ml-auto hidden text-xs text-neutral-400 sm:block">
+              ⌘↵ pour envoyer
+            </span>
           </div>
         </div>
       )}
@@ -905,7 +1173,6 @@ export function DocumentForm({ type }: DocumentFormProps) {
       {/* Post-generation: actions + preview */}
       {pdfUrl && (
         <>
-          {/* Action buttons */}
           <div className="flex flex-col gap-3 rounded-2xl border border-neutral-100 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900 sm:flex-row">
             <button
               onClick={handleDownload}
@@ -924,11 +1191,17 @@ export function DocumentForm({ type }: DocumentFormProps) {
               }`}
             >
               {isSaving ? (
-                <><Loader2 className="h-4 w-4 animate-spin" /> Sauvegarde...</>
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" /> Sauvegarde...
+                </>
               ) : savedSuccess ? (
-                <><CheckCircle className="h-4 w-4" /> {t("savedToDocuSafe")}</>
+                <>
+                  <CheckCircle className="h-4 w-4" /> {t("savedToDocuSafe")}
+                </>
               ) : (
-                <><Save className="h-4 w-4" /> {t("saveToDocuSafe")}</>
+                <>
+                  <Save className="h-4 w-4" /> {t("saveToDocuSafe")}
+                </>
               )}
             </button>
           </div>
