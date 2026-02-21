@@ -431,6 +431,25 @@ export const translations = {
     triageExit: "Exit triage",
     triageSwipeHint: "Swipe right to keep, left to delete",
     triageDeleteConfirm: "Delete this document?",
+
+    // Document Creation (Business)
+    createDocuments: "Create",
+    createDocumentsDesc: "Generate professional business documents",
+    chooseDocumentType: "Choose a document type",
+    docInvoice: "Invoice",
+    docQuote: "Quote / Estimate",
+    docContract: "Service Contract",
+    docPurchaseOrder: "Purchase Order",
+    docLetter: "Formal Letter",
+    generatePdf: "Generate PDF",
+    downloadPdf: "Download PDF",
+    saveToDocuSafe: "Save to DocuSafe",
+    savedToDocuSafe: "Saved to DocuSafe!",
+    businessOnlyFeature: "This feature is exclusive to Business plan subscribers.",
+    senderInfo: "Sender",
+    recipientInfo: "Recipient",
+    lineItems: "Line items",
+    addLine: "Add a line",
   },
 
   fr: {
@@ -865,6 +884,25 @@ export const translations = {
     triageExit: "Quitter le tri",
     triageSwipeHint: "Glissez à droite pour garder, à gauche pour supprimer",
     triageDeleteConfirm: "Supprimer ce document ?",
+
+    // Document Creation (Business)
+    createDocuments: "Créer",
+    createDocumentsDesc: "Générez des documents professionnels",
+    chooseDocumentType: "Choisissez un type de document",
+    docInvoice: "Facture",
+    docQuote: "Devis",
+    docContract: "Contrat de prestation",
+    docPurchaseOrder: "Bon de commande",
+    docLetter: "Lettre formelle",
+    generatePdf: "Générer le PDF",
+    downloadPdf: "Télécharger le PDF",
+    saveToDocuSafe: "Enregistrer dans DocuSafe",
+    savedToDocuSafe: "Enregistré dans DocuSafe !",
+    businessOnlyFeature: "Cette fonctionnalité est réservée aux abonnés Business.",
+    senderInfo: "Émetteur",
+    recipientInfo: "Destinataire",
+    lineItems: "Lignes",
+    addLine: "Ajouter une ligne",
   },
 } as const;
 

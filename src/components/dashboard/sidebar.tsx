@@ -16,19 +16,21 @@ import {
   FileUp,
   Lock,
   ArrowLeftRight,
+  FilePlus2,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useSubscription } from "@/components/providers/subscription-provider";
 import type { TranslationKey } from "@/lib/translations";
 
-const navigation: Array<{ nameKey: TranslationKey; href: string; icon: any; tutorialId?: string; exact?: boolean }> = [
+const navigation: Array<{ nameKey: TranslationKey; href: string; icon: any; tutorialId?: string; exact?: boolean; businessOnly?: boolean }> = [
   { nameKey: "dashboard", href: "/dashboard", icon: LayoutDashboard, exact: true },
   { nameKey: "myDocuments", href: "/dashboard/documents", icon: FileText, tutorialId: "documents-link", exact: true },
   { nameKey: "myFiles", href: "/dashboard/my-files", icon: Folder, tutorialId: "folders-link" },
   { nameKey: "search", href: "/dashboard/search", icon: Search, tutorialId: "search-link" },
   { nameKey: "requests", href: "/dashboard/requests", icon: FileUp },
   { nameKey: "triageMode", href: "/dashboard/documents?triage=1", icon: ArrowLeftRight },
+  { nameKey: "createDocuments", href: "/dashboard/create", icon: FilePlus2, businessOnly: true },
   { nameKey: "docubot", href: "/dashboard/docubot", icon: Bot, tutorialId: "docubot-link" },
 ];
 
@@ -40,7 +42,7 @@ const bottomNavigation: Array<{ nameKey: TranslationKey; href: string; icon: any
 export function Sidebar() {
   const pathname = usePathname();
   const { t } = useTranslation();
-  const { isRestricted } = useSubscription();
+  const { isRestricted, planType } = useSubscription();
 
   const handleSignOut = async () => {
     await signOut({ callbackUrl: "/" });
@@ -93,7 +95,9 @@ export function Sidebar() {
         <div className="space-y-1">
           {navigation.map((item) => {
             const isActive = isItemActive(item);
-            const isLocked = isRestricted && item.nameKey === "docubot";
+            const isLocked =
+              (isRestricted && item.nameKey === "docubot") ||
+              (item.businessOnly === true && planType !== "BUSINESS");
             return (
               <Link
                 key={item.nameKey}
