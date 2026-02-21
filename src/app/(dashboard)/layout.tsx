@@ -19,11 +19,14 @@ async function getLayoutData() {
 
   const user = await db.user.findUnique({
     where: { id: session.user.id },
-    select: { emailVerified: true, email: true, planType: true, onboardingCompleted: true, teamOwnerId: true },
+    select: { emailVerified: true, email: true, planType: true, onboardingCompleted: true, teamOwnerId: true, termsAcceptedAt: true },
   });
 
   if (!user) return { redirect: "/login" as const, session: null };
   if (!user.emailVerified) return { redirect: `/verify-email?email=${encodeURIComponent(user.email)}` as const, session: null };
+
+  // Legal gate: user must accept CGU + Privacy Policy before accessing the dashboard
+  if (!user.termsAcceptedAt) return { redirect: "/accept-terms" as const, session: null };
 
   // FREE users must complete onboarding then subscribe
   const headersList = headers();

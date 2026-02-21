@@ -46,6 +46,10 @@ model User {
   // Onboarding
   onboardingCompleted  Boolean   @default(false)
 
+  // Legal consent (RGPD + LCEN)
+  termsAcceptedAt      DateTime? // Null = not yet accepted, required before dashboard access
+  termsVersion         String?   // Version of CGU/Privacy accepted (e.g. "2026-02-21")
+
   // Email Import
   importEmailId        String?   @unique // Unique ID for import email (e.g., abc123 for user-abc123@import.docusafe.app)
 
