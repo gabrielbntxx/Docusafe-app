@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { decryptDocument, decryptUserKey, removeEncryptionMarker } from "@/lib/encryption";
 import { analyzeDocumentWithAI, getOrCreateCategoryFolder } from "@/lib/ai-analysis";
 import { getEffectiveUserId } from "@/lib/team";
+import { checkRateLimit } from "@/lib/security";
 
 // Helper to get user encryption key
 async function getUserEncryptionKey(userId: string): Promise<string | null> {
@@ -567,10 +568,10 @@ async function summarizeDocument(userId: string, documentId: string) {
     console.log("[DocuBot] Calling Gemini API, mime:", document.mimeType, "base64 length:", base64Data.length);
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
         body: JSON.stringify({
           contents: [
             {
@@ -1030,10 +1031,10 @@ async function analyzeDocument(userId: string, documentId: string) {
     const base64Data = fileBuffer.toString("base64");
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
         body: JSON.stringify({
           contents: [{
             parts: [
@@ -1431,10 +1432,10 @@ function streamText(text: string): Response {
 // Uses a regular generateContent call (not SSE) then simulates streaming server-side,
 // which avoids all proxy-buffering issues with Railway/Nginx.
 async function streamGeminiCall(contents: any[], apiKey: string): Promise<Response> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+  const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
   const gemRes = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
     body: JSON.stringify({ contents, generationConfig: { temperature: 0.7, maxOutputTokens: 1024 } }),
   });
 
@@ -1496,6 +1497,12 @@ export async function POST(request: NextRequest) {
       return new Response("Votre abonnement est expiré. Veuillez renouveler votre paiement.", { status: 403 });
     }
 
+    // Rate limiting — keyed by authenticated user ID
+    const rateCheck = checkRateLimit(session.user.id, "chat");
+    if (!rateCheck.allowed) {
+      return new Response(rateCheck.error || "Trop de requêtes, réessayez plus tard.", { status: 429 });
+    }
+
     // Use effective workspace userId for team members
     const userId = await getEffectiveUserId(session.user.id);
 
@@ -1516,10 +1523,10 @@ export async function POST(request: NextRequest) {
       const mimeType = file.type || "application/octet-stream";
 
       const gemRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
           body: JSON.stringify({
             contents: [{
               parts: [
@@ -1693,8 +1700,8 @@ export async function POST(request: NextRequest) {
       ? "Got it! I'm DocuBot, ready to help you with your documents."
       : "Compris ! Je suis DocuBot, prêt à t'aider avec tes documents.";
 
-    const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-    const GEMINI_HEADERS = { "Content-Type": "application/json" };
+    const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+    const GEMINI_HEADERS = { "Content-Type": "application/json", "x-goog-api-key": apiKey };
     const generationConfig = { temperature: 0.7, maxOutputTokens: 1024 };
 
     // Build initial conversation

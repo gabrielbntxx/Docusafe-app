@@ -392,6 +392,16 @@ const RATE_LIMIT_CONFIG = {
     windowMs: 15 * 60 * 1000, // 15 minutes
     blockDurationMs: 60 * 60 * 1000, // 1 hour block
   },
+  chat: {
+    maxAttempts: 40,
+    windowMs: 60 * 1000, // 1 minute
+    blockDurationMs: 5 * 60 * 1000, // 5 minutes block
+  },
+  aiGenerate: {
+    maxAttempts: 15,
+    windowMs: 60 * 1000, // 1 minute
+    blockDurationMs: 5 * 60 * 1000, // 5 minutes block
+  },
 };
 
 // In-memory rate limit store (pour production, utiliser Redis)

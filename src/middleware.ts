@@ -178,7 +178,7 @@ export function middleware(request: NextRequest) {
         "style-src 'self' 'unsafe-inline'",
         "img-src 'self' data: blob: https:",
         "font-src 'self' data:",
-        "connect-src 'self' https:",
+        "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com",
         "frame-src 'self' blob: https://docs.google.com https://accounts.google.com https://content.googleapis.com",
         "object-src 'self' blob:",
         "media-src 'self' blob:",
