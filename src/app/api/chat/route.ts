@@ -1190,7 +1190,27 @@ async function getDocumentStats(userId: string) {
   };
 }
 
-// NEW: List all documents inside a specific folder
+// Helper: collect a folder ID + all descendant folder IDs recursively
+async function getAllDescendantFolderIds(userId: string, rootFolderId: string): Promise<string[]> {
+  const allIds: string[] = [rootFolderId];
+  const queue: string[] = [rootFolderId];
+
+  while (queue.length > 0) {
+    const parentId = queue.shift()!;
+    const children = await db.folder.findMany({
+      where: { userId, parentId },
+      select: { id: true },
+    });
+    for (const child of children) {
+      allIds.push(child.id);
+      queue.push(child.id);
+    }
+  }
+
+  return allIds;
+}
+
+// NEW: List all documents inside a specific folder (and its sub-folders)
 async function listFolderContents(userId: string, folderId: string) {
   const folder = await db.folder.findFirst({
     where: { id: folderId, userId },
@@ -1200,13 +1220,16 @@ async function listFolderContents(userId: string, folderId: string) {
     return { success: false, error: "Dossier non trouvé" };
   }
 
+  const allFolderIds = await getAllDescendantFolderIds(userId, folderId);
+
   const documents = await db.document.findMany({
-    where: { userId, folderId },
+    where: { userId, folderId: { in: allFolderIds } },
     select: {
       id: true,
       displayName: true,
       fileType: true,
       uploadedAt: true,
+      folder: { select: { name: true } },
     },
     orderBy: { uploadedAt: "desc" },
   });
@@ -1217,7 +1240,7 @@ async function listFolderContents(userId: string, folderId: string) {
       folderName: folder.name,
       documentCount: 0,
       documents: [],
-      message: `Le dossier "${folder.name}" est vide.`,
+      message: `Le dossier "${folder.name}" (et ses sous-dossiers) est vide.`,
     };
   }
 
@@ -1225,16 +1248,18 @@ async function listFolderContents(userId: string, folderId: string) {
     success: true,
     folderName: folder.name,
     documentCount: documents.length,
+    subFolderCount: allFolderIds.length - 1,
     documents: documents.map((d) => ({
       id: d.id,
       name: d.displayName,
       type: d.fileType,
+      subfolder: d.folder?.name !== folder.name ? d.folder?.name : null,
       addedDate: formatFriendlyDate(new Date(d.uploadedAt)),
     })),
   };
 }
 
-// NEW: Delete ALL documents inside a specific folder
+// NEW: Delete ALL documents inside a folder AND its sub-folders
 async function deleteFolderContents(userId: string, folderId: string) {
   const folder = await db.folder.findFirst({
     where: { id: folderId, userId },
@@ -1244,15 +1269,18 @@ async function deleteFolderContents(userId: string, folderId: string) {
     return { success: false, error: "Dossier non trouvé" };
   }
 
+  // Collect this folder + all nested sub-folders
+  const allFolderIds = await getAllDescendantFolderIds(userId, folderId);
+
   const documents = await db.document.findMany({
-    where: { userId, folderId },
+    where: { userId, folderId: { in: allFolderIds } },
     select: { id: true, sizeBytes: true },
   });
 
   if (documents.length === 0) {
     return {
       success: true,
-      message: `Le dossier "${folder.name}" est déjà vide.`,
+      message: `Le dossier "${folder.name}" et ses sous-dossiers sont déjà vides.`,
       deletedCount: 0,
       folderName: folder.name,
     };
@@ -1260,7 +1288,7 @@ async function deleteFolderContents(userId: string, folderId: string) {
 
   const totalBytes = documents.reduce((sum, d) => sum + Number(d.sizeBytes), 0);
 
-  await db.document.deleteMany({ where: { userId, folderId } });
+  await db.document.deleteMany({ where: { userId, folderId: { in: allFolderIds } } });
 
   // Update user stats
   await db.user.update({
@@ -1271,9 +1299,12 @@ async function deleteFolderContents(userId: string, folderId: string) {
     },
   });
 
+  const subFolderCount = allFolderIds.length - 1;
+  const subFolderInfo = subFolderCount > 0 ? ` (dont ${subFolderCount} sous-dossier(s))` : "";
+
   return {
     success: true,
-    message: `${documents.length} fichier(s) supprimé(s) du dossier "${folder.name}"`,
+    message: `${documents.length} fichier(s) supprimé(s) du dossier "${folder.name}"${subFolderInfo}`,
     deletedCount: documents.length,
     folderName: folder.name,
   };
