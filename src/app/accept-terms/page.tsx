@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Shield, FileText, Lock, CheckCircle2 } from "lucide-react";
+import { Shield, FileText, Lock } from "lucide-react";
 
 export default function AcceptTermsPage() {
   const router = useRouter();
@@ -105,80 +105,58 @@ export default function AcceptTermsPage() {
           </div>
 
           {/* Checkboxes — explicit, separate consent */}
-          <div className="space-y-3 border-t border-neutral-100 pt-5 dark:border-neutral-700">
-            <label className="flex items-start gap-3 cursor-pointer group">
-              <div className="relative mt-0.5">
-                <input
-                  type="checkbox"
-                  checked={acceptedTerms}
-                  onChange={(e) => setAcceptedTerms(e.target.checked)}
-                  className="sr-only"
-                />
-                <div
-                  onClick={() => setAcceptedTerms(!acceptedTerms)}
-                  className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                    acceptedTerms
-                      ? "bg-blue-600 border-blue-600"
-                      : "border-neutral-300 dark:border-neutral-600 group-hover:border-blue-400"
-                  }`}
-                >
-                  {acceptedTerms && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
-                </div>
-              </div>
-              <span
-                onClick={() => setAcceptedTerms(!acceptedTerms)}
-                className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed select-none"
+          <div className="space-y-4 border-t border-neutral-100 pt-5 dark:border-neutral-700">
+            {/* Checkbox 1: CGU */}
+            <div className="flex items-start gap-3">
+              <input
+                id="accept-terms"
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="mt-1 h-4 w-4 shrink-0 cursor-pointer accent-blue-600"
+              />
+              <label
+                htmlFor="accept-terms"
+                className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed cursor-pointer"
               >
                 J&apos;ai lu et j&apos;accepte intégralement les{" "}
                 <a
                   href="/terms"
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
                   className="font-medium text-blue-600 hover:underline dark:text-blue-400"
                 >
                   Conditions Générales d&apos;Utilisation
                 </a>
                 , y compris les clauses de limitation de responsabilité et de droit applicable français.
-              </span>
-            </label>
+              </label>
+            </div>
 
-            <label className="flex items-start gap-3 cursor-pointer group">
-              <div className="relative mt-0.5">
-                <input
-                  type="checkbox"
-                  checked={acceptedPrivacy}
-                  onChange={(e) => setAcceptedPrivacy(e.target.checked)}
-                  className="sr-only"
-                />
-                <div
-                  onClick={() => setAcceptedPrivacy(!acceptedPrivacy)}
-                  className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                    acceptedPrivacy
-                      ? "bg-blue-600 border-blue-600"
-                      : "border-neutral-300 dark:border-neutral-600 group-hover:border-blue-400"
-                  }`}
-                >
-                  {acceptedPrivacy && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
-                </div>
-              </div>
-              <span
-                onClick={() => setAcceptedPrivacy(!acceptedPrivacy)}
-                className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed select-none"
+            {/* Checkbox 2: Privacy */}
+            <div className="flex items-start gap-3">
+              <input
+                id="accept-privacy"
+                type="checkbox"
+                checked={acceptedPrivacy}
+                onChange={(e) => setAcceptedPrivacy(e.target.checked)}
+                className="mt-1 h-4 w-4 shrink-0 cursor-pointer accent-blue-600"
+              />
+              <label
+                htmlFor="accept-privacy"
+                className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed cursor-pointer"
               >
                 J&apos;ai lu et j&apos;accepte la{" "}
                 <a
                   href="/privacy"
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
                   className="font-medium text-blue-600 hover:underline dark:text-blue-400"
                 >
                   Politique de confidentialité
                 </a>{" "}
                 et je consens au traitement de mes données personnelles conformément au RGPD pour la fourniture du service.
-              </span>
-            </label>
+              </label>
+            </div>
           </div>
 
           {/* Error */}
