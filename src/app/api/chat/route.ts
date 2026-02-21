@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getFromR2, hasActiveSubscription } from "@/lib/storage";
+import { revalidatePath } from "next/cache";
 import { decryptDocument, decryptUserKey, removeEncryptionMarker } from "@/lib/encryption";
 import { analyzeDocumentWithAI, getOrCreateCategoryFolder } from "@/lib/ai-analysis";
 import { getEffectiveUserId } from "@/lib/team";
@@ -805,6 +806,8 @@ async function deleteDocument(userId: string, documentId: string) {
     },
   });
 
+  revalidatePath("/dashboard", "layout");
+
   return {
     success: true,
     message: `Document "${document.displayName}" supprimé`,
@@ -837,6 +840,8 @@ async function deleteMultipleDocuments(userId: string, documentIds: string[]) {
       storageUsedBytes: { decrement: totalBytes },
     },
   });
+
+  revalidatePath("/dashboard", "layout");
 
   return {
     success: true,
@@ -1320,6 +1325,8 @@ async function deleteFolderContents(userId: string, folderId: string) {
 
   const subFolderCount = allFolderIds.length - 1;
   const subFolderInfo = subFolderCount > 0 ? ` (dont ${subFolderCount} sous-dossier(s))` : "";
+
+  revalidatePath("/dashboard", "layout");
 
   return {
     success: true,
