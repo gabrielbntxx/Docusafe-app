@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 
 // Current version of legal documents — update this date when CGU/Privacy are updated
 // to force users to re-accept. Format: YYYY-MM-DD
-export const TERMS_CURRENT_VERSION = "2026-02-21";
+const TERMS_CURRENT_VERSION = "2026-02-21";
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
