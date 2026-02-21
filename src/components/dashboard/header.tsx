@@ -41,14 +41,17 @@ export function Header() {
   return (
     <header className="sticky top-0 z-[50] hidden lg:block">
       <div className="border-b border-black/5 bg-white/70 backdrop-blur-xl dark:border-white/5 dark:bg-neutral-950/90">
-        <div className="flex h-12 items-center justify-between px-6">
+        <div className="flex h-16 items-center justify-between px-8">
           {/* Left: Greeting - suppressHydrationWarning because greeting is client-only */}
           <div suppressHydrationWarning>
-            <h2 className="text-sm font-semibold text-neutral-900 dark:text-white">
+            <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
               {greeting
                 ? `${greeting}, ${session?.user?.name?.split(" ")[0] || ""}`
-                : <span className="inline-block h-4 w-36 animate-pulse rounded bg-neutral-200 dark:bg-neutral-700" />}
+                : <span className="inline-block h-5 w-48 animate-pulse rounded bg-neutral-200 dark:bg-neutral-700" />}
             </h2>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+              {t("manageDocumentsEasily")}
+            </p>
           </div>
 
           {/* Right: Actions */}
