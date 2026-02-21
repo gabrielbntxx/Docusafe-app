@@ -915,12 +915,73 @@ export function MyFilesClient({
         {/* Folders Sidebar */}
         <div className={`lg:col-span-4 ${isMobileDocumentsView ? 'hidden lg:block' : ''}`}>
           <div className="rounded-2xl lg:rounded-3xl bg-white p-4 lg:p-5 shadow-lg shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
+            {/* Sidebar header with Sélectionner toggle */}
+            {rootFolders.length > 0 && (
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-medium uppercase tracking-wide text-neutral-400">Dossiers</span>
+                <button
+                  onClick={() => isSelectionMode ? cancelSelection() : setIsSelectionMode(true)}
+                  className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition-all ${
+                    isSelectionMode
+                      ? "bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400"
+                      : "text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 dark:hover:bg-white/5 dark:hover:text-neutral-200"
+                  }`}
+                >
+                  <CheckSquare className="h-3 w-3" />
+                  {isSelectionMode ? "Annuler" : "Sélectionner"}
+                </button>
+              </div>
+            )}
+
+            {/* Sidebar selection toolbar */}
+            {isSelectionMode && selectedFolders.size > 0 && (
+              <div className="mb-3 rounded-xl bg-blue-50 dark:bg-blue-500/10 p-2.5 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
+                    {selectedFolders.size} sélectionné{selectedFolders.size > 1 ? "s" : ""}
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={handleBulkDownload}
+                      disabled={isBulkDownloading}
+                      className="flex items-center gap-1 rounded-lg bg-blue-500 px-2 py-1 text-xs font-medium text-white hover:bg-blue-600 disabled:opacity-50"
+                    >
+                      {isBulkDownloading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+                      ZIP
+                    </button>
+                    <button
+                      onClick={handleBulkDelete}
+                      disabled={isBulkDeleting}
+                      className="flex items-center gap-1 rounded-lg bg-red-500 px-2 py-1 text-xs font-medium text-white hover:bg-red-600 disabled:opacity-50"
+                    >
+                      {isBulkDeleting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                      Suppr.
+                    </button>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    if (selectedFolders.size === rootFolders.length) {
+                      setSelectedFolders(new Set());
+                    } else {
+                      setSelectedFolders(new Set(rootFolders.map(f => f.id)));
+                    }
+                  }}
+                  className="flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400"
+                >
+                  <CheckCheck className="h-3 w-3" />
+                  {selectedFolders.size === rootFolders.length ? "Tout désélectionner" : "Tout sélectionner"}
+                </button>
+              </div>
+            )}
+
             {/* Uncategorized - drop zone */}
             <div
-              onDragOver={(e) => handleDragOver(e, null)}
+              onDragOver={(e) => !isSelectionMode && handleDragOver(e, null)}
               onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, null)}
+              onDrop={(e) => !isSelectionMode && handleDrop(e, null)}
               onClick={() => {
+                if (isSelectionMode) return;
                 setSelectedFolder(null);
                 setShowDocuments(true);
                 setFolderPath([]);
@@ -948,22 +1009,40 @@ export function MyFilesClient({
 
             {/* Root Folders */}
             <div className="space-y-2">
-              {rootFolders.map((folder) => (
+              {rootFolders.map((folder) => {
+                const isRootSelected = selectedFolders.has(folder.id);
+                return (
                 <div
                   key={folder.id}
-                  onDragOver={(e) => handleDragOver(e, folder.id)}
+                  onDragOver={(e) => !isSelectionMode && handleDragOver(e, folder.id)}
                   onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, folder.id)}
+                  onDrop={(e) => !isSelectionMode && handleDrop(e, folder.id)}
+                  onClick={() => isSelectionMode && toggleFolderSelection(folder.id)}
                   className={`group flex items-center gap-2 lg:gap-3 rounded-xl p-2 lg:p-3 transition-all ${
                     dropTargetFolder === folder.id && draggedDocument
                       ? "bg-violet-100 ring-2 ring-violet-500 dark:bg-violet-500/20"
+                      : isRootSelected
+                      ? "bg-blue-50 ring-2 ring-blue-500 dark:bg-blue-500/10"
                       : selectedFolder === folder.id
                       ? "bg-violet-50 dark:bg-violet-500/10"
                       : "hover:bg-neutral-100 dark:hover:bg-white/5"
-                  }`}
+                  } ${isSelectionMode ? "cursor-pointer" : ""}`}
                 >
+                  {/* Checkbox */}
+                  {isSelectionMode && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleFolderSelection(folder.id); }}
+                      className="flex-shrink-0"
+                    >
+                      {isRootSelected ? (
+                        <CheckSquare className="h-5 w-5 text-blue-500" />
+                      ) : (
+                        <Square className="h-5 w-5 text-neutral-400" />
+                      )}
+                    </button>
+                  )}
                   <button
-                    onClick={() => openFolder(folder)}
+                    onClick={(e) => { e.stopPropagation(); if (!isSelectionMode) openFolder(folder); }}
                     className="flex h-9 w-9 lg:h-10 lg:w-10 items-center justify-center rounded-xl flex-shrink-0 hover:ring-2 hover:ring-violet-500/30"
                     style={{ backgroundColor: folder.color + "20" }}
                   >
@@ -971,7 +1050,7 @@ export function MyFilesClient({
                   </button>
 
                   <button
-                    onClick={() => openFolder(folder)}
+                    onClick={(e) => { e.stopPropagation(); if (!isSelectionMode) openFolder(folder); }}
                     className="flex flex-1 items-center gap-2 text-left min-w-0"
                   >
                     <div className="flex-1 min-w-0">
@@ -1090,7 +1169,8 @@ export function MyFilesClient({
                     )}
                   </div>
                 </div>
-              ))}
+              );
+              })}
             </div>
 
             {rootFolders.length === 0 && (
