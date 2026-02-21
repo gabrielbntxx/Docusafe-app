@@ -4,11 +4,37 @@
  * Converts images and text/code files to PDF.
  * Images: uses sharp for processing + pdfkit for PDF generation.
  * Text/code: renders with monospace font, line numbers, and page numbers.
+ * Apple iWork: extracts QuickLook/Preview.pdf from the ZIP bundle.
  */
 
 import sharp from "sharp";
 import PDFDocument from "pdfkit";
 import { PDFDocument as PdfLib, StandardFonts, rgb } from "pdf-lib";
+import JSZip from "jszip";
+
+/** Apple iWork file MIME types (all are ZIP-based bundles) */
+export const APPLE_IWORK_MIME_TYPES = new Set([
+  "application/vnd.apple.pages",
+  "application/vnd.apple.numbers",
+  "application/vnd.apple.keynote",
+]);
+
+/**
+ * Extract the QuickLook/Preview.pdf from an Apple iWork file (.pages, .numbers, .key).
+ * These files are ZIP archives that embed a PDF preview at QuickLook/Preview.pdf.
+ * Returns null if the file is not a valid ZIP or has no preview PDF.
+ */
+export async function extractAppleQuickLookPdf(buffer: Buffer): Promise<Buffer | null> {
+  try {
+    const zip = await JSZip.loadAsync(buffer);
+    const pdfEntry = zip.file("QuickLook/Preview.pdf");
+    if (!pdfEntry) return null;
+    const pdfBuffer = await pdfEntry.async("nodebuffer");
+    return pdfBuffer;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Image MIME types supported for conversion (sharp handles all of these)

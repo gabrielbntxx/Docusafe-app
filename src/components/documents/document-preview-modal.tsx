@@ -45,6 +45,7 @@ export function DocumentPreviewModal({
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [blobMimeType, setBlobMimeType] = useState<string | null>(null);
   const [textContent, setTextContent] = useState<string | null>(null);
 
   // Fetch document and create blob URL
@@ -55,6 +56,7 @@ export function DocumentPreviewModal({
       setIsLoading(true);
       setHasError(false);
       setBlobUrl(null);
+      setBlobMimeType(null);
       setTextContent(null);
 
       fetch(`/api/documents/${document.id}/view`)
@@ -70,6 +72,7 @@ export function DocumentPreviewModal({
           return response.blob().then((blob) => {
             currentBlobUrl = URL.createObjectURL(blob);
             setBlobUrl(currentBlobUrl);
+            setBlobMimeType(blob.type || document.mimeType);
             setIsLoading(false);
           });
         })
@@ -265,7 +268,7 @@ export function DocumentPreviewModal({
                 {t("close") || "Fermer"}
               </Button>
             </div>
-          ) : document.fileType === "pdf" && blobUrl ? (
+          ) : (document.fileType === "pdf" || blobMimeType === "application/pdf") && blobUrl ? (
             <iframe
               src={blobUrl}
               className="h-full w-full min-h-[60vh]"

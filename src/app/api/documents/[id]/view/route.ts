@@ -10,6 +10,7 @@ import {
   removeEncryptionMarker,
 } from "@/lib/encryption";
 import { getEffectiveUserId } from "@/lib/team";
+import { extractAppleQuickLookPdf, APPLE_IWORK_MIME_TYPES } from "@/lib/pdf-converter";
 
 export async function GET(
   req: Request,
@@ -75,6 +76,24 @@ export async function GET(
       const userKey = decryptUserKey(owner.encryptionKey);
       const encryptedData = removeEncryptionMarker(fileBuffer);
       fileBuffer = decryptDocument(encryptedData, userKey);
+    }
+
+    // Apple iWork files (.pages, .numbers, .key): extract QuickLook PDF for browser preview
+    if (APPLE_IWORK_MIME_TYPES.has(document.mimeType)) {
+      const pdfBuffer = await extractAppleQuickLookPdf(fileBuffer);
+      if (pdfBuffer) {
+        const pdfName = document.originalName.replace(/\.[^.]+$/, ".pdf");
+        return new NextResponse(new Uint8Array(pdfBuffer), {
+          headers: {
+            "Content-Type": "application/pdf",
+            "Content-Disposition": `inline; filename="${encodeURIComponent(pdfName)}"`,
+            "Content-Length": String(pdfBuffer.length),
+            "Cache-Control": "private, max-age=3600",
+            "X-Content-Type-Options": "nosniff",
+          },
+        });
+      }
+      // No QuickLook PDF found — fall through and serve as download
     }
 
     // Types dangereux pouvant exécuter du JS (SVG, HTML)

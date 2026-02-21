@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import crypto from "crypto";
+import { extractAppleQuickLookPdf, APPLE_IWORK_MIME_TYPES } from "@/lib/pdf-converter";
 
 // ============================================================================
 // DOCUMENT TYPES - Beaucoup plus de types pour une classification précise
@@ -1346,6 +1347,24 @@ ${folderContext}`;
         console.log("[AI Analysis] File uploaded successfully, URI:", fileUri);
       } catch (uploadError) {
         console.error("[AI Analysis] File API upload failed, falling back to filename classification:", uploadError);
+        return classifyMediaByFilename(fileName, mimeType);
+      }
+    } else if (APPLE_IWORK_MIME_TYPES.has(mimeType)) {
+      // Apple iWork files: Gemini doesn't support their MIME type natively.
+      // Extract QuickLook/Preview.pdf from the ZIP bundle and send that instead.
+      console.log("[AI Analysis] Apple iWork file — trying QuickLook PDF extraction...");
+      const quickLookPdf = await extractAppleQuickLookPdf(fileBuffer);
+      if (quickLookPdf) {
+        console.log("[AI Analysis] QuickLook PDF extracted, size:", quickLookPdf.length);
+        contentParts.push({
+          inline_data: {
+            mime_type: "application/pdf",
+            data: quickLookPdf.toString("base64"),
+          },
+        });
+      } else {
+        // No QuickLook PDF — fall back to filename classification
+        console.log("[AI Analysis] No QuickLook PDF found, falling back to filename classification");
         return classifyMediaByFilename(fileName, mimeType);
       }
     } else {
