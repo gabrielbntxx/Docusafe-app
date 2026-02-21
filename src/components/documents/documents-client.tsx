@@ -288,12 +288,10 @@ export function DocumentsClient({
         {/* Header */}
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white">
+            <h1 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white">
               {t("myDocuments")}
+              <span className="ml-2 text-sm font-normal text-neutral-400">({documents.length})</span>
             </h1>
-            <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">
-              {documents.length} {documents.length === 1 ? "document" : "documents"}
-            </p>
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">

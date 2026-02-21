@@ -766,7 +766,7 @@ export function MyFilesClient({
               <span className="text-sm">Retour</span>
             </button>
           ) : null}
-          <h1 className="text-xl lg:text-2xl font-bold text-neutral-900 dark:text-white truncate">
+          <h1 className="text-lg lg:text-xl font-bold text-neutral-900 dark:text-white truncate">
             {isMobileDocumentsView ? (
               <span className="lg:hidden">{currentFolderName}</span>
             ) : null}
@@ -914,7 +914,7 @@ export function MyFilesClient({
       <div className="lg:grid lg:gap-6 lg:grid-cols-12">
         {/* Folders Sidebar */}
         <div className={`lg:col-span-4 ${isMobileDocumentsView ? 'hidden lg:block' : ''}`}>
-          <div className="rounded-2xl lg:rounded-3xl bg-white p-4 lg:p-5 shadow-lg shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
+          <div className="rounded-2xl bg-white p-3 lg:p-4 shadow-lg shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
             {/* Sidebar header with Sélectionner toggle */}
             {rootFolders.length > 0 && (
               <div className="flex items-center justify-between mb-3">
@@ -1185,8 +1185,8 @@ export function MyFilesClient({
         </div>
 
         {/* Folder Contents (subfolders + documents) */}
-        <div className={`lg:col-span-8 ${!isMobileDocumentsView ? 'hidden lg:block' : ''} mt-4 lg:mt-0`}>
-          <div className="rounded-2xl lg:rounded-3xl bg-white p-4 lg:p-6 shadow-lg shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
+        <div className={`lg:col-span-8 ${!isMobileDocumentsView ? 'hidden lg:block' : ''} mt-2 lg:mt-0`}>
+          <div className="rounded-2xl bg-white p-3 lg:p-4 shadow-lg shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
             {/* Breadcrumb */}
             {folderPath.length > 0 && (
               <div className="mb-2 flex items-center gap-1 text-sm overflow-x-auto pb-1">

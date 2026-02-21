@@ -66,7 +66,7 @@ export default async function DashboardLayout({
               <BottomNav />
               <div className="lg:ml-72 pt-14 lg:pt-0 pb-24 lg:pb-0">
                 <Header />
-                <main className="p-4 sm:p-6 lg:p-8">{children}</main>
+                <main className="p-3 sm:p-4 lg:p-5">{children}</main>
               </div>
             </div>
           </TutorialProvider>
