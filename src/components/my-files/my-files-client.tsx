@@ -157,6 +157,7 @@ export function MyFilesClient({
   const [showShareModal, setShowShareModal] = useState(false);
   const [rulesFolder, setRulesFolder] = useState<FolderType | null>(null);
   const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(new Set());
+  const [selectedFolders, setSelectedFolders] = useState<Set<string>>(new Set());
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [isBulkDownloading, setIsBulkDownloading] = useState(false);
@@ -610,82 +611,119 @@ export function MyFilesClient({
       newSet.add(docId);
     }
     setSelectedDocuments(newSet);
-    if (newSet.size === 0) {
+    if (newSet.size === 0 && selectedFolders.size === 0) {
+      setIsSelectionMode(false);
+    }
+  };
+
+  const toggleFolderSelection = (folderId: string) => {
+    const newSet = new Set(selectedFolders);
+    if (newSet.has(folderId)) {
+      newSet.delete(folderId);
+    } else {
+      newSet.add(folderId);
+    }
+    setSelectedFolders(newSet);
+    if (newSet.size === 0 && selectedDocuments.size === 0) {
       setIsSelectionMode(false);
     }
   };
 
   const toggleSelectAll = () => {
-    if (selectedDocuments.size === currentDocuments.length) {
+    const totalSelected = selectedDocuments.size + selectedFolders.size;
+    const totalItems = currentDocuments.length + currentSubfolders.length;
+    if (totalSelected === totalItems) {
       setSelectedDocuments(new Set());
+      setSelectedFolders(new Set());
       setIsSelectionMode(false);
     } else {
       setSelectedDocuments(new Set(currentDocuments.map(d => d.id)));
+      setSelectedFolders(new Set(currentSubfolders.map(f => f.id)));
     }
   };
 
   const cancelSelection = () => {
     setSelectedDocuments(new Set());
+    setSelectedFolders(new Set());
     setIsSelectionMode(false);
   };
 
   const handleBulkDelete = async () => {
-    if (selectedDocuments.size === 0) return;
+    const docCount = selectedDocuments.size;
+    const folderCount = selectedFolders.size;
+    if (docCount === 0 && folderCount === 0) return;
 
-    const count = selectedDocuments.size;
-    if (!confirm(`Supprimer ${count} document${count > 1 ? 's' : ''} ?`)) {
-      return;
-    }
+    const parts: string[] = [];
+    if (docCount > 0) parts.push(`${docCount} document${docCount > 1 ? "s" : ""}`);
+    if (folderCount > 0) parts.push(`${folderCount} dossier${folderCount > 1 ? "s" : ""} (et leur contenu)`);
+    if (!confirm(`Supprimer ${parts.join(" et ")} ?`)) return;
 
     setIsBulkDeleting(true);
     try {
-      const docsToDelete = Array.from(selectedDocuments);
-
-      // Compute per-folder count decrements before removing
-      const folderCountUpdates: Record<string, number> = {};
-      docsToDelete.forEach(docId => {
-        const doc = localDocuments.find(d => d.id === docId);
-        if (doc?.folderId) {
-          folderCountUpdates[doc.folderId] = (folderCountUpdates[doc.folderId] || 0) + 1;
+      // Delete selected documents
+      if (docCount > 0) {
+        const docsToDelete = Array.from(selectedDocuments);
+        const folderCountUpdates: Record<string, number> = {};
+        docsToDelete.forEach(docId => {
+          const doc = localDocuments.find(d => d.id === docId);
+          if (doc?.folderId) {
+            folderCountUpdates[doc.folderId] = (folderCountUpdates[doc.folderId] || 0) + 1;
+          }
+        });
+        setLocalDocuments(prev => prev.filter(d => !docsToDelete.includes(d.id)));
+        if (Object.keys(folderCountUpdates).length > 0) {
+          setLocalFolders(prev => prev.map(f =>
+            folderCountUpdates[f.id]
+              ? { ...f, documentCount: Math.max(0, f.documentCount - folderCountUpdates[f.id]) }
+              : f
+          ));
         }
-      });
-
-      // Optimistic update
-      setLocalDocuments(prev => prev.filter(d => !docsToDelete.includes(d.id)));
-
-      // Keep folder badges in sync
-      if (Object.keys(folderCountUpdates).length > 0) {
-        setLocalFolders(prev => prev.map(f =>
-          folderCountUpdates[f.id]
-            ? { ...f, documentCount: Math.max(0, f.documentCount - folderCountUpdates[f.id]) }
-            : f
+        await Promise.all(docsToDelete.map(docId =>
+          fetch(`/api/documents/${docId}`, { method: "DELETE" })
         ));
       }
 
-      const deletePromises = docsToDelete.map(docId =>
-        fetch(`/api/documents/${docId}`, { method: "DELETE" })
-      );
-      await Promise.all(deletePromises);
+      // Delete selected folders (and all their descendants)
+      if (folderCount > 0) {
+        const foldersToDelete = Array.from(selectedFolders);
+        const allRemovedIds = new Set<string>();
+        foldersToDelete.forEach(fId => {
+          allRemovedIds.add(fId);
+          getDescendantFolderIds(fId, localFolders).forEach(id => allRemovedIds.add(id));
+        });
+        setLocalFolders(prev => prev.filter(f => !allRemovedIds.has(f.id)));
+        setLocalDocuments(prev => prev.map(d =>
+          d.folderId && allRemovedIds.has(d.folderId) ? { ...d, folderId: null, folder: null } : d
+        ));
+        await Promise.all(foldersToDelete.map(fId =>
+          fetch(`/api/folders/${fId}`, { method: "DELETE" })
+        ));
+      }
+
       setSelectedDocuments(new Set());
+      setSelectedFolders(new Set());
       setIsSelectionMode(false);
     } catch (error) {
       console.error("Bulk delete error:", error);
       alert("Erreur lors de la suppression");
-      router.refresh(); // Refresh to get correct state
+      router.refresh();
     } finally {
       setIsBulkDeleting(false);
     }
   };
 
   const handleBulkDownload = async () => {
-    if (selectedDocuments.size === 0) return;
+    if (selectedDocuments.size === 0 && selectedFolders.size === 0) return;
 
     setIsBulkDownloading(true);
     try {
       const response = await fetch("/api/documents/download-multiple", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ documentIds: Array.from(selectedDocuments) }),
+        body: JSON.stringify({
+          documentIds: Array.from(selectedDocuments),
+          folderIds: Array.from(selectedFolders),
+        }),
       });
 
       if (response.ok) {
@@ -1132,7 +1170,7 @@ export function MyFilesClient({
                       Sous-dossier
                     </button>
                   )}
-                  {currentDocuments.length > 0 && (
+                  {(currentDocuments.length > 0 || currentSubfolders.length > 0) && (
                     <button
                       onClick={() => {
                         if (isSelectionMode) {
@@ -1156,11 +1194,11 @@ export function MyFilesClient({
             </div>
 
             {/* Selection toolbar */}
-            {isSelectionMode && selectedDocuments.size > 0 && (
+            {isSelectionMode && (selectedDocuments.size > 0 || selectedFolders.size > 0) && (
               <div className="mb-4 space-y-2 rounded-xl bg-blue-50 dark:bg-blue-500/10 p-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                    {selectedDocuments.size} sélectionné{selectedDocuments.size > 1 ? "s" : ""}
+                    {selectedDocuments.size + selectedFolders.size} sélectionné{selectedDocuments.size + selectedFolders.size > 1 ? "s" : ""}
                   </span>
                   <div className="flex items-center gap-2">
                     <button
@@ -1194,7 +1232,9 @@ export function MyFilesClient({
                   className="flex items-center gap-2 text-xs font-medium text-blue-600 dark:text-blue-400"
                 >
                   <CheckCheck className="h-3.5 w-3.5" />
-                  {selectedDocuments.size === currentDocuments.length ? "Tout désélectionner" : "Tout sélectionner"}
+                  {selectedDocuments.size + selectedFolders.size === currentDocuments.length + currentSubfolders.length
+                    ? "Tout désélectionner"
+                    : "Tout sélectionner"}
                 </button>
               </div>
             )}
@@ -1204,27 +1244,48 @@ export function MyFilesClient({
               <div className="mb-4">
                 <h3 className="text-xs font-medium uppercase tracking-wide text-neutral-400 mb-2">Sous-dossiers</h3>
                 <div className="space-y-2">
-                  {currentSubfolders.map((subfolder) => (
+                  {currentSubfolders.map((subfolder) => {
+                    const isFolderSelected = selectedFolders.has(subfolder.id);
+                    return (
                     <div
                       key={subfolder.id}
-                      onDragOver={(e) => handleDragOver(e, subfolder.id)}
+                      onDragOver={(e) => !isSelectionMode && handleDragOver(e, subfolder.id)}
                       onDragLeave={handleDragLeave}
-                      onDrop={(e) => handleDrop(e, subfolder.id)}
+                      onDrop={(e) => !isSelectionMode && handleDrop(e, subfolder.id)}
+                      onClick={() => isSelectionMode && toggleFolderSelection(subfolder.id)}
                       className={`group flex items-center gap-2 lg:gap-3 rounded-xl p-2 lg:p-3 transition-all ${
                         dropTargetFolder === subfolder.id && draggedDocument
                           ? "bg-violet-100 ring-2 ring-violet-500 dark:bg-violet-500/20"
+                          : isFolderSelected
+                          ? "bg-blue-50 ring-2 ring-blue-500 dark:bg-blue-500/10"
                           : "bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700/50"
-                      }`}
+                      } ${isSelectionMode ? "cursor-pointer" : ""}`}
                     >
+                      {/* Checkbox */}
+                      {isSelectionMode && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFolderSelection(subfolder.id);
+                          }}
+                          className="flex-shrink-0"
+                        >
+                          {isFolderSelected ? (
+                            <CheckSquare className="h-5 w-5 text-blue-500" />
+                          ) : (
+                            <Square className="h-5 w-5 text-neutral-400" />
+                          )}
+                        </button>
+                      )}
                       <button
-                        onClick={() => openFolder(subfolder)}
+                        onClick={(e) => { e.stopPropagation(); if (!isSelectionMode) openFolder(subfolder); }}
                         className="flex h-9 w-9 lg:h-10 lg:w-10 items-center justify-center rounded-xl flex-shrink-0 hover:ring-2 hover:ring-violet-500/30"
                         style={{ backgroundColor: subfolder.color + "20" }}
                       >
                         <Folder className="h-4 w-4 lg:h-5 lg:w-5" style={{ color: subfolder.color }} />
                       </button>
                       <button
-                        onClick={() => openFolder(subfolder)}
+                        onClick={(e) => { e.stopPropagation(); if (!isSelectionMode) openFolder(subfolder); }}
                         className="flex-1 min-w-0 text-left"
                       >
                         <span className="block truncate text-sm font-medium text-neutral-700 dark:text-neutral-300">
@@ -1324,7 +1385,8 @@ export function MyFilesClient({
                         )}
                       </div>
                     </div>
-                  ))}
+                  );
+                })}
                 </div>
               </div>
             )}

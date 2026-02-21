@@ -25,11 +25,14 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { documentIds } = body;
+    const { documentIds = [], folderIds = [] } = body;
 
-    if (!documentIds || !Array.isArray(documentIds) || documentIds.length === 0) {
+    if (
+      (!Array.isArray(documentIds) || documentIds.length === 0) &&
+      (!Array.isArray(folderIds) || folderIds.length === 0)
+    ) {
       return NextResponse.json(
-        { error: "Aucun document sélectionné" },
+        { error: "Aucun document ou dossier sélectionné" },
         { status: 400 }
       );
     }
@@ -38,10 +41,38 @@ export async function POST(req: Request) {
     const effectiveUserId = await getEffectiveUserId(session.user.id);
     const isOwner = effectiveUserId === session.user.id;
 
+    // Resolve folderIds → collect all descendant folder IDs recursively
+    let allDocumentIds: string[] = [...documentIds];
+    if (folderIds.length > 0) {
+      const allFolderIds = new Set<string>();
+      const queue: string[] = [...folderIds];
+      while (queue.length > 0) {
+        const parentId = queue.shift()!;
+        allFolderIds.add(parentId);
+        const children = await db.folder.findMany({
+          where: { userId: effectiveUserId, parentId },
+          select: { id: true },
+        });
+        for (const child of children) queue.push(child.id);
+      }
+      const folderDocs = await db.document.findMany({
+        where: { folderId: { in: Array.from(allFolderIds) }, userId: effectiveUserId },
+        select: { id: true },
+      });
+      allDocumentIds = [...new Set([...allDocumentIds, ...folderDocs.map(d => d.id)])];
+    }
+
+    if (allDocumentIds.length === 0) {
+      return NextResponse.json(
+        { error: "Aucun document trouvé dans la sélection" },
+        { status: 404 }
+      );
+    }
+
     // Get documents that belong to the workspace
     const documents = await db.document.findMany({
       where: {
-        id: { in: documentIds },
+        id: { in: allDocumentIds },
         userId: effectiveUserId,
         // Team members can't download private docs they didn't upload
         ...(isOwner ? {} : {
@@ -63,6 +94,20 @@ export async function POST(req: Request) {
         { error: "Aucun document trouvé" },
         { status: 404 }
       );
+    }
+
+    // Build full folder path map for proper nested ZIP structure
+    const allFolders = await db.folder.findMany({
+      where: { userId: effectiveUserId },
+      select: { id: true, name: true, parentId: true },
+    });
+    const folderMap = new Map(allFolders.map(f => [f.id, f]));
+    function buildFolderPath(folderId: string | null): string {
+      if (!folderId) return "";
+      const folder = folderMap.get(folderId);
+      if (!folder) return "";
+      const parentPath = buildFolderPath(folder.parentId);
+      return parentPath ? `${parentPath}/${folder.name}` : folder.name;
     }
 
     // Get workspace owner's encryption key (not the team member's)
@@ -87,10 +132,9 @@ export async function POST(req: Request) {
           }
         }
 
-        // Add to ZIP with folder structure if applicable
-        const filePath = doc.folder
-          ? `${doc.folder.name}/${doc.displayName}`
-          : doc.displayName;
+        // Add to ZIP with full nested folder path
+        const folderPath = buildFolderPath(doc.folderId ?? null);
+        const filePath = folderPath ? `${folderPath}/${doc.displayName}` : doc.displayName;
 
         zip.file(filePath, fileBuffer);
       } catch (err) {
