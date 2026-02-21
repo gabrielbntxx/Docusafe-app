@@ -979,7 +979,7 @@ export default function UploadPage() {
               <ul className="mt-3 space-y-1.5 text-sm text-violet-100">
                 <li>PDF, Images, Audio, Vidéo, Office, Code, Archives</li>
                 <li>Taille max : 100 MB (vidéos 1 GB, archives 500 MB)</li>
-                <li>Jusqu'à 100 fichiers en parallèle</li>
+                <li>Jusqu&apos;à 100 fichiers en parallèle</li>
               </ul>
             </div>
           </div>
