@@ -1031,6 +1031,43 @@ export function DocumentForm({ type }: DocumentFormProps) {
     }
   };
 
+  // ─── Shared action buttons (download + save) ───────────────────────────────
+
+  const renderActions = () => (
+    <div className="flex flex-col gap-3 rounded-2xl border border-neutral-100 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900 sm:flex-row">
+      <button
+        onClick={handleDownload}
+        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-neutral-100 py-3 text-sm font-medium text-neutral-800 transition hover:bg-neutral-200 dark:bg-neutral-800 dark:text-white dark:hover:bg-neutral-700"
+      >
+        <Download className="h-4 w-4" />
+        {t("downloadPdf")}
+      </button>
+      <button
+        onClick={handleSave}
+        disabled={isSaving || savedSuccess}
+        className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-medium transition disabled:cursor-not-allowed ${
+          savedSuccess
+            ? "border border-emerald-200 bg-emerald-50 text-emerald-600 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400"
+            : "border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20"
+        }`}
+      >
+        {isSaving ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" /> Sauvegarde...
+          </>
+        ) : savedSuccess ? (
+          <>
+            <CheckCircle className="h-4 w-4" /> {t("savedToDocuSafe")}
+          </>
+        ) : (
+          <>
+            <Save className="h-4 w-4" /> {t("saveToDocuSafe")}
+          </>
+        )}
+      </button>
+    </div>
+  );
+
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -1067,170 +1104,149 @@ export function DocumentForm({ type }: DocumentFormProps) {
         </button>
       </div>
 
-      {/* AI Helper panel */}
-      {showAiHelper && (
-        <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4 dark:border-violet-500/30 dark:bg-violet-500/10">
-          <div className="mb-3 flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-violet-500" />
-            <span className="text-sm font-semibold text-violet-700 dark:text-violet-400">
-              Aide IA — décris ce que tu veux créer
-            </span>
-          </div>
-          <textarea
-            value={aiPrompt}
-            onChange={(e) => setAiPrompt(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey))
-                handleAiAssist();
-            }}
-            placeholder={
-              type === "facture"
-                ? "Ex : Je facture Acme Corp pour 3 jours de développement à 800 € /jour, TVA 20%, paiement sous 30 jours."
-                : type === "devis"
-                ? "Ex : Devis pour la création d'un logo pour la startup TechNow, 1 500 € HT, valable 1 mois."
-                : type === "contrat"
-                ? "Ex : Contrat avec Dupont SAS pour une mission de conseil en marketing du 1er mars au 30 juin 2024, forfait 8 000 €."
-                : type === "bon-de-commande"
-                ? "Ex : Commander 10 licences logicielles à 200 €/unité au fournisseur SoftCo, livraison le 15 mars."
-                : "Ex : Lettre de résiliation de contrat d'abonnement adressée à Orange, pour le contrat n°123456."
-            }
-            rows={3}
-            className="w-full resize-none rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 transition dark:border-violet-500/30 dark:bg-neutral-800 dark:text-white"
-          />
-          {aiError && (
-            <p className="mt-2 flex items-center gap-1.5 text-xs text-red-500">
-              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-              {aiError}
-            </p>
-          )}
-          <div className="mt-3 flex items-center gap-2">
-            <button
-              onClick={handleAiAssist}
-              disabled={isAiLoading || !aiPrompt.trim()}
-              className="flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isAiLoading ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Analyse en
-                  cours...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-3.5 w-3.5" /> Remplir le formulaire
-                </>
-              )}
-            </button>
-            <button
-              onClick={() => {
-                setShowAiHelper(false);
-                setAiPrompt("");
-                setAiError(null);
-              }}
-              className="flex items-center gap-1 rounded-xl px-3 py-2 text-sm text-neutral-500 transition hover:text-neutral-700 dark:hover:text-neutral-300"
-            >
-              <X className="h-3.5 w-3.5" />
-              Fermer
-            </button>
-            <span className="ml-auto hidden text-xs text-neutral-400 sm:block">
-              ⌘↵ pour envoyer
-            </span>
-          </div>
-        </div>
-      )}
+      {/* Two-column layout on desktop when PDF exists, single column otherwise */}
+      <div className={pdfUrl ? "lg:grid lg:grid-cols-2 lg:gap-5 lg:items-start" : undefined}>
 
-      {/* Form card */}
-      <div className="rounded-2xl border border-neutral-100 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
-        {renderForm()}
-      </div>
-
-      {/* Error */}
-      {error && (
-        <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400">
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-          {error}
-        </div>
-      )}
-
-      {/* Generate button */}
-      <button
-        onClick={handleGenerate}
-        disabled={isGenerating}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 py-3.5 font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:scale-[1.01] hover:shadow-xl hover:shadow-blue-500/30 active:scale-[0.99] disabled:cursor-not-allowed disabled:scale-100 disabled:opacity-60"
-      >
-        {isGenerating ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Génération en cours...
-          </>
-        ) : (
-          <>
-            <FileText className="h-4 w-4" />
-            {t("generatePdf")}
-          </>
-        )}
-      </button>
-
-      {/* Post-generation: actions + preview */}
-      {pdfUrl && (
-        <>
-          <div className="flex flex-col gap-3 rounded-2xl border border-neutral-100 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900 sm:flex-row">
-            <button
-              onClick={handleDownload}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-neutral-100 py-3 text-sm font-medium text-neutral-800 transition hover:bg-neutral-200 dark:bg-neutral-800 dark:text-white dark:hover:bg-neutral-700"
-            >
-              <Download className="h-4 w-4" />
-              {t("downloadPdf")}
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={isSaving || savedSuccess}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-medium transition disabled:cursor-not-allowed ${
-                savedSuccess
-                  ? "border border-emerald-200 bg-emerald-50 text-emerald-600 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400"
-                  : "border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20"
-              }`}
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> Sauvegarde...
-                </>
-              ) : savedSuccess ? (
-                <>
-                  <CheckCircle className="h-4 w-4" /> {t("savedToDocuSafe")}
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4" /> {t("saveToDocuSafe")}
-                </>
-              )}
-            </button>
-          </div>
-
-          {/* PDF Preview */}
-          <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white dark:border-neutral-800 dark:bg-neutral-900">
-            <button
-              onClick={() => setShowPreview((v) => !v)}
-              className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 dark:text-neutral-300 dark:hover:bg-white/5"
-            >
-              <span className="flex items-center gap-2">
-                <Eye className="h-4 w-4 text-neutral-400" />
-                Aperçu du document
-              </span>
-              <span className="text-xs text-neutral-400">
-                {showPreview ? "Masquer" : "Afficher"}
-              </span>
-            </button>
-            {showPreview && (
-              <iframe
-                src={pdfUrl}
-                title="Aperçu PDF"
-                className="w-full border-t border-neutral-100 dark:border-neutral-800"
-                style={{ height: "75vh", minHeight: "500px" }}
+        {/* ── Left column: form + generate ────────────────────────────────── */}
+        <div className="space-y-5">
+          {/* AI Helper panel */}
+          {showAiHelper && (
+            <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4 dark:border-violet-500/30 dark:bg-violet-500/10">
+              <div className="mb-3 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-violet-500" />
+                <span className="text-sm font-semibold text-violet-700 dark:text-violet-400">
+                  Aide IA — décris ce que tu veux créer
+                </span>
+              </div>
+              <textarea
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey))
+                    handleAiAssist();
+                }}
+                placeholder={
+                  type === "facture"
+                    ? "Ex : Je facture Acme Corp pour 3 jours de développement à 800 € /jour, TVA 20%, paiement sous 30 jours."
+                    : type === "devis"
+                    ? "Ex : Devis pour la création d'un logo pour la startup TechNow, 1 500 € HT, valable 1 mois."
+                    : type === "contrat"
+                    ? "Ex : Contrat avec Dupont SAS pour une mission de conseil en marketing du 1er mars au 30 juin 2024, forfait 8 000 €."
+                    : type === "bon-de-commande"
+                    ? "Ex : Commander 10 licences logicielles à 200 €/unité au fournisseur SoftCo, livraison le 15 mars."
+                    : "Ex : Lettre de résiliation de contrat d'abonnement adressée à Orange, pour le contrat n°123456."
+                }
+                rows={3}
+                className="w-full resize-none rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30 transition dark:border-violet-500/30 dark:bg-neutral-800 dark:text-white"
               />
-            )}
+              {aiError && (
+                <p className="mt-2 flex items-center gap-1.5 text-xs text-red-500">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                  {aiError}
+                </p>
+              )}
+              <div className="mt-3 flex items-center gap-2">
+                <button
+                  onClick={handleAiAssist}
+                  disabled={isAiLoading || !aiPrompt.trim()}
+                  className="flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isAiLoading ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Analyse en cours...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-3.5 w-3.5" /> Remplir le formulaire
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowAiHelper(false);
+                    setAiPrompt("");
+                    setAiError(null);
+                  }}
+                  className="flex items-center gap-1 rounded-xl px-3 py-2 text-sm text-neutral-500 transition hover:text-neutral-700 dark:hover:text-neutral-300"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Fermer
+                </button>
+                <span className="ml-auto hidden text-xs text-neutral-400 sm:block">
+                  ⌘↵ pour envoyer
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Form card */}
+          <div className="rounded-2xl border border-neutral-100 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
+            {renderForm()}
           </div>
-        </>
-      )}
+
+          {/* Error */}
+          {error && (
+            <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-400">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              {error}
+            </div>
+          )}
+
+          {/* Generate button */}
+          <button
+            onClick={handleGenerate}
+            disabled={isGenerating}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 py-3.5 font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:scale-[1.01] hover:shadow-xl hover:shadow-blue-500/30 active:scale-[0.99] disabled:cursor-not-allowed disabled:scale-100 disabled:opacity-60"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Génération en cours...
+              </>
+            ) : (
+              <>
+                <FileText className="h-4 w-4" />
+                {t("generatePdf")}
+              </>
+            )}
+          </button>
+
+          {/* Actions on mobile (below generate button) */}
+          {pdfUrl && <div className="lg:hidden">{renderActions()}</div>}
+        </div>
+
+        {/* ── Right column: sticky preview (desktop only) ──────────────────── */}
+        {pdfUrl && (
+          <div className="mt-5 lg:mt-0 lg:sticky lg:top-5 space-y-3">
+            {/* Actions on desktop (top of right column) */}
+            <div className="hidden lg:block">{renderActions()}</div>
+
+            {/* PDF Preview */}
+            <div className="overflow-hidden rounded-2xl border border-neutral-100 bg-white dark:border-neutral-800 dark:bg-neutral-900">
+              <button
+                onClick={() => setShowPreview((v) => !v)}
+                className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 dark:text-neutral-300 dark:hover:bg-white/5"
+              >
+                <span className="flex items-center gap-2">
+                  <Eye className="h-4 w-4 text-neutral-400" />
+                  Aperçu du document
+                </span>
+                <span className="text-xs text-neutral-400">
+                  {showPreview ? "Masquer" : "Afficher"}
+                </span>
+              </button>
+              {showPreview && (
+                <iframe
+                  src={pdfUrl}
+                  title="Aperçu PDF"
+                  className="w-full border-t border-neutral-100 dark:border-neutral-800"
+                  style={{ height: "75vh", minHeight: "500px" }}
+                />
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
