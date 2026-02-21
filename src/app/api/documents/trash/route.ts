@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { deleteFromR2 } from "@/lib/storage";
+import { revalidatePath } from "next/cache";
 
 const TRASH_RETENTION_DAYS = 30;
 
@@ -91,6 +92,8 @@ export async function DELETE() {
         },
       });
     }
+
+    revalidatePath("/dashboard", "layout");
 
     return NextResponse.json({ deleted: trashed.length });
   } catch (error) {

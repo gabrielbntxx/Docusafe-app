@@ -25,6 +25,7 @@ import {
 } from "@/lib/encryption";
 import { applyFolderRules } from "@/lib/folder-rules";
 import { getEffectiveUserId } from "@/lib/team";
+import { revalidatePath } from "next/cache";
 
 // Allow up to 120 seconds per upload (large files + encryption + R2 PUT)
 export const maxDuration = 120;
@@ -257,6 +258,8 @@ export async function POST(req: Request) {
       "document_uploaded",
       finalFileName
     );
+
+    revalidatePath("/dashboard", "layout");
 
     return NextResponse.json(
       {

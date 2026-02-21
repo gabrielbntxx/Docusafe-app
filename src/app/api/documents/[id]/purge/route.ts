@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { deleteFromR2 } from "@/lib/storage";
+import { revalidatePath } from "next/cache";
 
 // DELETE /api/documents/[id]/purge — permanently delete one trashed document
 export async function DELETE(
@@ -48,6 +49,8 @@ export async function DELETE(
         storageUsedBytes: { decrement: Number(document.sizeBytes) || 0 },
       },
     });
+
+    revalidatePath("/dashboard", "layout");
 
     return NextResponse.json({ message: "Document supprimé définitivement" });
   } catch (error) {

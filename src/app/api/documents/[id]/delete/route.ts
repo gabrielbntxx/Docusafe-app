@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { createNotification } from "@/lib/notifications";
 import { getEffectiveUserId } from "@/lib/team";
+import { revalidatePath } from "next/cache";
 
 export async function DELETE(
   req: Request,
@@ -54,6 +55,8 @@ export async function DELETE(
       "document_deleted",
       document.displayName
     );
+
+    revalidatePath("/dashboard", "layout");
 
     return NextResponse.json(
       { message: "Document déplacé dans la corbeille" },
