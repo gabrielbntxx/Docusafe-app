@@ -54,6 +54,8 @@ Voici tes 5 derniers documents 📚
 - "cherche facture" = appelle searchDocuments avec query="facture"
 - "expirent" / "renouveler" / "expire bientôt" / "à surveiller" = appelle getExpiringDocuments
 - "statistiques" / "combien de docs" / "espace utilisé" / "résumé de ma bibliothèque" = appelle getDocumentStats
+- "voir les fichiers dans [dossier]" / "montre le contenu de [dossier]" / "liste [dossier]" = appelle listFolderContents avec l'ID du dossier
+- "supprime tous les fichiers dans [dossier]" / "vide le dossier [X]" / "efface tout dans [dossier]" = appelle deleteFolderContents avec l'ID du dossier
 
 ## CONTEXTE (IDs pour TES appels de fonctions - NE PAS AFFICHER)
 {context}
@@ -97,6 +99,8 @@ Here are your 5 most recent documents 📚
 - "search invoice" = call searchDocuments with query="invoice"
 - "expiring" / "renew" / "expires soon" / "to watch" = call getExpiringDocuments
 - "statistics" / "how many docs" / "storage used" / "library summary" = call getDocumentStats
+- "show files in [folder]" / "list [folder] contents" / "what's in [folder]" = call listFolderContents with the folder ID
+- "delete all files in [folder]" / "empty [folder]" / "clear [folder]" = call deleteFolderContents with the folder ID
 
 ## CONTEXT (IDs for YOUR function calls - DO NOT DISPLAY)
 {context}
@@ -310,6 +314,28 @@ const FUNCTION_DECLARATIONS = [
     name: "getDocumentStats",
     description: "Obtient les statistiques de la bibliothèque : nombre total de documents, répartition par catégorie, espace de stockage utilisé.",
     parameters: { type: "object", properties: {} },
+  },
+  {
+    name: "listFolderContents",
+    description: "Liste TOUS les documents à l'intérieur d'un dossier spécifique. Utilise cette fonction quand l'utilisateur veut voir, lister ou gérer les fichiers d'un dossier particulier.",
+    parameters: {
+      type: "object",
+      properties: {
+        folderId: { type: "string", description: "ID du dossier dont afficher le contenu" },
+      },
+      required: ["folderId"],
+    },
+  },
+  {
+    name: "deleteFolderContents",
+    description: "Supprime TOUS les documents à l'intérieur d'un dossier. Utilise cette fonction quand l'utilisateur dit 'supprime tout dans [dossier]', 'vide le dossier', 'efface tous les fichiers de [dossier]'.",
+    parameters: {
+      type: "object",
+      properties: {
+        folderId: { type: "string", description: "ID du dossier dont supprimer tous les fichiers" },
+      },
+      required: ["folderId"],
+    },
   },
 ];
 
@@ -1164,6 +1190,95 @@ async function getDocumentStats(userId: string) {
   };
 }
 
+// NEW: List all documents inside a specific folder
+async function listFolderContents(userId: string, folderId: string) {
+  const folder = await db.folder.findFirst({
+    where: { id: folderId, userId },
+  });
+
+  if (!folder) {
+    return { success: false, error: "Dossier non trouvé" };
+  }
+
+  const documents = await db.document.findMany({
+    where: { userId, folderId },
+    select: {
+      id: true,
+      displayName: true,
+      fileType: true,
+      uploadedAt: true,
+    },
+    orderBy: { uploadedAt: "desc" },
+  });
+
+  if (documents.length === 0) {
+    return {
+      success: true,
+      folderName: folder.name,
+      documentCount: 0,
+      documents: [],
+      message: `Le dossier "${folder.name}" est vide.`,
+    };
+  }
+
+  return {
+    success: true,
+    folderName: folder.name,
+    documentCount: documents.length,
+    documents: documents.map((d) => ({
+      id: d.id,
+      name: d.displayName,
+      type: d.fileType,
+      addedDate: formatFriendlyDate(new Date(d.uploadedAt)),
+    })),
+  };
+}
+
+// NEW: Delete ALL documents inside a specific folder
+async function deleteFolderContents(userId: string, folderId: string) {
+  const folder = await db.folder.findFirst({
+    where: { id: folderId, userId },
+  });
+
+  if (!folder) {
+    return { success: false, error: "Dossier non trouvé" };
+  }
+
+  const documents = await db.document.findMany({
+    where: { userId, folderId },
+    select: { id: true, sizeBytes: true },
+  });
+
+  if (documents.length === 0) {
+    return {
+      success: true,
+      message: `Le dossier "${folder.name}" est déjà vide.`,
+      deletedCount: 0,
+      folderName: folder.name,
+    };
+  }
+
+  const totalBytes = documents.reduce((sum, d) => sum + Number(d.sizeBytes), 0);
+
+  await db.document.deleteMany({ where: { userId, folderId } });
+
+  // Update user stats
+  await db.user.update({
+    where: { id: userId },
+    data: {
+      documentsCount: { decrement: documents.length },
+      storageUsedBytes: { decrement: totalBytes },
+    },
+  });
+
+  return {
+    success: true,
+    message: `${documents.length} fichier(s) supprimé(s) du dossier "${folder.name}"`,
+    deletedCount: documents.length,
+    folderName: folder.name,
+  };
+}
+
 // ============================================================================
 // EXECUTE FUNCTION
 // ============================================================================
@@ -1209,6 +1324,10 @@ async function executeFunction(
       return getExpiringDocuments(userId, args.days || 60);
     case "getDocumentStats":
       return getDocumentStats(userId);
+    case "listFolderContents":
+      return listFolderContents(userId, args.folderId);
+    case "deleteFolderContents":
+      return deleteFolderContents(userId, args.folderId);
     default:
       return { error: "Fonction non reconnue" };
   }
