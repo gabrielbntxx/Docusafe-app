@@ -284,7 +284,7 @@ export function DocumentsClient({
           }}
         />
       ) : (
-      <div className="mx-auto max-w-6xl space-y-4 lg:space-y-6">
+      <div className="mx-auto max-w-6xl space-y-2 lg:space-y-3">
         {/* Header */}
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -381,7 +381,7 @@ export function DocumentsClient({
         )}
 
         {/* Search & Filters */}
-        <div className="flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
             <input
@@ -437,7 +437,7 @@ export function DocumentsClient({
 
         {/* Documents */}
         {filteredDocuments.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-3xl bg-white p-16 text-center shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
+          <div className="flex flex-col items-center justify-center rounded-3xl bg-white p-10 text-center shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-700">
               <FileText className="h-8 w-8 text-neutral-400 dark:text-neutral-500" />
             </div>
@@ -466,7 +466,7 @@ export function DocumentsClient({
                 <div
                   key={doc.id}
                   onClick={() => isSelectionMode && toggleDocumentSelection(doc.id)}
-                  className={`group relative overflow-hidden rounded-2xl bg-white p-3 sm:p-4 shadow-xl shadow-black/5 transition-all hover:shadow-2xl dark:bg-neutral-800/50 dark:shadow-none ${
+                  className={`group relative overflow-hidden rounded-2xl bg-white p-2.5 sm:p-3 shadow-xl shadow-black/5 transition-all hover:shadow-2xl dark:bg-neutral-800/50 dark:shadow-none ${
                     isSelected ? "ring-2 ring-blue-500" : ""
                   } ${isSelectionMode ? "cursor-pointer" : ""}`}
                 >
@@ -497,9 +497,9 @@ export function DocumentsClient({
                         handleView(doc);
                       }
                     }}
-                    className="mb-3 flex h-24 sm:h-32 cursor-pointer items-center justify-center rounded-xl bg-gradient-to-br from-blue-50 to-violet-50 transition-transform group-hover:scale-[1.02] dark:from-blue-500/10 dark:to-violet-500/10"
+                    className="mb-2 flex h-16 sm:h-20 cursor-pointer items-center justify-center rounded-xl bg-gradient-to-br from-blue-50 to-violet-50 transition-transform group-hover:scale-[1.02] dark:from-blue-500/10 dark:to-violet-500/10"
                   >
-                    <Icon className="h-10 w-10 sm:h-12 sm:w-12 text-blue-500 dark:text-blue-400" />
+                    <Icon className="h-8 w-8 sm:h-10 sm:w-10 text-blue-500 dark:text-blue-400" />
                   </div>
 
                   {/* Info */}
@@ -556,7 +556,7 @@ export function DocumentsClient({
 
                   {/* Actions */}
                   {!isSelectionMode && (
-                    <div className="mt-3 flex gap-1.5 border-t border-neutral-100 pt-3 dark:border-neutral-700/50">
+                    <div className="mt-2 flex gap-1.5 border-t border-neutral-100 pt-2 dark:border-neutral-700/50">
                       <button
                         onClick={() => handleView(doc)}
                         className="flex flex-1 items-center justify-center gap-1 rounded-xl bg-blue-50 py-1.5 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20"

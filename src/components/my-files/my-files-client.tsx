@@ -749,7 +749,7 @@ export function MyFilesClient({
   const isMobileDocumentsView = showDocuments;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-4 lg:space-y-6">
+    <div className="mx-auto max-w-6xl space-y-2 lg:space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
@@ -994,12 +994,12 @@ export function MyFilesClient({
                   : "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-white/5"
               }`}
             >
-              <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+              <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${
                 selectedFolder === null && showDocuments
                   ? "bg-blue-100 dark:bg-blue-500/20"
                   : "bg-neutral-100 dark:bg-neutral-700/50"
               }`}>
-                <FolderOpen className="h-5 w-5" />
+                <FolderOpen className="h-4 w-4" />
               </div>
               <span className="flex-1 text-left font-medium truncate">{t("uncategorized")}</span>
               <span className="text-sm text-neutral-400 flex-shrink-0">
@@ -1043,10 +1043,10 @@ export function MyFilesClient({
                   )}
                   <button
                     onClick={(e) => { e.stopPropagation(); if (!isSelectionMode) openFolder(folder); }}
-                    className="flex h-9 w-9 lg:h-10 lg:w-10 items-center justify-center rounded-xl flex-shrink-0 hover:ring-2 hover:ring-violet-500/30"
+                    className="flex h-7 w-7 lg:h-8 lg:w-8 items-center justify-center rounded-lg flex-shrink-0 hover:ring-2 hover:ring-violet-500/30"
                     style={{ backgroundColor: folder.color + "20" }}
                   >
-                    <Folder className="h-4 w-4 lg:h-5 lg:w-5" style={{ color: folder.color }} />
+                    <Folder className="h-3.5 w-3.5 lg:h-4 lg:w-4" style={{ color: folder.color }} />
                   </button>
 
                   <button
@@ -1189,7 +1189,7 @@ export function MyFilesClient({
           <div className="rounded-2xl lg:rounded-3xl bg-white p-4 lg:p-6 shadow-lg shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
             {/* Breadcrumb */}
             {folderPath.length > 0 && (
-              <div className="mb-4 flex items-center gap-1 text-sm overflow-x-auto pb-2">
+              <div className="mb-2 flex items-center gap-1 text-sm overflow-x-auto pb-1">
                 <button
                   onClick={() => navigateToLevel(-1)}
                   className="flex items-center gap-1 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 flex-shrink-0"
@@ -1216,7 +1216,7 @@ export function MyFilesClient({
             )}
 
             {/* Header — 2 rows on mobile to avoid overflow */}
-            <div className="mb-4 space-y-2">
+            <div className="mb-2 space-y-1.5">
               {/* Row 1 : back + title + count */}
               <div className="flex items-center gap-2">
                 {selectedFolder && (
@@ -1275,7 +1275,7 @@ export function MyFilesClient({
 
             {/* Selection toolbar */}
             {isSelectionMode && (selectedDocuments.size > 0 || selectedFolders.size > 0) && (
-              <div className="mb-4 space-y-2 rounded-xl bg-blue-50 dark:bg-blue-500/10 p-3">
+              <div className="mb-2 space-y-1.5 rounded-xl bg-blue-50 dark:bg-blue-500/10 p-2.5">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
                     {selectedDocuments.size + selectedFolders.size} sélectionné{selectedDocuments.size + selectedFolders.size > 1 ? "s" : ""}
