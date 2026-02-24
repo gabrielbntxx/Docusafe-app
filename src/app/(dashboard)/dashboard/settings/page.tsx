@@ -23,6 +23,7 @@ export default async function SettingsPage() {
       planType: true,
       teamOwnerId: true,
       teamRole: true,
+      profession: true,
     },
   });
 
@@ -42,6 +43,7 @@ export default async function SettingsPage() {
       }}
       planType={user.planType}
       isTeamOwner={!user.teamOwnerId && user.planType === "BUSINESS"}
+      profession={user.profession ?? null}
     />
   );
 }

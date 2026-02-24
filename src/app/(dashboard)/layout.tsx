@@ -12,6 +12,7 @@ import { SessionProvider } from "@/components/providers/session-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { TutorialProvider } from "@/components/providers/tutorial-provider";
 import { SubscriptionProvider } from "@/components/providers/subscription-provider";
+import { ProfessionModalTrigger } from "@/components/dashboard/profession-modal-trigger";
 
 async function getLayoutData() {
   const session = await getServerSession(authOptions);
@@ -19,7 +20,7 @@ async function getLayoutData() {
 
   const user = await db.user.findUnique({
     where: { id: session.user.id },
-    select: { emailVerified: true, email: true, planType: true, onboardingCompleted: true, teamOwnerId: true, termsAcceptedAt: true },
+    select: { emailVerified: true, email: true, planType: true, onboardingCompleted: true, teamOwnerId: true, termsAcceptedAt: true, profession: true },
   });
 
   if (!user) return { redirect: "/login" as const, session: null };
@@ -71,6 +72,7 @@ export default async function DashboardLayout({
                 <Header />
                 <main className="p-3 sm:p-4 lg:p-5">{children}</main>
               </div>
+              <ProfessionModalTrigger planType={user.planType} profession={user.profession ?? null} />
             </div>
           </TutorialProvider>
         </SubscriptionProvider>

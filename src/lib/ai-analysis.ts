@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import crypto from "crypto";
 import { extractAppleQuickLookPdf, APPLE_IWORK_MIME_TYPES } from "@/lib/pdf-converter";
+import { getProfessionAIContext } from "@/lib/professions";
 
 // ============================================================================
 // DOCUMENT TYPES - Beaucoup plus de types pour une classification précise
@@ -1650,9 +1651,15 @@ async function classifyDocument(
   fileName: string,
   apiKey: string,
   folderContext?: string,
+  professionContext?: string,
 ): Promise<AIAnalysisResult> {
   const today = new Date().toISOString().split("T")[0];
   let fullPrompt = CLASSIFICATION_PROMPT + `\n\n## 📅 DATE ACTUELLE: ${today}`;
+
+  if (professionContext) {
+    fullPrompt += `\n\n## 👤 CONTEXTE MÉTIER DE L'UTILISATEUR\n${professionContext}`;
+  }
+
   if (folderContext) {
     fullPrompt += `\n\n## 📂 DOSSIERS EXISTANTS
 Choisis parmi ces actions :
@@ -1751,7 +1758,8 @@ export async function analyzeDocumentWithAI(
   fileBuffer: Buffer,
   fileName: string,
   mimeType: string,
-  folderContext?: string
+  folderContext?: string,
+  professionContext?: string,
 ): Promise<AIAnalysisResult> {
   const apiKey = process.env.GEMINI_API_KEY;
   const fileSize = fileBuffer.length;
@@ -1792,7 +1800,7 @@ export async function analyzeDocumentWithAI(
     }
 
     // ── PASS 1: Classification ──
-    const result = await classifyDocument(fileContentParts, fileName, apiKey, folderContext);
+    const result = await classifyDocument(fileContentParts, fileName, apiKey, folderContext, professionContext);
 
     // ── PASS 2: Deep extraction (only for categories with specialized prompts) ──
     const categoryKey = TYPE_TO_CATEGORY[result.documentType] || "AUTRE";
@@ -1876,14 +1884,27 @@ export async function analyzeDocument(
     return { success: false, error: canUse.reason };
   }
 
-  // Fetch user's folder tree for AI context
-  const folderTree = await getUserFolderTree(userId);
+  // Fetch user's folder tree + profession for AI context
+  const [folderTree, userProfile] = await Promise.all([
+    getUserFolderTree(userId),
+    db.user.findUnique({ where: { id: userId }, select: { profession: true, planType: true } }),
+  ]);
   const folderContext = serializeFolderTree(folderTree);
   console.log("[analyzeDocument] Folder context for AI:", folderTree.length, "root folders");
 
-  // Analyze with AI (with folder hierarchy context)
+  // Build profession context (BUSINESS plan only)
+  const professionContext =
+    userProfile?.planType === "BUSINESS" && userProfile?.profession
+      ? getProfessionAIContext(userProfile.profession)
+      : undefined;
+
+  if (professionContext) {
+    console.log("[analyzeDocument] Using profession context for:", userProfile!.profession);
+  }
+
+  // Analyze with AI (with folder hierarchy + profession context)
   console.log("[analyzeDocument] Calling analyzeDocumentWithAI...");
-  const result = await analyzeDocumentWithAI(fileBuffer, fileName, mimeType, folderContext);
+  const result = await analyzeDocumentWithAI(fileBuffer, fileName, mimeType, folderContext, professionContext);
   console.log("[analyzeDocument] AI result:", result.documentType, "confidence:", result.confidence, "suggestedFolder:", result.suggestedFolder, "folderAction:", result.folderAction);
 
   // Cache the result

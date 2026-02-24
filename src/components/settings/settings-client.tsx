@@ -26,7 +26,9 @@ import {
   Trash2,
   AlertTriangle,
   Loader2,
+  Briefcase,
 } from "lucide-react";
+import { ProfessionModal } from "@/components/dashboard/profession-modal";
 import { TeamSection } from "@/components/settings/team-section";
 
 type UserSettings = {
@@ -47,10 +49,12 @@ export function SettingsClient({
   user,
   planType,
   isTeamOwner,
+  profession: initialProfession,
 }: {
   user: UserSettings;
   planType?: string;
   isTeamOwner?: boolean;
+  profession?: string | null;
 }) {
   const router = useRouter();
   const { t } = useTranslation();
@@ -67,6 +71,8 @@ export function SettingsClient({
   const [importEmail, setImportEmail] = useState<string | null>(null);
   const [isLoadingEmail, setIsLoadingEmail] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showProfessionModal, setShowProfessionModal] = useState(false);
+  const [currentProfession, setCurrentProfession] = useState<string | null>(initialProfession ?? null);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -549,6 +555,73 @@ export function SettingsClient({
           </div>
         </div>
       </div>
+
+      {/* Profession / AI Personalization - Business plan only */}
+      {planType === "BUSINESS" && (
+        <div className="mt-3 sm:mt-4 lg:mt-6">
+          <div className="overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-neutral-800/50 sm:rounded-3xl sm:shadow-xl sm:shadow-black/5 dark:sm:shadow-none">
+            <div className="flex items-center gap-3 border-b border-neutral-100 p-4 dark:border-neutral-700/50 sm:p-5">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-blue-600 shadow-md shadow-violet-500/20 sm:h-11 sm:w-11">
+                <Sparkles className="h-5 w-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-[15px] font-semibold text-neutral-900 dark:text-white sm:text-base">
+                  Personnalisation IA
+                </h2>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                  L'IA adapte le tri selon votre métier
+                </p>
+              </div>
+              {currentProfession && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2.5 py-0.5 text-[10px] font-semibold text-violet-700 dark:bg-violet-500/20 dark:text-violet-400">
+                  <Check className="h-2.5 w-2.5" />
+                  Configuré
+                </span>
+              )}
+            </div>
+
+            <div className="p-3 sm:p-4">
+              <div className="flex items-center justify-between rounded-xl bg-neutral-50 p-4 dark:bg-neutral-700/30">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-100 dark:bg-violet-500/20 flex-shrink-0">
+                    <Briefcase className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-neutral-900 dark:text-white">
+                      {currentProfession ?? "Aucun métier sélectionné"}
+                    </p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                      {currentProfession
+                        ? "L'IA utilise ce contexte pour vos analyses"
+                        : "Sélectionnez votre métier pour personnaliser l'IA"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowProfessionModal(true)}
+                  className="flex-shrink-0 ml-3 rounded-xl bg-violet-500 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-violet-600 active:scale-[0.98]"
+                >
+                  {currentProfession ? "Modifier" : "Choisir"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ProfessionModal
+        isOpen={showProfessionModal}
+        onClose={(saved) => {
+          setShowProfessionModal(false);
+          if (saved) {
+            // Refresh profession display without full page reload
+            fetch("/api/profile/profession")
+              .then((r) => r.json())
+              .then((data) => setCurrentProfession(data.profession ?? null))
+              .catch(() => {});
+          }
+        }}
+      />
 
       {/* Team Section - Business plan only */}
       {isTeamOwner && planType === "BUSINESS" && (

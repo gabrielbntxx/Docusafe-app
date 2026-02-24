@@ -36,6 +36,7 @@ model User {
   theme                String    @default("light")
   notificationsEnabled Int       @default(1) // 1 = enabled, 0 = disabled
   aiSortingEnabled     Int       @default(1) // 1 = enabled, 0 = disabled (user preference)
+  profession           String?   // User's profession for AI personalization (BUSINESS plan)
 
   // Security
   passwordChangedAt    DateTime? // Tracks password changes to invalidate old JWTs
