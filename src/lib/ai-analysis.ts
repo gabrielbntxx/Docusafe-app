@@ -487,6 +487,95 @@ export const TYPE_TO_CATEGORY: Record<string, keyof typeof DOCUMENT_CATEGORIES> 
 // ============================================================================
 // TYPES
 // ============================================================================
+export type ExtractedData = {
+  // Common fields (pass 1)
+  date?: string;
+  expiryDate?: string; // Date d'expiration/renouvellement (YYYY-MM-DD)
+  amount?: string;
+  issuer?: string;
+  recipient?: string;
+  reference?: string;
+  subject?: string;
+  topic?: string; // Matière/thème précis (ex: "Informatique", "Droit")
+  location?: string;
+  people?: string;
+  language?: string;
+  duration?: string;
+  genre?: string; // Genre pour musique/vidéo
+  description?: string;
+  // Finance-specific (pass 2)
+  montantHT?: string;
+  montantTTC?: string;
+  tva?: string;
+  devise?: string;
+  iban?: string;
+  bic?: string;
+  modeReglement?: string;
+  dateEcheance?: string;
+  numeroFacture?: string;
+  fournisseur?: string;
+  // Identity-specific (pass 2)
+  nom?: string;
+  prenom?: string;
+  dateNaissance?: string;
+  lieuNaissance?: string;
+  nationalite?: string;
+  numeroDocument?: string;
+  dateDelivrance?: string;
+  dateExpiration?: string;
+  adresse?: string;
+  // Employment-specific (pass 2)
+  employeur?: string;
+  poste?: string;
+  salaireBrut?: string;
+  salaireNet?: string;
+  primes?: string;
+  conges?: string;
+  periode?: string;
+  contratType?: string;
+  dateDebut?: string;
+  // Housing-specific (pass 2)
+  adresseBien?: string;
+  typeBien?: string;
+  surface?: string;
+  loyer?: string;
+  charges?: string;
+  proprietaire?: string;
+  locataire?: string;
+  dateFin?: string;
+  depotGarantie?: string;
+  // Health-specific (pass 2)
+  medecin?: string;
+  specialite?: string;
+  patient?: string;
+  diagnostic?: string;
+  traitement?: string;
+  posologie?: string;
+  dateConsultation?: string;
+  numeroSS?: string;
+  // Education-specific (pass 2)
+  etablissement?: string;
+  diplome?: string;
+  mention?: string;
+  annee?: string;
+  matiere?: string;
+  note?: string;
+  niveau?: string;
+  // Legal-specific (pass 2)
+  parties?: string;
+  typeActe?: string;
+  notaire?: string;
+  dateSignature?: string;
+  clausesParticulieres?: string;
+  // Vehicle-specific (pass 2)
+  marque?: string;
+  modele?: string;
+  immatriculation?: string;
+  vin?: string;
+  dateCirculation?: string;
+  puissanceFiscale?: string;
+};
+
 export type AIAnalysisResult = {
   documentType: string;
   category: string;
@@ -496,22 +585,7 @@ export type AIAnalysisResult = {
   folderAction?: "use_existing" | "create_new" | "create_subfolder";
   targetFolderId?: string;   // ID du dossier existant si use_existing
   parentFolderId?: string;   // ID du parent si create_subfolder
-  extractedData: {
-    date?: string;
-    expiryDate?: string; // Date d'expiration/renouvellement (YYYY-MM-DD)
-    amount?: string;
-    issuer?: string;
-    recipient?: string;
-    reference?: string;
-    subject?: string;
-    topic?: string; // Matière/thème précis (ex: "Informatique", "Droit")
-    location?: string;
-    people?: string;
-    language?: string;
-    duration?: string;
-    genre?: string; // Genre pour musique/vidéo
-    description?: string;
-  };
+  extractedData: ExtractedData;
   rawResponse?: string;
 };
 
@@ -644,9 +718,44 @@ export async function getCachedAnalysis(
 
   // Re-parse rawResponse to recover the full extractedData (expiryDate, subject, topic, etc.)
   // The DB schema only stores 3 fields, but rawResponse contains the complete Gemini JSON.
+  // Supports both legacy (single-pass) and multi-pass format ({"pass1":"...","pass2":{...}})
   if (cached.rawResponse && !cached.rawResponse.startsWith("FALLBACK") && !cached.rawResponse.startsWith("ERROR")) {
     try {
-      const parsed = parseGeminiJson(cached.rawResponse);
+      const rawParsed = JSON.parse(cached.rawResponse);
+
+      // Multi-pass format: {"pass1": "json string", "pass2": {...}}
+      if (rawParsed.pass1 && rawParsed.pass2) {
+        const pass1 = typeof rawParsed.pass1 === "string" ? parseGeminiJson(rawParsed.pass1) : rawParsed.pass1;
+        const pass2Data: ExtractedData = rawParsed.pass2;
+
+        const documentType = pass1.documentType || cached.documentType;
+        const categoryKey = TYPE_TO_CATEGORY[documentType] || "AUTRE";
+        const category = DOCUMENT_CATEGORIES[categoryKey].name;
+
+        // Merge pass1 extractedData + pass2 deep data
+        const extractedData: ExtractedData = {
+          date: pass1.extractedData?.date || cached.extractedDate || undefined,
+          expiryDate: pass1.extractedData?.expiryDate || undefined,
+          description: pass1.extractedData?.description || undefined,
+          ...pass2Data,
+        };
+
+        return {
+          documentType,
+          category,
+          confidence: pass1.confidence ?? cached.confidence,
+          suggestedName: pass1.suggestedName || cached.suggestedName || undefined,
+          suggestedFolder: pass1.suggestedFolder || undefined,
+          folderAction: pass1.folderAction || undefined,
+          targetFolderId: pass1.targetFolderId || undefined,
+          parentFolderId: pass1.parentFolderId || undefined,
+          extractedData,
+          rawResponse: cached.rawResponse,
+        };
+      }
+
+      // Legacy single-pass format
+      const parsed = rawParsed.documentType ? rawParsed : parseGeminiJson(cached.rawResponse);
       const documentType = parsed.documentType || cached.documentType;
       const categoryKey = TYPE_TO_CATEGORY[documentType] || "AUTRE";
       const category = DOCUMENT_CATEGORIES[categoryKey].name;
@@ -923,6 +1032,199 @@ Réponds UNIQUEMENT avec ce JSON (PAS de \`\`\`, PAS de markdown):
 3. Extrais TOUTES les infos pertinentes (date, matière, lieu, personnes...)
 4. La confidence doit refléter ta certitude réelle
 5. Si tu détectes plusieurs thèmes, choisis le principal`;
+
+// ============================================================================
+// PASS 1 - Slim classification prompt (no deep extraction)
+// ============================================================================
+const CLASSIFICATION_PROMPT = `Tu es DocuSafe AI. Analyse ce fichier et classifie-le rapidement.
+
+## MISSION
+1. Identifie le TYPE PRÉCIS du document
+2. Suggère un NOM DE DOSSIER SPÉCIFIQUE (pas générique!)
+3. Donne un nom de fichier descriptif
+4. Extrais les infos basiques (date, description)
+
+## TYPES DE DOCUMENTS
+### PHOTOS: photo_personnelle, photo_famille, photo_voyage, photo_evenement, photo_profil, screenshot, image_artistique, meme_image
+### ÉTUDES: cours, notes_de_cours, dissertation, memoire_these, exercices, examen, diplome, releve_notes, certificat_formation, attestation_scolarite, carte_etudiant
+### EMPLOI: cv, lettre_motivation, contrat_travail, fiche_de_paie, attestation_employeur, certificat_travail, offre_emploi
+### ASSURANCE: contrat_assurance, attestation_assurance, mutuelle, assurance_auto, assurance_habitation, constat_amiable
+### BANQUE: releve_bancaire, rib, pret_bancaire, echeancier
+### IMPÔTS: avis_imposition, declaration_revenus, taxe_habitation, taxe_fonciere
+### LOGEMENT: bail, quittance_loyer, etat_des_lieux, facture_energie, facture_eau, facture_internet
+### VÉHICULE: carte_grise, permis_conduire, controle_technique, pv_amende
+### SANTÉ: ordonnance, compte_rendu_medical, analyse_medicale, carte_vitale, carnet_vaccination, facture_medicale
+### IDENTITÉ: carte_identite, passeport, acte_naissance, livret_famille
+### FACTURES: facture, ticket_caisse, devis, garantie
+### JURIDIQUE: contrat, acte_notarie, jugement, procuration
+### VOYAGE: billet_avion, billet_train, reservation_hotel, visa
+### AUDIO: audio_musique, audio_podcast, audio_memo_vocal, audio_interview, audio_cours, audio_reunion, audio_livre, audio_autre
+### VIDÉO: video_cours, video_conference, video_personnelle, video_voyage, video_evenement, video_musique, video_gaming, video_tutorial, video_presentation, video_reunion, video_autre
+### CODE: code_source, code_python, code_javascript, code_java, code_cpp, code_web, config_file, data_file, documentation_technique, script
+### OFFICE: document_word, tableur_excel, presentation_powerpoint, document_apple
+### AUTRE: recette_cuisine, note_personnelle, document_professionnel, autre
+
+## NOMMAGE DOSSIERS
+- PRÉCIS: "Cours Informatique", "Factures Amazon", "Photos Vacances Portugal"
+- PAS générique: "Études", "Photos", "Documents"
+
+## FORMAT DE RÉPONSE (JSON uniquement, pas de markdown)
+{"documentType":"type_exact","confidence":0.95,"suggestedName":"Nom descriptif","suggestedFolder":"Dossier Précis","folderAction":"use_existing|create_new|create_subfolder","targetFolderId":"id_ou_null","parentFolderId":"id_ou_null","extractedData":{"date":"2024-01-15","description":"Description courte du contenu"}}`;
+
+// ============================================================================
+// PASS 2 - Type-specific deep extraction prompts
+// ============================================================================
+const EXTRACTION_PROMPTS: Record<string, string> = {
+  ADMINISTRATIF: `Tu analyses un document d'IDENTITÉ. Extrais TOUTES ces informations avec précision:
+
+Réponds UNIQUEMENT en JSON (pas de markdown):
+{"nom":"","prenom":"","dateNaissance":"YYYY-MM-DD","lieuNaissance":"","nationalite":"","numeroDocument":"","dateDelivrance":"YYYY-MM-DD","dateExpiration":"YYYY-MM-DD","adresse":"","expiryDate":"YYYY-MM-DD","description":""}
+
+- nom/prenom: Tels qu'écrits sur le document
+- numeroDocument: Numéro de carte, passeport, etc.
+- dateExpiration et expiryDate: MÊME valeur (date de fin de validité)
+- Si un champ n'est pas visible, mets null`,
+
+  FINANCE: `Tu analyses un document FINANCIER (facture, devis, ticket, relevé bancaire, RIB). Extrais TOUTES ces informations:
+
+Réponds UNIQUEMENT en JSON (pas de markdown):
+{"montantHT":"","montantTTC":"","tva":"","devise":"EUR","iban":"","bic":"","modeReglement":"","dateEcheance":"YYYY-MM-DD","numeroFacture":"","fournisseur":"","amount":"","issuer":"","recipient":"","reference":"","date":"YYYY-MM-DD","expiryDate":"YYYY-MM-DD","description":""}
+
+- montantHT/montantTTC: Avec le symbole € (ex: "150.00€")
+- tva: Montant OU pourcentage (ex: "20%" ou "30.00€")
+- iban: Format complet (ex: FR76 3000 1000 ...)
+- amount = montantTTC si disponible
+- issuer = fournisseur
+- Si c'est un RIB: extrais IBAN, BIC, titulaire
+- Si un champ n'est pas visible, mets null`,
+
+  EMPLOI: `Tu analyses un document d'EMPLOI (contrat, fiche de paie, attestation, CV). Extrais TOUTES ces informations:
+
+Réponds UNIQUEMENT en JSON (pas de markdown):
+{"employeur":"","poste":"","salaireBrut":"","salaireNet":"","primes":"","conges":"","periode":"","contratType":"","dateDebut":"YYYY-MM-DD","date":"YYYY-MM-DD","expiryDate":"YYYY-MM-DD","amount":"","issuer":"","recipient":"","reference":"","description":""}
+
+- salaireBrut/salaireNet: Avec € (ex: "2500.00€")
+- contratType: CDI, CDD, Intérim, Stage, Alternance
+- periode: Pour fiche de paie (ex: "Janvier 2024")
+- primes: Liste des primes si présentes
+- conges: Solde de congés si visible
+- amount = salaireNet
+- issuer = employeur
+- Si un champ n'est pas visible, mets null`,
+
+  LOGEMENT: `Tu analyses un document de LOGEMENT (bail, quittance, état des lieux, facture énergie/eau/internet). Extrais TOUTES ces informations:
+
+Réponds UNIQUEMENT en JSON (pas de markdown):
+{"adresseBien":"","typeBien":"","surface":"","loyer":"","charges":"","proprietaire":"","locataire":"","dateDebut":"YYYY-MM-DD","dateFin":"YYYY-MM-DD","depotGarantie":"","date":"YYYY-MM-DD","expiryDate":"YYYY-MM-DD","amount":"","issuer":"","reference":"","description":""}
+
+- loyer/charges/depotGarantie: Avec € (ex: "750.00€")
+- typeBien: Appartement, Maison, Studio, etc.
+- surface: En m² (ex: "45 m²")
+- amount = loyer ou montant facture
+- expiryDate = dateFin du bail
+- Si c'est une facture énergie/eau: extrais montant, fournisseur, référence client
+- Si un champ n'est pas visible, mets null`,
+
+  SANTE: `Tu analyses un document de SANTÉ (ordonnance, compte-rendu, analyse, carte vitale). Extrais TOUTES ces informations:
+
+Réponds UNIQUEMENT en JSON (pas de markdown):
+{"medecin":"","specialite":"","patient":"","diagnostic":"","traitement":"","posologie":"","dateConsultation":"YYYY-MM-DD","numeroSS":"","date":"YYYY-MM-DD","expiryDate":"YYYY-MM-DD","amount":"","description":""}
+
+- medecin: Nom complet avec titre (Dr., Pr.)
+- posologie: Dosage et fréquence (ex: "1 comprimé matin et soir pendant 7 jours")
+- traitement: Noms des médicaments
+- numeroSS: Numéro de sécurité sociale si visible
+- Si un champ n'est pas visible, mets null`,
+
+  EDUCATION: `Tu analyses un document d'ÉDUCATION (diplôme, relevé de notes, attestation, carte étudiant). Extrais TOUTES ces informations:
+
+Réponds UNIQUEMENT en JSON (pas de markdown):
+{"etablissement":"","diplome":"","mention":"","annee":"","matiere":"","note":"","niveau":"","date":"YYYY-MM-DD","topic":"","description":""}
+
+- etablissement: Nom complet de l'école/université
+- diplome: Intitulé exact (ex: "Licence Informatique", "Baccalauréat S")
+- mention: Passable, Assez Bien, Bien, Très Bien
+- note: Note ou moyenne si visible (ex: "14.5/20")
+- niveau: L1, L2, L3, M1, M2, Terminale, etc.
+- matiere = topic
+- Si un champ n'est pas visible, mets null`,
+
+  JURIDIQUE: `Tu analyses un document JURIDIQUE (contrat, acte notarié, jugement, procuration). Extrais TOUTES ces informations:
+
+Réponds UNIQUEMENT en JSON (pas de markdown):
+{"parties":"","typeActe":"","notaire":"","dateSignature":"YYYY-MM-DD","duree":"","montant":"","clausesParticulieres":"","date":"YYYY-MM-DD","expiryDate":"YYYY-MM-DD","amount":"","reference":"","description":""}
+
+- parties: Toutes les parties prenantes séparées par " / "
+- typeActe: Vente, Donation, Bail notarié, Testament, etc.
+- clausesParticulieres: Résumé des clauses importantes
+- montant/amount: Montant de la transaction si applicable
+- Si un champ n'est pas visible, mets null`,
+
+  VEHICULE: `Tu analyses un document de VÉHICULE (carte grise, permis, contrôle technique, PV). Extrais TOUTES ces informations:
+
+Réponds UNIQUEMENT en JSON (pas de markdown):
+{"marque":"","modele":"","immatriculation":"","vin":"","dateCirculation":"YYYY-MM-DD","puissanceFiscale":"","date":"YYYY-MM-DD","expiryDate":"YYYY-MM-DD","amount":"","reference":"","description":""}
+
+- immatriculation: Format AA-123-BB
+- vin: Numéro VIN si visible (17 caractères)
+- puissanceFiscale: En CV (ex: "5 CV")
+- Si c'est un PV/amende: extrais montant, référence, date
+- Si c'est un contrôle technique: extrais date validité (expiryDate)
+- Si un champ n'est pas visible, mets null`,
+
+  IMPOTS: `Tu analyses un document d'IMPÔTS (avis d'imposition, déclaration, taxe). Extrais TOUTES ces informations:
+
+Réponds UNIQUEMENT en JSON (pas de markdown):
+{"montantTTC":"","reference":"","annee":"","date":"YYYY-MM-DD","dateEcheance":"YYYY-MM-DD","expiryDate":"YYYY-MM-DD","amount":"","issuer":"","recipient":"","description":""}
+
+- montantTTC/amount: Montant total à payer
+- reference: Numéro fiscal ou référence avis
+- annee: Année fiscale concernée
+- dateEcheance/expiryDate: Date limite de paiement
+- issuer: "Direction Générale des Finances Publiques" ou similaire
+- Si un champ n'est pas visible, mets null`,
+
+  ASSURANCE: `Tu analyses un document d'ASSURANCE (contrat, attestation, mutuelle, constat). Extrais TOUTES ces informations:
+
+Réponds UNIQUEMENT en JSON (pas de markdown):
+{"issuer":"","reference":"","montantTTC":"","dateDebut":"YYYY-MM-DD","dateFin":"YYYY-MM-DD","date":"YYYY-MM-DD","expiryDate":"YYYY-MM-DD","amount":"","recipient":"","description":""}
+
+- issuer: Nom de la compagnie d'assurance
+- reference: Numéro de contrat/police
+- montantTTC/amount: Prime ou cotisation
+- dateFin/expiryDate: Fin de couverture
+- recipient: Assuré(e)
+- Si c'est un constat: extrais date, lieu, véhicules impliqués dans description
+- Si un champ n'est pas visible, mets null`,
+
+  BANQUE: `Tu analyses un document BANCAIRE (relevé, RIB, prêt, échéancier). Extrais TOUTES ces informations:
+
+Réponds UNIQUEMENT en JSON (pas de markdown):
+{"iban":"","bic":"","issuer":"","reference":"","montantTTC":"","date":"YYYY-MM-DD","dateEcheance":"YYYY-MM-DD","expiryDate":"YYYY-MM-DD","amount":"","recipient":"","description":""}
+
+- iban: IBAN complet
+- bic: Code BIC/SWIFT
+- issuer: Nom de la banque
+- reference: Numéro de compte ou de prêt
+- Pour un relevé: montant = solde final, période dans description
+- Pour un prêt: montant = mensualité, expiryDate = fin du prêt
+- Si un champ n'est pas visible, mets null`,
+};
+
+// Map category keys to extraction prompt keys
+const CATEGORY_TO_EXTRACTION: Record<string, string> = {
+  ADMINISTRATIF: "ADMINISTRATIF",
+  FINANCE: "FINANCE",
+  EMPLOI: "EMPLOI",
+  LOGEMENT: "LOGEMENT",
+  SANTE: "SANTE",
+  EDUCATION: "EDUCATION",
+  JURIDIQUE: "JURIDIQUE",
+  VEHICULE: "VEHICULE",
+  IMPOTS: "IMPOTS",
+  ASSURANCE: "ASSURANCE",
+  BANQUE: "BANQUE",
+};
 
 /**
  * Classify media files based on filename when AI analysis fails or file is too large
@@ -1226,6 +1528,225 @@ async function uploadToGeminiFileAPI(
  * Analyze document with Gemini AI - VERSION ULTRA
  * Uses File API for large files (videos/audio > 20MB)
  */
+// ============================================================================
+// SHARED: Prepare file content parts for Gemini API calls
+// ============================================================================
+type ContentPart = { text: string } | { inline_data: { mime_type: string; data: string } } | { file_data: { mime_type: string; file_uri: string } };
+
+function resolveGeminiMimeType(mimeType: string, isTextBased: boolean, isOfficeDoc: boolean): string {
+  if (mimeType === "application/pdf") return "application/pdf";
+  if (mimeType.startsWith("image/")) return mimeType;
+  if (mimeType.startsWith("audio/")) {
+    if (mimeType === "audio/mpeg" || mimeType === "audio/mp3") return "audio/mpeg";
+    if (mimeType === "audio/wav" || mimeType === "audio/x-wav" || mimeType === "audio/wave") return "audio/wav";
+    if (mimeType === "audio/ogg") return "audio/ogg";
+    if (mimeType === "audio/flac") return "audio/flac";
+    return "audio/mpeg";
+  }
+  if (mimeType.startsWith("video/")) {
+    if (mimeType === "video/mp4" || mimeType === "video/mpeg") return "video/mp4";
+    if (mimeType === "video/quicktime") return "video/quicktime";
+    if (mimeType === "video/webm") return "video/webm";
+    if (mimeType === "video/x-msvideo" || mimeType === "video/avi") return "video/x-msvideo";
+    return "video/mp4";
+  }
+  if (isTextBased) return "text/plain";
+  if (isOfficeDoc) return mimeType;
+  return "application/pdf";
+}
+
+/**
+ * Build file content parts for Gemini (shared between pass 1 and pass 2).
+ * Returns null if file should fall back to filename classification.
+ */
+async function buildFileContentParts(
+  fileBuffer: Buffer,
+  fileName: string,
+  mimeType: string,
+  geminiMimeType: string,
+  apiKey: string,
+): Promise<ContentPart[] | null> {
+  const fileSize = fileBuffer.length;
+  const isLargeFile = fileSize > MAX_INLINE_SIZE;
+  const isMediaFile = mimeType.startsWith("video/") || mimeType.startsWith("audio/");
+  const isTextBased = TEXT_BASED_MIME_TYPES.has(mimeType) ||
+                      mimeType.startsWith("text/") ||
+                      !!fileName.match(/\.(py|js|ts|jsx|tsx|java|c|cpp|h|hpp|cs|rb|php|swift|kt|go|rs|scala|pl|lua|sh|bash|sql|css|html|htm|xml|json|yaml|yml|md|txt|csv|tsv|ini|cfg|conf|log|rtf)$/i);
+
+  const parts: ContentPart[] = [];
+
+  if (isTextBased) {
+    const textContent = fileBuffer.toString("utf-8");
+    const truncated = textContent.length > 100000 ? textContent.substring(0, 100000) + "\n\n[... contenu tronqué ...]" : textContent;
+    parts.push({ text: `\n\n=== CONTENU DU FICHIER "${fileName}" ===\n\`\`\`\n${truncated}\n\`\`\`` });
+  } else if (isLargeFile && isMediaFile) {
+    try {
+      const fileUri = await uploadToGeminiFileAPI(fileBuffer, fileName, geminiMimeType, apiKey);
+      parts.push({ file_data: { mime_type: geminiMimeType, file_uri: fileUri } });
+    } catch (uploadError) {
+      console.error("[AI] File API upload failed:", uploadError);
+      return null; // Signal to fall back to filename classification
+    }
+  } else if (APPLE_IWORK_MIME_TYPES.has(mimeType)) {
+    const quickLookPdf = await extractAppleQuickLookPdf(fileBuffer);
+    if (quickLookPdf) {
+      parts.push({ inline_data: { mime_type: "application/pdf", data: quickLookPdf.toString("base64") } });
+    } else {
+      return null; // Signal to fall back
+    }
+  } else {
+    parts.push({ inline_data: { mime_type: geminiMimeType, data: fileBuffer.toString("base64") } });
+  }
+
+  return parts;
+}
+
+/**
+ * Call Gemini API with given content parts and return parsed JSON
+ */
+async function callGemini(
+  contentParts: ContentPart[],
+  apiKey: string,
+  maxOutputTokens = 1024,
+): Promise<Record<string, any>> {
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: contentParts }],
+        generationConfig: { temperature: 0.1, maxOutputTokens },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+  }
+
+  const data = await response.json();
+
+  if (data.candidates?.[0]?.finishReason === "SAFETY") {
+    throw new Error("Content blocked by safety filters");
+  }
+
+  const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  if (!textResponse) {
+    throw new Error("Empty response from Gemini");
+  }
+
+  const parsed = parseGeminiJson(textResponse);
+  (parsed as any).__rawText = textResponse;
+  return parsed;
+}
+
+// ============================================================================
+// PASS 1 - Classification (type, category, folder placement)
+// ============================================================================
+async function classifyDocument(
+  fileContentParts: ContentPart[],
+  fileName: string,
+  apiKey: string,
+  folderContext?: string,
+): Promise<AIAnalysisResult> {
+  const today = new Date().toISOString().split("T")[0];
+  let fullPrompt = CLASSIFICATION_PROMPT + `\n\n## 📅 DATE ACTUELLE: ${today}`;
+  if (folderContext) {
+    fullPrompt += `\n\n## 📂 DOSSIERS EXISTANTS
+Choisis parmi ces actions :
+- "use_existing": Utiliser un dossier existant (donne targetFolderId)
+- "create_subfolder": Sous-dossier dans un parent (donne parentFolderId + suggestedFolder)
+- "create_new": Nouveau dossier racine (donne suggestedFolder)
+
+⚠️ PRIORITÉ: utilise un dossier existant si possible !
+
+ARBORESCENCE :
+${folderContext}`;
+  }
+
+  const contentParts: ContentPart[] = [{ text: fullPrompt }, ...fileContentParts];
+
+  console.log("[Pass 1] Classifying:", fileName);
+  const parsed = await callGemini(contentParts, apiKey, 1024);
+  const rawText = (parsed as any).__rawText;
+  delete (parsed as any).__rawText;
+
+  const documentType = parsed.documentType || "autre";
+  const categoryKey = TYPE_TO_CATEGORY[documentType] || "AUTRE";
+  const category = DOCUMENT_CATEGORIES[categoryKey].name;
+
+  console.log("[Pass 1] Result:", documentType, "->", category, "confidence:", parsed.confidence);
+
+  return {
+    documentType,
+    category,
+    confidence: parsed.confidence || 0.5,
+    suggestedName: parsed.suggestedName,
+    suggestedFolder: parsed.suggestedFolder || category,
+    folderAction: parsed.folderAction || "create_new",
+    targetFolderId: parsed.targetFolderId || undefined,
+    parentFolderId: parsed.parentFolderId || undefined,
+    extractedData: {
+      date: parsed.extractedData?.date || undefined,
+      expiryDate: parsed.extractedData?.expiryDate || undefined,
+      description: parsed.extractedData?.description || undefined,
+    },
+    rawResponse: rawText,
+  };
+}
+
+// ============================================================================
+// PASS 2 - Deep extraction (type-specific fields)
+// ============================================================================
+async function extractDocumentData(
+  fileContentParts: ContentPart[],
+  fileName: string,
+  documentType: string,
+  categoryKey: string,
+  apiKey: string,
+): Promise<ExtractedData | null> {
+  const extractionKey = CATEGORY_TO_EXTRACTION[categoryKey];
+  if (!extractionKey) return null;
+
+  const extractionPrompt = EXTRACTION_PROMPTS[extractionKey];
+  if (!extractionPrompt) return null;
+
+  console.log("[Pass 2] Deep extraction for:", fileName, "category:", categoryKey);
+
+  const prompt = `${extractionPrompt}\n\nLe document est de type "${documentType}". Analyse le fichier ci-joint et extrais les informations demandées.`;
+  const contentParts: ContentPart[] = [{ text: prompt }, ...fileContentParts];
+
+  try {
+    const parsed = await callGemini(contentParts, apiKey, 1024);
+    delete (parsed as any).__rawText;
+
+    console.log("[Pass 2] Extracted fields:", Object.keys(parsed).filter(k => parsed[k] != null).join(", "));
+
+    // Build ExtractedData from parsed response — all fields are optional
+    const extracted: ExtractedData = {};
+    for (const [key, value] of Object.entries(parsed)) {
+      if (value != null && value !== "" && value !== "null") {
+        (extracted as any)[key] = String(value);
+      }
+    }
+    return extracted;
+  } catch (error) {
+    console.error("[Pass 2] Deep extraction failed, continuing with pass 1 data:", error);
+    return null;
+  }
+}
+
+// ============================================================================
+// ORCHESTRATOR - Multi-pass analysis
+// ============================================================================
+
+/**
+ * Analyze document with Gemini AI - MULTI-PASS VERSION
+ * Pass 1: Quick classification (type, category, folder placement)
+ * Pass 2: Deep extraction with type-specific prompt (if applicable)
+ */
 export async function analyzeDocumentWithAI(
   fileBuffer: Buffer,
   fileName: string,
@@ -1235,7 +1756,7 @@ export async function analyzeDocumentWithAI(
   const apiKey = process.env.GEMINI_API_KEY;
   const fileSize = fileBuffer.length;
 
-  console.log("[AI Analysis] Starting ULTRA analysis for:", fileName, "mimeType:", mimeType, "size:", fileSize);
+  console.log("[AI Analysis] Starting multi-pass analysis for:", fileName, "mimeType:", mimeType, "size:", fileSize);
 
   if (!apiKey) {
     console.error("[AI Analysis] GEMINI_API_KEY not configured!");
@@ -1250,231 +1771,54 @@ export async function analyzeDocumentWithAI(
     }
   }
 
-  const isLargeFile = fileSize > MAX_INLINE_SIZE;
-  const isMediaFile = mimeType.startsWith("video/") || mimeType.startsWith("audio/");
-
-  // Determine if this is a text-based file that should be analyzed as text
   const isTextBased = TEXT_BASED_MIME_TYPES.has(mimeType) ||
                       mimeType.startsWith("text/") ||
-                      fileName.match(/\.(py|js|ts|jsx|tsx|java|c|cpp|h|hpp|cs|rb|php|swift|kt|go|rs|scala|pl|lua|sh|bash|sql|css|html|htm|xml|json|yaml|yml|md|txt|csv|tsv|ini|cfg|conf|log|rtf)$/i);
-
+                      !!fileName.match(/\.(py|js|ts|jsx|tsx|java|c|cpp|h|hpp|cs|rb|php|swift|kt|go|rs|scala|pl|lua|sh|bash|sql|css|html|htm|xml|json|yaml|yml|md|txt|csv|tsv|ini|cfg|conf|log|rtf)$/i);
   const isOfficeDoc = OFFICE_MIME_TYPES.has(mimeType) ||
-                      fileName.match(/\.(doc|docx|xls|xlsx|ppt|pptx|pages|numbers|key|odt|ods|odp)$/i);
+                      !!fileName.match(/\.(doc|docx|xls|xlsx|ppt|pptx|pages|numbers|key|odt|ods|odp)$/i);
+  const geminiMimeType = resolveGeminiMimeType(mimeType, isTextBased, isOfficeDoc);
 
-  let geminiMimeType = mimeType;
-
-  if (mimeType === "application/pdf") {
-    geminiMimeType = "application/pdf";
-  } else if (mimeType.startsWith("image/")) {
-    geminiMimeType = mimeType;
-  } else if (mimeType.startsWith("audio/")) {
-    // Gemini supports audio analysis - map to supported formats
-    if (mimeType === "audio/mpeg" || mimeType === "audio/mp3") {
-      geminiMimeType = "audio/mpeg";
-    } else if (mimeType === "audio/wav" || mimeType === "audio/x-wav" || mimeType === "audio/wave") {
-      geminiMimeType = "audio/wav";
-    } else if (mimeType === "audio/ogg") {
-      geminiMimeType = "audio/ogg";
-    } else if (mimeType === "audio/flac") {
-      geminiMimeType = "audio/flac";
-    } else {
-      geminiMimeType = "audio/mpeg"; // Default fallback for audio
-    }
-  } else if (mimeType.startsWith("video/")) {
-    // Gemini 2.0 supports video analysis - map to supported formats
-    if (mimeType === "video/mp4" || mimeType === "video/mpeg") {
-      geminiMimeType = "video/mp4";
-    } else if (mimeType === "video/quicktime") {
-      geminiMimeType = "video/quicktime";
-    } else if (mimeType === "video/webm") {
-      geminiMimeType = "video/webm";
-    } else if (mimeType === "video/x-msvideo" || mimeType === "video/avi") {
-      geminiMimeType = "video/x-msvideo";
-    } else {
-      geminiMimeType = "video/mp4"; // Default fallback for video
-    }
-  } else if (isTextBased) {
-    geminiMimeType = "text/plain";
-  } else if (isOfficeDoc) {
-    // Keep original mime type for Office docs - Gemini might support some
-    geminiMimeType = mimeType;
-  } else {
-    geminiMimeType = "application/pdf";
-  }
-  console.log("[AI Analysis] Using mimeType for Gemini:", geminiMimeType, "isTextBased:", isTextBased, "isOfficeDoc:", isOfficeDoc);
+  console.log("[AI Analysis] Gemini mimeType:", geminiMimeType);
 
   try {
-    // Determine which method to use based on file size and type
-    let contentParts: Array<{ text: string } | { inline_data: { mime_type: string; data: string } } | { file_data: { mime_type: string; file_uri: string } }> = [];
-
-    // Add the prompt first, with folder context if available
-    const today = new Date().toISOString().split("T")[0];
-    let fullPrompt = AI_CLASSIFICATION_PROMPT + `\n\n## 📅 DATE ACTUELLE\nAujourd'hui nous sommes le **${today}**. Utilise cette date pour :\n- Déterminer si des documents sont DÉJÀ EXPIRÉS (expiryDate < ${today})\n- Évaluer l'urgence de renouvellement (< 30 jours = urgent)\n- Contextualiser les dates relatives (\"en cours\", \"valide\", \"périmé\")\nMets toujours expiryDate au format YYYY-MM-DD.`;
-    if (folderContext) {
-      fullPrompt += `\n\n## 📂 DOSSIERS EXISTANTS DE L'UTILISATEUR
-Voici l'arborescence actuelle des dossiers de l'utilisateur. Tu DOIS choisir parmi ces 3 actions :
-- "use_existing": Placer dans un dossier/sous-dossier existant qui correspond (donne son targetFolderId)
-- "create_subfolder": Créer un sous-dossier dans un dossier parent existant (donne parentFolderId + suggestedFolder pour le nom du nouveau sous-dossier)
-- "create_new": Créer un nouveau dossier à la racine (donne suggestedFolder pour le nom)
-
-⚠️ PRIORITÉ ABSOLUE : utilise un dossier existant ("use_existing") si un dossier correspond au document ! Ne crée un nouveau dossier que si AUCUN existant ne correspond.
-⚠️ Si un dossier parent correspond à la catégorie mais qu'un sous-dossier plus précis serait utile, utilise "create_subfolder".
-
-ARBORESCENCE :
-${folderContext}`;
-    }
-    contentParts.push({ text: fullPrompt });
-
-    if (isTextBased) {
-      // For text-based files (code, etc.), send the content as text
-      const textContent = fileBuffer.toString("utf-8");
-      const truncatedContent = textContent.length > 100000 ? textContent.substring(0, 100000) + "\n\n[... contenu tronqué ...]" : textContent;
-      console.log("[AI Analysis] Sending as text content, length:", truncatedContent.length);
-      contentParts.push({
-        text: `\n\n=== CONTENU DU FICHIER "${fileName}" ===\n\`\`\`\n${truncatedContent}\n\`\`\``,
-      });
-    } else if (isLargeFile && isMediaFile) {
-      // Use File API for large media files (video/audio > 20MB)
-      console.log("[AI Analysis] Using File API for large media file...");
-      try {
-        const fileUri = await uploadToGeminiFileAPI(fileBuffer, fileName, geminiMimeType, apiKey);
-        contentParts.push({
-          file_data: {
-            mime_type: geminiMimeType,
-            file_uri: fileUri,
-          },
-        });
-        console.log("[AI Analysis] File uploaded successfully, URI:", fileUri);
-      } catch (uploadError) {
-        console.error("[AI Analysis] File API upload failed, falling back to filename classification:", uploadError);
+    // Build file content parts (shared between passes)
+    const fileContentParts = await buildFileContentParts(fileBuffer, fileName, mimeType, geminiMimeType, apiKey);
+    if (!fileContentParts) {
+      // File API upload failed or no QuickLook PDF
+      if (mimeType.startsWith("video/") || mimeType.startsWith("audio/")) {
         return classifyMediaByFilename(fileName, mimeType);
       }
-    } else if (APPLE_IWORK_MIME_TYPES.has(mimeType)) {
-      // Apple iWork files: Gemini doesn't support their MIME type natively.
-      // Extract QuickLook/Preview.pdf from the ZIP bundle and send that instead.
-      console.log("[AI Analysis] Apple iWork file — trying QuickLook PDF extraction...");
-      const quickLookPdf = await extractAppleQuickLookPdf(fileBuffer);
-      if (quickLookPdf) {
-        console.log("[AI Analysis] QuickLook PDF extracted, size:", quickLookPdf.length);
-        contentParts.push({
-          inline_data: {
-            mime_type: "application/pdf",
-            data: quickLookPdf.toString("base64"),
-          },
+      return classifyMediaByFilename(fileName, mimeType);
+    }
+
+    // ── PASS 1: Classification ──
+    const result = await classifyDocument(fileContentParts, fileName, apiKey, folderContext);
+
+    // ── PASS 2: Deep extraction (only for categories with specialized prompts) ──
+    const categoryKey = TYPE_TO_CATEGORY[result.documentType] || "AUTRE";
+    if (result.confidence >= 0.5 && CATEGORY_TO_EXTRACTION[categoryKey]) {
+      const deepData = await extractDocumentData(
+        fileContentParts,
+        fileName,
+        result.documentType,
+        categoryKey,
+        apiKey,
+      );
+
+      if (deepData) {
+        // Merge pass 2 data into pass 1 result (pass 2 wins on conflicts)
+        result.extractedData = { ...result.extractedData, ...deepData };
+        result.rawResponse = JSON.stringify({
+          pass1: result.rawResponse,
+          pass2: deepData,
         });
-      } else {
-        // No QuickLook PDF — fall back to filename classification
-        console.log("[AI Analysis] No QuickLook PDF found, falling back to filename classification");
-        return classifyMediaByFilename(fileName, mimeType);
+        console.log("[AI Analysis] Multi-pass merge complete. Fields:", Object.keys(result.extractedData).filter(k => (result.extractedData as any)[k] != null).join(", "));
       }
     } else {
-      // Use inline base64 for small binary files
-      const base64Data = fileBuffer.toString("base64");
-      console.log("[AI Analysis] Using inline base64, length:", base64Data.length);
-      contentParts.push({
-        inline_data: {
-          mime_type: geminiMimeType,
-          data: base64Data,
-        },
-      });
+      console.log("[AI Analysis] Skipping pass 2 (confidence:", result.confidence, "category:", categoryKey, ")");
     }
 
-    console.log("[AI Analysis] Calling Gemini API with ULTRA prompt...");
-
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: contentParts,
-            },
-          ],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 2048,
-          },
-        }),
-      }
-    );
-
-    console.log("[AI Analysis] Gemini response status:", response.status);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("[AI Analysis] Gemini API error response:", errorText);
-      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
-    }
-
-    const data = await response.json();
-    console.log("[AI Analysis] Gemini raw response:", JSON.stringify(data, null, 2));
-
-    if (data.candidates?.[0]?.finishReason === "SAFETY") {
-      console.error("[AI Analysis] Content blocked by safety filters");
-      throw new Error("Content blocked by safety filters");
-    }
-
-    const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    console.log("[AI Analysis] Extracted text response:", textResponse);
-
-    if (!textResponse) {
-      console.error("[AI Analysis] Empty response from Gemini");
-      throw new Error("Empty response from Gemini");
-    }
-
-    // Parse JSON from response (robust: handles fences + text before/after)
-    console.log("[AI Analysis] Parsing JSON from response...");
-    const parsed = parseGeminiJson(textResponse);
-    console.log("[AI Analysis] Parsed result:", parsed);
-
-    // Map document type to category
-    const documentType = parsed.documentType || "autre";
-    const categoryKey = TYPE_TO_CATEGORY[documentType] || "AUTRE";
-    const category = DOCUMENT_CATEGORIES[categoryKey].name;
-
-    console.log("[AI Analysis] ULTRA classification:", documentType, "->", category, "(", categoryKey, ")");
-
-    // Use the AI's suggested folder if provided, otherwise fall back to category
-    const suggestedFolder = parsed.suggestedFolder || category;
-
-    // Extract folder placement decision from AI
-    const folderAction = parsed.folderAction || "create_new";
-    const targetFolderId = parsed.targetFolderId || undefined;
-    const parentFolderId = parsed.parentFolderId || undefined;
-
-    console.log("[AI Analysis] Folder decision:", folderAction, "targetFolderId:", targetFolderId, "parentFolderId:", parentFolderId);
-
-    return {
-      documentType,
-      category,
-      confidence: parsed.confidence || 0.5,
-      suggestedName: parsed.suggestedName,
-      suggestedFolder, // Nom de dossier PRÉCIS de l'IA
-      folderAction,
-      targetFolderId,
-      parentFolderId,
-      extractedData: {
-        date: parsed.extractedData?.date || undefined,
-        expiryDate: parsed.extractedData?.expiryDate || undefined,
-        amount: parsed.extractedData?.amount || undefined,
-        issuer: parsed.extractedData?.issuer || undefined,
-        recipient: parsed.extractedData?.recipient || undefined,
-        reference: parsed.extractedData?.reference || undefined,
-        subject: parsed.extractedData?.subject || undefined,
-        topic: parsed.extractedData?.topic || undefined,
-        location: parsed.extractedData?.location || undefined,
-        people: parsed.extractedData?.people || undefined,
-        language: parsed.extractedData?.language || undefined,
-        duration: parsed.extractedData?.duration || undefined,
-        genre: parsed.extractedData?.genre || undefined,
-        description: parsed.extractedData?.description || undefined,
-      },
-      rawResponse: textResponse,
-    };
+    return result;
   } catch (error) {
     console.error("[AI Analysis] CRITICAL ERROR:", error);
 

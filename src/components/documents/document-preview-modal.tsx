@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Download, FileText, Image as ImageIcon, File, AlertCircle, Loader2, Music, Video, FileCode, Sparkles, Calendar, Tag, User, DollarSign, Hash, AlertTriangle, Clock, CheckCircle } from "lucide-react";
+import { X, Download, FileText, Image as ImageIcon, File, AlertCircle, Loader2, Music, Video, FileCode, Sparkles, Calendar, Tag, User, DollarSign, Hash, AlertTriangle, Clock, CheckCircle, Building2, Briefcase, Home, Heart, GraduationCap, Scale, Car, CreditCard, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/hooks/useTranslation";
 
@@ -198,13 +198,65 @@ export function DocumentPreviewModal({
 
           const chips: { Icon: React.ElementType; label: string; value: string }[] = [];
           if (document.aiCategory) chips.push({ Icon: Tag, label: "Catégorie", value: document.aiCategory });
-          if (extracted.issuer) chips.push({ Icon: User, label: "Émetteur", value: extracted.issuer });
-          if (extracted.amount) chips.push({ Icon: DollarSign, label: "Montant", value: extracted.amount });
+          if (extracted.issuer || extracted.fournisseur) chips.push({ Icon: Building2, label: "Émetteur", value: extracted.issuer || extracted.fournisseur });
+          if (extracted.montantTTC || extracted.amount) chips.push({ Icon: DollarSign, label: "Montant", value: extracted.montantTTC || extracted.amount });
           if (extracted.date) chips.push({ Icon: Calendar, label: "Date", value: extracted.date });
-          if (extracted.reference) chips.push({ Icon: Hash, label: "Référence", value: extracted.reference });
+          if (extracted.reference || extracted.numeroFacture) chips.push({ Icon: Hash, label: "Réf.", value: extracted.reference || extracted.numeroFacture });
           if (extracted.subject) chips.push({ Icon: FileText, label: "Sujet", value: extracted.subject });
 
+          // Pass 2 enriched fields — Finance
+          if (extracted.montantHT) chips.push({ Icon: DollarSign, label: "HT", value: extracted.montantHT });
+          if (extracted.tva) chips.push({ Icon: DollarSign, label: "TVA", value: extracted.tva });
+          if (extracted.iban) chips.push({ Icon: CreditCard, label: "IBAN", value: extracted.iban });
+
+          // Pass 2 enriched fields — Identity
+          if (extracted.nom && extracted.prenom) chips.push({ Icon: User, label: "Identité", value: `${extracted.prenom} ${extracted.nom}` });
+          else if (extracted.nom) chips.push({ Icon: User, label: "Nom", value: extracted.nom });
+          if (extracted.numeroDocument) chips.push({ Icon: Hash, label: "N° doc", value: extracted.numeroDocument });
+          if (extracted.dateNaissance) chips.push({ Icon: Calendar, label: "Naissance", value: extracted.dateNaissance });
+          if (extracted.nationalite) chips.push({ Icon: User, label: "Nationalité", value: extracted.nationalite });
+
+          // Pass 2 enriched fields — Employment
+          if (extracted.employeur) chips.push({ Icon: Briefcase, label: "Employeur", value: extracted.employeur });
+          if (extracted.poste) chips.push({ Icon: Briefcase, label: "Poste", value: extracted.poste });
+          if (extracted.salaireNet) chips.push({ Icon: DollarSign, label: "Net", value: extracted.salaireNet });
+          if (extracted.salaireBrut && !extracted.salaireNet) chips.push({ Icon: DollarSign, label: "Brut", value: extracted.salaireBrut });
+          if (extracted.contratType) chips.push({ Icon: FileText, label: "Contrat", value: extracted.contratType });
+
+          // Pass 2 enriched fields — Housing
+          if (extracted.adresseBien) chips.push({ Icon: Home, label: "Adresse", value: extracted.adresseBien });
+          if (extracted.loyer) chips.push({ Icon: DollarSign, label: "Loyer", value: extracted.loyer });
+          if (extracted.surface) chips.push({ Icon: Home, label: "Surface", value: extracted.surface });
+          if (extracted.proprietaire) chips.push({ Icon: User, label: "Propriétaire", value: extracted.proprietaire });
+
+          // Pass 2 enriched fields — Health
+          if (extracted.medecin) chips.push({ Icon: Heart, label: "Médecin", value: extracted.medecin });
+          if (extracted.patient) chips.push({ Icon: User, label: "Patient", value: extracted.patient });
+          if (extracted.traitement) chips.push({ Icon: Heart, label: "Traitement", value: extracted.traitement });
+
+          // Pass 2 enriched fields — Education
+          if (extracted.etablissement) chips.push({ Icon: GraduationCap, label: "Établissement", value: extracted.etablissement });
+          if (extracted.diplome) chips.push({ Icon: GraduationCap, label: "Diplôme", value: extracted.diplome });
+          if (extracted.mention) chips.push({ Icon: GraduationCap, label: "Mention", value: extracted.mention });
+
+          // Pass 2 enriched fields — Legal
+          if (extracted.parties) chips.push({ Icon: Scale, label: "Parties", value: extracted.parties });
+          if (extracted.typeActe) chips.push({ Icon: Scale, label: "Acte", value: extracted.typeActe });
+          if (extracted.notaire) chips.push({ Icon: User, label: "Notaire", value: extracted.notaire });
+
+          // Pass 2 enriched fields — Vehicle
+          if (extracted.immatriculation) chips.push({ Icon: Car, label: "Immat.", value: extracted.immatriculation });
+          if (extracted.marque && extracted.modele) chips.push({ Icon: Car, label: "Véhicule", value: `${extracted.marque} ${extracted.modele}` });
+          else if (extracted.marque) chips.push({ Icon: Car, label: "Marque", value: extracted.marque });
+
+          // Pass 2 enriched fields — Insurance
+          if (extracted.dateDebut && extracted.dateFin) chips.push({ Icon: Shield, label: "Validité", value: `${extracted.dateDebut} → ${extracted.dateFin}` });
+
           if (chips.length === 0 && !expiryLabel) return null;
+
+          // Limit displayed chips to avoid overflow, show rest in a collapsible section
+          const mainChips = chips.slice(0, 6);
+          const extraChips = chips.slice(6);
 
           return (
             <div className="border-t border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900/50 px-4 py-3 flex-shrink-0">
@@ -219,11 +271,11 @@ export function DocumentPreviewModal({
                     {expiryLabel.text}
                   </span>
                 )}
-                {chips.map((chip) => (
+                {mainChips.map((chip) => (
                   <span key={chip.label} className="inline-flex items-center gap-1 rounded-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 px-2.5 py-1 text-xs text-neutral-700 dark:text-neutral-300 shadow-sm">
                     <chip.Icon className="h-3 w-3 text-neutral-400 dark:text-neutral-500" />
                     <span className="font-medium text-neutral-500 dark:text-neutral-400">{chip.label}:</span>
-                    <span className="truncate max-w-[120px]">{chip.value}</span>
+                    <span className="truncate max-w-[150px]">{chip.value}</span>
                   </span>
                 ))}
                 {document.aiConfidence != null && (
@@ -232,6 +284,17 @@ export function DocumentPreviewModal({
                   </span>
                 )}
               </div>
+              {extraChips.length > 0 && (
+                <div className="flex items-center gap-2 flex-wrap mt-2">
+                  {extraChips.map((chip) => (
+                    <span key={chip.label} className="inline-flex items-center gap-1 rounded-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 px-2.5 py-1 text-xs text-neutral-700 dark:text-neutral-300 shadow-sm">
+                      <chip.Icon className="h-3 w-3 text-neutral-400 dark:text-neutral-500" />
+                      <span className="font-medium text-neutral-500 dark:text-neutral-400">{chip.label}:</span>
+                      <span className="truncate max-w-[150px]">{chip.value}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           );
         })()}
