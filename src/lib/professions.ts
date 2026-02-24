@@ -183,6 +183,87 @@ export const PROFESSION_CATEGORIES: ProfessionCategory[] = [
 /** Flat list of all profession strings */
 export const ALL_PROFESSIONS: string[] = PROFESSION_CATEGORIES.flatMap((c) => c.professions);
 
+// ============================================================================
+// PROFESSION → DOC TYPES CONFIG (page Créer)
+// ============================================================================
+
+export type DocType = "facture" | "devis" | "contrat" | "bon-de-commande" | "lettre";
+
+export type ProfessionDocConfig = {
+  /** Doc types shown by default (in order), with a "Recommandé" badge. */
+  prioritized: DocType[];
+  /** Suggested folder name to pre-select when saving the generated document. */
+  suggestedFolderName: string;
+  /** Optional suffix per doc type for the suggested filename (appended after the type label). */
+  nameSuffix: Partial<Record<DocType, string>>;
+};
+
+export const PROFESSION_CATEGORY_DOC_CONFIG: Record<string, ProfessionDocConfig> = {
+  sante: {
+    prioritized: ["lettre", "facture", "contrat"],
+    suggestedFolderName: "Comptabilité Cabinet",
+    nameSuffix: { facture: "Cabinet", lettre: "Médicale", contrat: "Prestataire" },
+  },
+  finance: {
+    prioritized: ["facture", "devis", "contrat"],
+    suggestedFolderName: "Honoraires & Factures",
+    nameSuffix: { facture: "Honoraires", devis: "Prestation", contrat: "Mission" },
+  },
+  juridique: {
+    prioritized: ["contrat", "lettre", "facture"],
+    suggestedFolderName: "Honoraires",
+    nameSuffix: { contrat: "Mission", lettre: "Officielle", facture: "Honoraires" },
+  },
+  immobilier: {
+    prioritized: ["devis", "contrat", "bon-de-commande"],
+    suggestedFolderName: "Devis & Factures Chantier",
+    nameSuffix: { devis: "Chantier", contrat: "Prestation", "bon-de-commande": "Fournisseur" },
+  },
+  tech: {
+    prioritized: ["facture", "devis", "contrat"],
+    suggestedFolderName: "Contrats Clients",
+    nameSuffix: { facture: "Prestation", devis: "Projet", contrat: "Mission" },
+  },
+  commerce: {
+    prioritized: ["facture", "bon-de-commande", "devis"],
+    suggestedFolderName: "Factures Fournisseurs",
+    nameSuffix: { facture: "Client", "bon-de-commande": "Fournisseur", devis: "Commercial" },
+  },
+  enseignement: {
+    prioritized: ["contrat", "lettre", "devis"],
+    suggestedFolderName: "Contrats Formation",
+    nameSuffix: { contrat: "Formation", lettre: "Pédagogique", devis: "Formation" },
+  },
+  communication: {
+    prioritized: ["devis", "facture", "contrat"],
+    suggestedFolderName: "Devis & Factures",
+    nameSuffix: { devis: "Créatif", facture: "Prestation", contrat: "Droits" },
+  },
+  restauration: {
+    prioritized: ["facture", "bon-de-commande", "contrat"],
+    suggestedFolderName: "Factures Fournisseurs",
+    nameSuffix: { facture: "Fournisseur", "bon-de-commande": "Approvisionnement", contrat: "Employé" },
+  },
+  artisanat: {
+    prioritized: ["devis", "facture", "contrat"],
+    suggestedFolderName: "Devis & Factures",
+    nameSuffix: { devis: "Chantier", facture: "Client", contrat: "Prestation" },
+  },
+  liberal: {
+    prioritized: ["facture", "devis", "contrat"],
+    suggestedFolderName: "Factures & Devis",
+    nameSuffix: { facture: "Client", devis: "Prestation", contrat: "Mission" },
+  },
+};
+
+/** Returns the ProfessionDocConfig for a given profession string, or null if no profession. */
+export function getProfessionDocConfig(profession: string | null | undefined): ProfessionDocConfig | null {
+  if (!profession) return null;
+  const category = PROFESSION_CATEGORIES.find((c) => c.professions.includes(profession));
+  const key = category?.key ?? "liberal";
+  return PROFESSION_CATEGORY_DOC_CONFIG[key] ?? null;
+}
+
 /**
  * Get the AI context string for a given profession.
  * Injected into Gemini prompts to personalize folder naming and document prioritization.

@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect, notFound } from "next/navigation";
 import { DocumentForm, type DocType } from "@/components/create/document-form";
+import { getProfessionDocConfig } from "@/lib/professions";
 
 const VALID_TYPES: DocType[] = [
   "facture",
@@ -22,7 +23,7 @@ export default async function CreateTypePage({
 
   const user = await db.user.findUnique({
     where: { id: session.user.id },
-    select: { planType: true },
+    select: { planType: true, profession: true },
   });
 
   if (!user || user.planType !== "BUSINESS") {
@@ -31,5 +32,17 @@ export default async function CreateTypePage({
 
   if (!VALID_TYPES.includes(params.type as DocType)) notFound();
 
-  return <DocumentForm type={params.type as DocType} />;
+  const docType = params.type as DocType;
+  const config = getProfessionDocConfig(user.profession);
+  const suggestedFolderName = config?.suggestedFolderName ?? null;
+  const nameSuffix = config?.nameSuffix[docType] ?? null;
+
+  return (
+    <DocumentForm
+      type={docType}
+      profession={user.profession ?? null}
+      suggestedFolderName={suggestedFolderName}
+      nameSuffix={nameSuffix}
+    />
+  );
 }

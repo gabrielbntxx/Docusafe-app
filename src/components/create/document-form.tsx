@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -139,9 +139,14 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 interface DocumentFormProps {
   type: DocType;
+  profession?: string | null;
+  suggestedFolderName?: string | null;
+  nameSuffix?: string | null;
 }
 
-export function DocumentForm({ type }: DocumentFormProps) {
+type FolderItem = { id: string; name: string; color: string | null };
+
+export function DocumentForm({ type, profession, suggestedFolderName, nameSuffix }: DocumentFormProps) {
   const router = useRouter();
   const { t } = useTranslation();
 
@@ -226,6 +231,31 @@ export function DocumentForm({ type }: DocumentFormProps) {
   const [aiPrompt, setAiPrompt] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+
+  // Profession-based folder + filename
+  const defaultFileName = nameSuffix
+    ? `${TYPE_LABELS[type]}_${nameSuffix}`
+    : TYPE_LABELS[type].replace(/ /g, "_");
+  const [fileName, setFileName] = useState(defaultFileName);
+  const [folders, setFolders] = useState<FolderItem[]>([]);
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!profession) return;
+    fetch("/api/folders")
+      .then((r) => r.json())
+      .then((data: FolderItem[]) => {
+        const list = Array.isArray(data) ? data : [];
+        setFolders(list);
+        if (suggestedFolderName) {
+          const match = list.find(
+            (f) => f.name.toLowerCase() === suggestedFolderName.toLowerCase()
+          );
+          if (match) setSelectedFolderId(match.id);
+        }
+      })
+      .catch(() => {});
+  }, [profession, suggestedFolderName]);
 
   const set = (field: string, value: string | number) =>
     setForm((f) => ({ ...f, [field]: value }));
@@ -375,11 +405,10 @@ export function DocumentForm({ type }: DocumentFormProps) {
     setError(null);
     try {
       const fd = new FormData();
-      fd.append(
-        "file",
-        pdfBlob,
-        `${TYPE_LABELS[type].replace(/ /g, "_")}_${Date.now()}.pdf`
-      );
+      const safeName = (fileName.trim() || TYPE_LABELS[type].replace(/ /g, "_"))
+        .replace(/\.pdf$/i, "");
+      fd.append("file", pdfBlob, `${safeName}.pdf`);
+      if (selectedFolderId) fd.append("folderId", selectedFolderId);
       const res = await fetch("/api/documents/upload", {
         method: "POST",
         body: fd,
@@ -1034,37 +1063,88 @@ export function DocumentForm({ type }: DocumentFormProps) {
   // ─── Shared action buttons (download + save) ───────────────────────────────
 
   const renderActions = () => (
-    <div className="flex flex-col gap-3 rounded-2xl border border-neutral-100 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900 sm:flex-row">
-      <button
-        onClick={handleDownload}
-        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-neutral-100 py-3 text-sm font-medium text-neutral-800 transition hover:bg-neutral-200 dark:bg-neutral-800 dark:text-white dark:hover:bg-neutral-700"
-      >
-        <Download className="h-4 w-4" />
-        {t("downloadPdf")}
-      </button>
-      <button
-        onClick={handleSave}
-        disabled={isSaving || savedSuccess}
-        className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-medium transition disabled:cursor-not-allowed ${
-          savedSuccess
-            ? "border border-emerald-200 bg-emerald-50 text-emerald-600 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400"
-            : "border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20"
-        }`}
-      >
-        {isSaving ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" /> Sauvegarde...
-          </>
-        ) : savedSuccess ? (
-          <>
-            <CheckCircle className="h-4 w-4" /> {t("savedToDocuSafe")}
-          </>
-        ) : (
-          <>
-            <Save className="h-4 w-4" /> {t("saveToDocuSafe")}
-          </>
-        )}
-      </button>
+    <div className="flex flex-col gap-3">
+      {/* Profession suggestion panel */}
+      {profession && (
+        <div className="rounded-2xl border border-violet-100 bg-violet-50 p-4 dark:border-violet-500/20 dark:bg-violet-500/10 space-y-3">
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-violet-700 dark:text-violet-400">
+            <Sparkles className="h-3.5 w-3.5" />
+            Suggestions pour {profession}
+          </p>
+
+          {/* Filename */}
+          <div>
+            <label className="mb-1 block text-xs font-medium text-neutral-500 dark:text-neutral-400">
+              Nom du fichier
+            </label>
+            <input
+              type="text"
+              value={fileName}
+              onChange={(e) => setFileName(e.target.value)}
+              className="w-full rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-violet-400 focus:outline-none dark:border-violet-500/30 dark:bg-neutral-800 dark:text-white"
+              placeholder={TYPE_LABELS[type]}
+            />
+          </div>
+
+          {/* Folder */}
+          {folders.length > 0 && (
+            <div>
+              <label className="mb-1 block text-xs font-medium text-neutral-500 dark:text-neutral-400">
+                Dossier de destination
+              </label>
+              <select
+                value={selectedFolderId ?? ""}
+                onChange={(e) => setSelectedFolderId(e.target.value || null)}
+                className="w-full rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:border-violet-400 focus:outline-none dark:border-violet-500/30 dark:bg-neutral-800 dark:text-white"
+              >
+                <option value="">Sans dossier</option>
+                {folders.map((f) => (
+                  <option key={f.id} value={f.id}>{f.name}</option>
+                ))}
+              </select>
+              {suggestedFolderName && !selectedFolderId && (
+                <p className="mt-1 text-xs text-violet-500">
+                  💡 Dossier suggéré : &ldquo;{suggestedFolderName}&rdquo; — créez-le d&apos;abord si besoin
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Action buttons */}
+      <div className="flex flex-col gap-3 rounded-2xl border border-neutral-100 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900 sm:flex-row">
+        <button
+          onClick={handleDownload}
+          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-neutral-100 py-3 text-sm font-medium text-neutral-800 transition hover:bg-neutral-200 dark:bg-neutral-800 dark:text-white dark:hover:bg-neutral-700"
+        >
+          <Download className="h-4 w-4" />
+          {t("downloadPdf")}
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={isSaving || savedSuccess}
+          className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-medium transition disabled:cursor-not-allowed ${
+            savedSuccess
+              ? "border border-emerald-200 bg-emerald-50 text-emerald-600 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400"
+              : "border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20"
+          }`}
+        >
+          {isSaving ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" /> Sauvegarde...
+            </>
+          ) : savedSuccess ? (
+            <>
+              <CheckCircle className="h-4 w-4" /> {t("savedToDocuSafe")}
+            </>
+          ) : (
+            <>
+              <Save className="h-4 w-4" /> {t("saveToDocuSafe")}
+            </>
+          )}
+        </button>
+      </div>
     </div>
   );
 

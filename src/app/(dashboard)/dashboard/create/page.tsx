@@ -12,12 +12,12 @@ export default async function CreatePage() {
 
   const user = await db.user.findUnique({
     where: { id: session.user.id },
-    select: { planType: true },
+    select: { planType: true, profession: true },
   });
 
   if (!user || user.planType !== "BUSINESS") {
     redirect("/dashboard/subscription");
   }
 
-  return <CreateHub />;
+  return <CreateHub profession={user.profession ?? null} />;
 }
