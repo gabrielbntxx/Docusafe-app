@@ -16,6 +16,7 @@ import {
   Bot,
   FileUp,
   FilePlus2,
+  Image as ImageIcon,
   Lock,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
@@ -25,6 +26,7 @@ import type { TranslationKey } from "@/lib/translations";
 
 const menuItems: Array<{ nameKey: TranslationKey; href: string; icon: React.ElementType; description: string; businessOnly?: boolean }> = [
   { nameKey: "createDocuments", href: "/dashboard/create", icon: FilePlus2, description: "Générez des documents professionnels", businessOnly: true },
+  { nameKey: "myPhotos", href: "/dashboard/photos", icon: ImageIcon, description: "Vos photos et images" },
   { nameKey: "docubot", href: "/dashboard/docubot", icon: Bot, description: "Ton assistant intelligent" },
   { nameKey: "requests", href: "/dashboard/requests", icon: FileUp, description: "Demandes de documents" },
   { nameKey: "profile", href: "/dashboard/profile", icon: User, description: "Gérer votre profil" },

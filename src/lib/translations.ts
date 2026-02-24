@@ -63,6 +63,10 @@ export const translations = {
     // My Documents
     myDocuments: "My Documents",
     myFiles: "My Files",
+    myPhotos: "My Photos",
+    noPhotosFound: "No photos yet",
+    noPhotosFoundDesc: "Your imported images will appear here automatically.",
+    photosCount: "photo(s)",
     totalDocuments: "document(s) total",
     searchDocuments: "Search for a document...",
     allFolders: "All folders",
@@ -516,6 +520,10 @@ export const translations = {
     // My Documents
     myDocuments: "Mes documents",
     myFiles: "Mes dossiers",
+    myPhotos: "Mes photos",
+    noPhotosFound: "Pas encore de photos",
+    noPhotosFoundDesc: "Vos images importées apparaîtront ici automatiquement.",
+    photosCount: "photo(s)",
     totalDocuments: "document(s) au total",
     searchDocuments: "Rechercher un document...",
     allFolders: "Tous les dossiers",

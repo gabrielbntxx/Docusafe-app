@@ -17,6 +17,7 @@ import {
   Lock,
   ArrowLeftRight,
   FilePlus2,
+  Image as ImageIcon,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -26,6 +27,7 @@ import type { TranslationKey } from "@/lib/translations";
 const navigation: Array<{ nameKey: TranslationKey; href: string; icon: any; tutorialId?: string; exact?: boolean; businessOnly?: boolean }> = [
   { nameKey: "dashboard", href: "/dashboard", icon: LayoutDashboard, exact: true },
   { nameKey: "myDocuments", href: "/dashboard/documents", icon: FileText, tutorialId: "documents-link", exact: true },
+  { nameKey: "myPhotos", href: "/dashboard/photos", icon: ImageIcon, exact: true },
   { nameKey: "myFiles", href: "/dashboard/my-files", icon: Folder, tutorialId: "folders-link" },
   { nameKey: "search", href: "/dashboard/search", icon: Search, tutorialId: "search-link" },
   { nameKey: "requests", href: "/dashboard/requests", icon: FileUp },
