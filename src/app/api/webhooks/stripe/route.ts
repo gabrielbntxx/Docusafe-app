@@ -159,7 +159,8 @@ async function resolvePlanType(session: Stripe.Checkout.Session): Promise<string
     }
   }
 
-  return "PRO";
+  // No plan resolved — throw so the webhook fails and Stripe retries
+  throw new Error("[Stripe Webhook] Could not resolve plan type from line items — check STRIPE_PRICE_* env vars");
 }
 
 /**
@@ -206,7 +207,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 }
 
 /**
- * Handle subscription updates (plan changes, renewals)
+ * Handle subscription updates (plan changes, renewals, upgrades)
  */
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const customerId = subscription.customer as string;
@@ -227,19 +228,31 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   let status = subscription.status;
   if (status === "trialing") status = "active";
 
-  // Update subscription status
+  // Resolve plan type from subscription items — handles upgrades (PRO → BUSINESS, etc.)
+  const priceId = subscription.items.data[0]?.price?.id;
+  const planType = priceId && PRICE_TO_PLAN[priceId] ? PRICE_TO_PLAN[priceId] : null;
+
+  if (planType) {
+    console.log("[Stripe Webhook] Plan resolved from subscription items:", planType);
+  } else if (priceId) {
+    console.warn("[Stripe Webhook] Unknown price ID in subscription:", priceId, "— plan not updated");
+  }
+
   const periodEnd = (subscription as unknown as { current_period_end?: number }).current_period_end;
+
   await db.user.update({
     where: { id: user.id },
     data: {
+      // Update planType if we can resolve it from the subscription items
+      ...(planType ? { planType } : {}),
+      // Always keep the current active subscription ID in sync
+      stripeSubscriptionId: subscription.id,
       subscriptionStatus: status,
-      subscriptionEndsAt: periodEnd
-        ? new Date(periodEnd * 1000)
-        : null,
+      subscriptionEndsAt: periodEnd ? new Date(periodEnd * 1000) : null,
     },
   });
 
-  console.log("[Stripe Webhook] Subscription status updated:", status);
+  console.log("[Stripe Webhook] Subscription updated — status:", status, "plan:", planType ?? "(unchanged)");
 }
 
 /**
