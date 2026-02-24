@@ -266,7 +266,7 @@ export function DashboardClient({
                         <p className="text-xs text-neutral-400 dark:text-neutral-500">{doc.aiCategory}</p>
                       )}
                     </div>
-                    <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${badgeBg} ${badgeText}`}>
+                    <span suppressHydrationWarning className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${badgeBg} ${badgeText}`}>
                       {label}
                     </span>
                   </div>
@@ -395,7 +395,7 @@ export function DashboardClient({
                       <div className="mt-0.5 lg:mt-1 flex items-center gap-1.5 lg:gap-2 text-xs lg:text-sm text-neutral-500 dark:text-neutral-400">
                         <span>{formatFileSize(doc.sizeBytes)}</span>
                         <span className="text-neutral-300 dark:text-neutral-600">•</span>
-                        <span>{formatDate(doc.uploadedAt)}</span>
+                        <span suppressHydrationWarning>{formatDate(doc.uploadedAt)}</span>
                       </div>
                     </div>
 
