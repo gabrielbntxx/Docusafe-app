@@ -261,7 +261,7 @@ function PhotoCard({ photo, deleting, onOpen, onDownload, onDelete }: CardProps)
           <div className="flex items-center gap-1.5 text-white/70 text-[10px]">
             <span>{formatSize(photo.sizeBytes)}</span>
             <span>·</span>
-            <span>{formatDate(photo.uploadedAt)}</span>
+            <span suppressHydrationWarning>{formatDate(photo.uploadedAt)}</span>
           </div>
           {photo.folder && (
             <p className="text-white/60 text-[10px] truncate mt-0.5">
