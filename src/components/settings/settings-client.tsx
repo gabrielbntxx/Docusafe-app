@@ -569,7 +569,7 @@ export function SettingsClient({
                   Personnalisation IA
                 </h2>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                  L'IA adapte le tri selon votre métier
+                  L&apos;IA adapte le tri selon votre métier
                 </p>
               </div>
               {currentProfession && (

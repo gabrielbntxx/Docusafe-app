@@ -69,7 +69,7 @@ export function ProfessionModal({ isOpen, onClose }: ProfessionModalProps) {
               Quel est votre métier ?
             </h2>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-              L'IA adaptera le tri et les noms de dossiers à votre activité.
+              L&apos;IA adaptera le tri et les noms de dossiers à votre activité.
             </p>
           </div>
           <button
