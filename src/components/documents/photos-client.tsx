@@ -83,7 +83,7 @@ export function PhotosClient({ photos }: Props) {
     if (!confirm(`Supprimer "${photo.displayName}" ?`)) return;
     setDeletingId(photo.id);
     try {
-      const res = await fetch(`/api/documents/${photo.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/documents/${photo.id}/delete`, { method: "DELETE" });
       if (res.ok) router.refresh();
     } finally {
       setDeletingId(null);
