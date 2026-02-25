@@ -16,6 +16,8 @@ import {
   Shield,
   Eye,
   Pencil,
+  Folder,
+  Check,
 } from "lucide-react";
 
 type MemberRole = "owner" | "admin" | "editeur" | "lecteur";
@@ -26,7 +28,15 @@ type TeamMember = {
   email: string;
   image: string | null;
   teamRole: MemberRole | null;
+  folderAccess: string[] | null;
   createdAt: string;
+};
+
+type WorkspaceFolder = {
+  id: string;
+  name: string;
+  icon: string | null;
+  color: string | null;
 };
 
 type Invitation = {
@@ -96,12 +106,18 @@ export function TeamSection() {
   const [changingRoleId, setChangingRoleId] = useState<string | null>(null);
   const [lastInviteLink, setLastInviteLink] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
+  // Folder access picker
+  const [workspaceFolders, setWorkspaceFolders] = useState<WorkspaceFolder[]>([]);
+  const [foldersPopoverFor, setFoldersPopoverFor] = useState<string | null>(null);
+  const [folderDraft, setFolderDraft] = useState<string[] | null>(null);
+  const [savingFolderId, setSavingFolderId] = useState<string | null>(null);
 
   const fetchData = async () => {
     try {
-      const [membersRes, invitesRes] = await Promise.all([
+      const [membersRes, invitesRes, foldersRes] = await Promise.all([
         fetch("/api/team/members"),
         fetch("/api/team/invite"),
+        fetch("/api/folders?parentId=root"),
       ]);
 
       if (membersRes.ok) {
@@ -113,6 +129,18 @@ export function TeamSection() {
       if (invitesRes.ok) {
         const data = await invitesRes.json();
         setInvitations(data.invitations || []);
+      }
+
+      if (foldersRes.ok) {
+        const data = await foldersRes.json();
+        setWorkspaceFolders(
+          (data as WorkspaceFolder[]).map((f) => ({
+            id: f.id,
+            name: f.name,
+            icon: f.icon,
+            color: f.color,
+          }))
+        );
       }
     } catch (err) {
       console.error("Error fetching team data:", err);
@@ -199,6 +227,38 @@ export function TeamSection() {
     } finally {
       setChangingRoleId(null);
     }
+  };
+
+  const openFolderPicker = (member: TeamMember) => {
+    setFolderDraft(member.folderAccess);
+    setFoldersPopoverFor(member.id);
+  };
+
+  const handleSaveFolderAccess = async (memberId: string) => {
+    setSavingFolderId(memberId);
+    try {
+      const res = await fetch(`/api/team/members/${memberId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ folderAccess: folderDraft }),
+      });
+      if (res.ok) {
+        setFoldersPopoverFor(null);
+        fetchData();
+      }
+    } catch (err) {
+      console.error("Error saving folder access:", err);
+    } finally {
+      setSavingFolderId(null);
+    }
+  };
+
+  const toggleFolderInDraft = (folderId: string) => {
+    setFolderDraft((prev) => {
+      if (prev === null) return [folderId];
+      if (prev.includes(folderId)) return prev.filter((id) => id !== folderId);
+      return [...prev, folderId];
+    });
   };
 
   const handleRevokeInvite = async (invitationId: string) => {
@@ -374,55 +434,150 @@ export function TeamSection() {
           </div>
           <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
             {members.map((member) => (
-              <div key={member.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-sm font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
-                    {(member.name || member.email)[0].toUpperCase()}
+              <div key={member.id} className="relative">
+                <div className="flex items-center justify-between gap-3 px-4 py-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-sm font-medium text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
+                      {(member.name || member.email)[0].toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-neutral-900 dark:text-white">
+                        {member.name || "Sans nom"}
+                      </p>
+                      <p className="truncate text-xs text-neutral-500">{member.email}</p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-neutral-900 dark:text-white">
-                      {member.name || "Sans nom"}
-                    </p>
-                    <p className="truncate text-xs text-neutral-500">{member.email}</p>
-                  </div>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  {/* Role selector */}
-                  <div className="relative">
-                    <select
-                      value={member.teamRole || "editeur"}
-                      onChange={(e) =>
-                        handleChangeRole(
-                          member.id,
-                          e.target.value as "admin" | "editeur" | "lecteur"
-                        )
-                      }
-                      disabled={changingRoleId === member.id}
-                      className="appearance-none rounded-full border border-neutral-200 bg-white py-1 pl-3 pr-7 text-xs font-medium text-neutral-600 focus:border-violet-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
+                  <div className="flex shrink-0 items-center gap-2">
+                    {/* Folder access button */}
+                    {workspaceFolders.length > 0 && (
+                      <button
+                        onClick={() =>
+                          foldersPopoverFor === member.id
+                            ? setFoldersPopoverFor(null)
+                            : openFolderPicker(member)
+                        }
+                        className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition ${
+                          member.folderAccess !== null
+                            ? "border-blue-300 bg-blue-50 text-blue-600 dark:border-blue-500/40 dark:bg-blue-500/10 dark:text-blue-400"
+                            : "border-neutral-200 bg-white text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400"
+                        }`}
+                        title="Accès aux dossiers"
+                      >
+                        <Folder className="h-3 w-3" />
+                        {member.folderAccess === null
+                          ? "Tous"
+                          : member.folderAccess.length === 0
+                          ? "Aucun"
+                          : `${member.folderAccess.length} dossier${member.folderAccess.length > 1 ? "s" : ""}`}
+                      </button>
+                    )}
+                    {/* Role selector */}
+                    <div className="relative">
+                      <select
+                        value={member.teamRole || "editeur"}
+                        onChange={(e) =>
+                          handleChangeRole(
+                            member.id,
+                            e.target.value as "admin" | "editeur" | "lecteur"
+                          )
+                        }
+                        disabled={changingRoleId === member.id}
+                        className="appearance-none rounded-full border border-neutral-200 bg-white py-1 pl-3 pr-7 text-xs font-medium text-neutral-600 focus:border-violet-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
+                      >
+                        <option value="admin">Admin</option>
+                        <option value="editeur">Éditeur</option>
+                        <option value="lecteur">Lecteur</option>
+                      </select>
+                      {changingRoleId === member.id ? (
+                        <Loader2 className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 animate-spin text-neutral-400" />
+                      ) : (
+                        <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-neutral-400" />
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleRemoveMember(member.id)}
+                      disabled={removingId === member.id}
+                      className="rounded-lg p-2 text-neutral-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10"
+                      title="Retirer de l&apos;équipe"
                     >
-                      <option value="admin">Admin</option>
-                      <option value="editeur">Éditeur</option>
-                      <option value="lecteur">Lecteur</option>
-                    </select>
-                    {changingRoleId === member.id ? (
-                      <Loader2 className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 animate-spin text-neutral-400" />
-                    ) : (
-                      <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-neutral-400" />
-                    )}
+                      {removingId === member.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                    </button>
                   </div>
-                  <button
-                    onClick={() => handleRemoveMember(member.id)}
-                    disabled={removingId === member.id}
-                    className="rounded-lg p-2 text-neutral-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10"
-                    title="Retirer de l&apos;équipe"
-                  >
-                    {removingId === member.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-4 w-4" />
-                    )}
-                  </button>
                 </div>
+
+                {/* Folder picker popover */}
+                {foldersPopoverFor === member.id && (
+                  <div className="mx-4 mb-3 rounded-xl border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-900">
+                    <div className="border-b border-neutral-100 px-4 py-2.5 dark:border-neutral-800">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400">
+                        Accès aux dossiers
+                      </p>
+                    </div>
+                    <div className="p-3 space-y-1">
+                      {/* All folders option */}
+                      <button
+                        onClick={() => setFolderDraft(null)}
+                        className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
+                          folderDraft === null
+                            ? "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300"
+                            : "text-neutral-600 hover:bg-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                        }`}
+                      >
+                        <div className={`flex h-4 w-4 items-center justify-center rounded border ${folderDraft === null ? "border-blue-500 bg-blue-500" : "border-neutral-300 dark:border-neutral-600"}`}>
+                          {folderDraft === null && <Check className="h-3 w-3 text-white" />}
+                        </div>
+                        <span className="font-medium">Tous les dossiers</span>
+                      </button>
+
+                      {/* Individual folders */}
+                      {workspaceFolders.map((folder) => {
+                        const isSelected = folderDraft !== null && folderDraft.includes(folder.id);
+                        return (
+                          <button
+                            key={folder.id}
+                            onClick={() => {
+                              if (folderDraft === null) setFolderDraft([folder.id]);
+                              else toggleFolderInDraft(folder.id);
+                            }}
+                            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
+                              isSelected
+                                ? "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300"
+                                : "text-neutral-600 hover:bg-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                            }`}
+                          >
+                            <div className={`flex h-4 w-4 items-center justify-center rounded border ${isSelected ? "border-blue-500 bg-blue-500" : "border-neutral-300 dark:border-neutral-600"}`}>
+                              {isSelected && <Check className="h-3 w-3 text-white" />}
+                            </div>
+                            <Folder className="h-4 w-4 text-neutral-400" style={folder.color ? { color: folder.color } : {}} />
+                            <span>{folder.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="flex items-center justify-end gap-2 border-t border-neutral-100 px-3 py-2.5 dark:border-neutral-800">
+                      <button
+                        onClick={() => setFoldersPopoverFor(null)}
+                        className="rounded-lg px-3 py-1.5 text-xs text-neutral-500 transition hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                      >
+                        Annuler
+                      </button>
+                      <button
+                        onClick={() => handleSaveFolderAccess(member.id)}
+                        disabled={savingFolderId === member.id}
+                        className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
+                      >
+                        {savingFolderId === member.id ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : null}
+                        Sauvegarder
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>

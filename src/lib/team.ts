@@ -53,7 +53,7 @@ export async function hasTeam(userId: string): Promise<boolean> {
  * Get all team members for an owner (excluding the owner)
  */
 export async function getTeamMembers(ownerId: string) {
-  return db.user.findMany({
+  const members = await db.user.findMany({
     where: { teamOwnerId: ownerId },
     select: {
       id: true,
@@ -61,10 +61,17 @@ export async function getTeamMembers(ownerId: string) {
       email: true,
       image: true,
       memberColor: true,
+      teamRole: true,
+      folderAccess: true,
       createdAt: true,
     },
     orderBy: { createdAt: "asc" },
   });
+  // Parse folderAccess JSON for each member
+  return members.map((m) => ({
+    ...m,
+    folderAccess: m.folderAccess ? (JSON.parse(m.folderAccess) as string[]) : null,
+  }));
 }
 
 /**
@@ -148,6 +155,24 @@ export async function canManageTeam(userId: string): Promise<boolean> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Get the folder access restriction for a team member.
+ * Returns null if the member has access to all folders,
+ * or an array of folder IDs they are restricted to.
+ */
+export async function getMemberFolderAccess(userId: string): Promise<string[] | null> {
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { folderAccess: true },
+  });
+  if (!user?.folderAccess) return null;
+  try {
+    return JSON.parse(user.folderAccess) as string[];
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Get a map of userId -> { name, color } for all team members + owner.

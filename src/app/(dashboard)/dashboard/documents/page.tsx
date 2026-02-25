@@ -3,7 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { DocumentsClient } from "@/components/documents/documents-client";
-import { getEffectiveUserId, getTeamMemberMap, hasTeam } from "@/lib/team";
+import { getEffectiveUserId, getTeamMemberMap, hasTeam, getMemberFolderAccess } from "@/lib/team";
 
 const DOCS_PER_PAGE = 50;
 
@@ -24,11 +24,26 @@ export default async function DocumentsPage({
   // Private space mode: owner-only view of their private documents
   const privateSpace = isOwner && searchParams.space === "private";
 
+  // Folder access restriction for team members
+  const memberFolderAccess = !isOwner ? await getMemberFolderAccess(session.user.id) : null;
+  // memberFolderAccess null = all public folders; [] = no access; [id1,id2] = restricted
+
   const baseWhere = {
-    // In private space, scope to owner's actual userId and private docs only
     userId: privateSpace ? session.user.id : effectiveUserId,
     deletedAt: null,
-    ...(privateSpace ? { isPrivate: 1 } : isOwner ? {} : { isPrivate: 0 }),
+    ...(privateSpace
+      ? { isPrivate: 1 }
+      : isOwner
+      ? {}
+      : {
+          isPrivate: 0,
+          // If member has folder restriction: only docs inside allowed folders
+          ...(memberFolderAccess !== null
+            ? memberFolderAccess.length === 0
+              ? { folderId: "__NONE__" } // match nothing
+              : { folderId: { in: memberFolderAccess } }
+            : {}),
+        }),
   };
 
   const filterWhere = {
@@ -51,7 +66,17 @@ export default async function DocumentsPage({
     db.folder.findMany({
       where: {
         userId: effectiveUserId,
-        ...(isOwner ? {} : { isPrivate: 0 }),
+        ...(isOwner
+          ? {}
+          : {
+              isPrivate: 0,
+              // Restrict to allowed folders if member has folder access restriction
+              ...(memberFolderAccess !== null
+                ? memberFolderAccess.length === 0
+                  ? { id: "__NONE__" }
+                  : { id: { in: memberFolderAccess } }
+                : {}),
+            }),
       },
       select: {
         id: true,

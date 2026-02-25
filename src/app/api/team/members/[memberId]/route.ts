@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 const VALID_ROLES = ["admin", "editeur", "lecteur"] as const;
 type MemberRole = typeof VALID_ROLES[number];
 
-// PATCH /api/team/members/[memberId] — Update a team member's role (owner only)
+// PATCH /api/team/members/[memberId] — Update role and/or folderAccess (owner only)
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ memberId: string }> }
@@ -18,24 +18,41 @@ export async function PATCH(
     }
 
     const { memberId } = await params;
-    const { role } = await req.json();
+    const body = await req.json();
+    const { role, folderAccess } = body as {
+      role?: string;
+      folderAccess?: string[] | null;
+    };
 
-    if (!role || !VALID_ROLES.includes(role as MemberRole)) {
+    // Validate role if provided
+    if (role !== undefined && !VALID_ROLES.includes(role as MemberRole)) {
       return NextResponse.json(
         { error: "Rôle invalide. Valeurs acceptées : admin, editeur, lecteur" },
         { status: 400 }
       );
     }
 
-    // Only the team owner can change roles
+    // Validate folderAccess if provided (must be array of strings or null)
+    if (
+      folderAccess !== undefined &&
+      folderAccess !== null &&
+      (!Array.isArray(folderAccess) || folderAccess.some((id) => typeof id !== "string"))
+    ) {
+      return NextResponse.json(
+        { error: "folderAccess doit être un tableau d'identifiants ou null" },
+        { status: 400 }
+      );
+    }
+
+    // Only the team owner can update members
     const owner = await db.user.findUnique({
       where: { id: session.user.id },
-      select: { teamOwnerId: true, teamRole: true },
+      select: { teamOwnerId: true },
     });
 
     if (owner?.teamOwnerId) {
       return NextResponse.json(
-        { error: "Seul le propriétaire de l'équipe peut modifier les rôles" },
+        { error: "Seul le propriétaire de l'équipe peut modifier les membres" },
         { status: 403 }
       );
     }
@@ -53,17 +70,32 @@ export async function PATCH(
       );
     }
 
+    // Build the update data
+    const updateData: Record<string, unknown> = {};
+    if (role !== undefined) updateData.teamRole = role as MemberRole;
+    if ("folderAccess" in body) {
+      updateData.folderAccess =
+        folderAccess === null ? null : JSON.stringify(folderAccess);
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json(
+        { error: "Aucun champ à mettre à jour" },
+        { status: 400 }
+      );
+    }
+
     await db.user.update({
       where: { id: memberId },
-      data: { teamRole: role as MemberRole },
+      data: updateData,
     });
 
     return NextResponse.json({
       success: true,
-      member: { id: member.id, email: member.email, role },
+      member: { id: member.id, email: member.email, role, folderAccess },
     });
   } catch (error) {
-    console.error("[Team Member Role] Error:", error);
+    console.error("[Team Member Update] Error:", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }

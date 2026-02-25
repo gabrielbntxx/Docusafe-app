@@ -56,8 +56,9 @@ model User {
 
   // Team (Business plan)
   teamOwnerId  String?   // If set, this user is a member of this owner's team
-  teamRole     String?   // "owner" | "member" (null = solo user)
+  teamRole     String?   // "owner" | "admin" | "editeur" | "lecteur" (null = solo user)
   memberColor  String?   // Unique color assigned in team context (hex)
+  folderAccess String?   // JSON array of allowed folder IDs; null = all public folders
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

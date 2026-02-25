@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { createNotification } from "@/lib/notifications";
-import { getEffectiveUserId, canUpload } from "@/lib/team";
+import { getEffectiveUserId, canUpload, getMemberFolderAccess } from "@/lib/team";
 import { hasActiveSubscription } from "@/lib/storage";
 
 // GET - List all folders for the current user
@@ -23,10 +23,23 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const parentId = searchParams.get("parentId");
 
+    // Folder access restriction for team members
+    const memberFolderAccess = !isOwner ? await getMemberFolderAccess(session.user.id) : null;
+
     const folders = await db.folder.findMany({
       where: {
         userId: effectiveUserId,
-        ...(isOwner ? {} : { isPrivate: 0 }),
+        ...(isOwner
+          ? {}
+          : {
+              isPrivate: 0,
+              // If member has folder restriction: only allowed folders
+              ...(memberFolderAccess !== null
+                ? memberFolderAccess.length === 0
+                  ? { id: "__NONE__" } // match nothing
+                  : { id: { in: memberFolderAccess } }
+                : {}),
+            }),
         // If parentId is specified, filter by it; if "root" get only root folders
         ...(parentId === "root"
           ? { parentId: null }
