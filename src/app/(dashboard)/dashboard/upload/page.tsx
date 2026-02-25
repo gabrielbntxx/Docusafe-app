@@ -52,6 +52,9 @@ export default function UploadPage() {
   // Cloud picker state
   const [isCloudPickerOpen, setIsCloudPickerOpen] = useState(false);
 
+  // Private upload state
+  const [isPrivateUpload, setIsPrivateUpload] = useState(false);
+
   // Fetch AI status on mount
   useEffect(() => {
     fetch("/api/documents/analyze")
@@ -301,6 +304,7 @@ export default function UploadPage() {
         const fd = new FormData();
         fd.append("file", file);
         if (folderId) fd.append("folderId", folderId);
+        if (isPrivateUpload) fd.append("isPrivate", "1");
 
         try {
           const res = await fetch("/api/documents/upload", {
@@ -706,6 +710,44 @@ export default function UploadPage() {
               Limite mensuelle atteinte. Passez à Premium pour un tri illimité.
             </p>
           )}
+        </div>
+      )}
+
+      {/* Private Upload Toggle */}
+      {hasSelection && (
+        <div className="rounded-3xl border border-neutral-200 bg-white p-5 dark:border-neutral-700 dark:bg-neutral-800/50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-100 dark:bg-neutral-700">
+                <Lock className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-neutral-900 dark:text-white">
+                  Espace privé
+                </h3>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                  {isPrivateUpload
+                    ? "Visible uniquement par vous dans Mon espace privé"
+                    : "Ajouter dans Mon espace privé"}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsPrivateUpload(!isPrivateUpload)}
+              disabled={isUploading}
+              className={`relative h-7 w-12 rounded-full transition-colors ${
+                isPrivateUpload
+                  ? "bg-neutral-700 dark:bg-neutral-500"
+                  : "bg-neutral-300 dark:bg-neutral-600"
+              } ${isUploading ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              <span
+                className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                  isPrivateUpload ? "left-6" : "left-1"
+                }`}
+              />
+            </button>
+          </div>
         </div>
       )}
 

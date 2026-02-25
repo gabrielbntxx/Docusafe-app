@@ -112,6 +112,9 @@ export async function POST(req: Request) {
     const formData = await req.formData();
     const file = formData.get("file") as File;
     const folderId = formData.get("folderId") as string | null;
+    // isPrivate: only honored for workspace owners, not team members
+    const isPrivateFlag =
+      !currentUser.teamOwnerId && formData.get("isPrivate") === "1" ? 1 : 0;
 
     if (!file) {
       return NextResponse.json(
@@ -246,6 +249,7 @@ export async function POST(req: Request) {
         storageUrl: `r2://${storageKey}`,
         aiAnalyzed: 0, // Not analyzed yet
         isEncrypted: 1, // Document chiffré
+        isPrivate: isPrivateFlag, // Private space if requested by owner
         addedById: session.user.id, // Track who uploaded
         // Store conversion info in description if converted
         description: processedFile.wasConverted
