@@ -107,7 +107,7 @@ export function SubscriptionClient({
     {
       id: "PRO" as PlanType,
       name: "Pro",
-      price: "10",
+      price: "19",
       period: "/mois",
       description: "Pour les utilisateurs avancés",
       features: [
@@ -126,8 +126,7 @@ export function SubscriptionClient({
     {
       id: "BUSINESS" as PlanType,
       name: "Business",
-      price: "35",
-      priceSuffix: ".90",
+      price: "89",
       period: "/mois",
       description: "Parfait pour les entreprises",
       features: [
@@ -322,11 +321,6 @@ export function SubscriptionClient({
                       <span className={`text-2xl sm:text-4xl font-bold ${styles.isGradient ? "text-white" : "text-neutral-900 dark:text-white"}`}>
                         {plan.price}€
                       </span>
-                      {plan.priceSuffix && (
-                        <span className={`text-lg sm:text-2xl font-bold ${styles.isGradient ? "text-white/80" : "text-neutral-700 dark:text-neutral-300"}`}>
-                          {plan.priceSuffix}
-                        </span>
-                      )}
                       <span className={`text-xs sm:text-sm ${styles.isGradient ? "text-white/70" : "text-neutral-500 dark:text-neutral-400"}`}>
                         {plan.period}
                       </span>

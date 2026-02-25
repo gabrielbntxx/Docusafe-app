@@ -60,7 +60,7 @@ const PLANS = {
   PRO: {
     id: "PRO",
     name: "Pro",
-    price: "10",
+    price: "19",
     period: "/mois",
     description: "Pour les utilisateurs avancés",
     badge: "Recommandé",
@@ -82,7 +82,7 @@ const PLANS = {
   BUSINESS: {
     id: "BUSINESS",
     name: "Business",
-    price: "35.90",
+    price: "89",
     period: "/mois",
     description: "Parfait pour les entreprises",
     badge: "Entreprise",
