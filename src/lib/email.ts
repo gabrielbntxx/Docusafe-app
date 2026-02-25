@@ -218,8 +218,7 @@ export async function sendPasswordResetEmail(userEmail: string, token: string, u
   }
 
   const name = userName || "cher utilisateur";
-  const baseUrl = process.env.NEXTAUTH_URL || "https://justif-app-production.up.railway.app";
-  const resetUrl = `${baseUrl}/reset-password?token=${token}`;
+  const resetUrl = `${APP_URL}/reset-password?token=${token}`;
 
   try {
     const { data, error } = await resend.emails.send({
@@ -1402,7 +1401,7 @@ function getCancellationEmailHtml(name: string): string {
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td align="center">
-                    <a href="https://justif-app-production.up.railway.app/dashboard/subscription"
+                    <a href="${APP_URL}/dashboard/subscription"
                        style="display: inline-block; background-color: #18181b; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 10px; font-size: 16px; font-weight: 600;">
                       Se réabonner
                     </a>

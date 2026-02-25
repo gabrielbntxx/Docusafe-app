@@ -6,7 +6,7 @@ import { getFromR2, hasActiveSubscription } from "@/lib/storage";
 import { revalidatePath } from "next/cache";
 import { decryptDocument, decryptUserKey, removeEncryptionMarker } from "@/lib/encryption";
 import { analyzeDocumentWithAI, getOrCreateCategoryFolder } from "@/lib/ai-analysis";
-import { getEffectiveUserId } from "@/lib/team";
+import { getEffectiveUserId, getMemberFolderAccess } from "@/lib/team";
 import { checkRateLimit } from "@/lib/security";
 
 // Helper to get user encryption key
@@ -364,9 +364,42 @@ function formatFriendlyDate(date: Date, lang: string = "fr"): string {
   }
 }
 
-async function getRecentDocuments(userId: string, count: number = 5) {
+// ============================================================================
+// MEMBER ACCESS CONTEXT — folder/privacy restrictions for team members
+// ============================================================================
+interface MemberAccessCtx {
+  memberFolderAccess: string[] | null; // null = no restriction, [] = blocked, [...] = restricted
+  isOwner: boolean;
+  canWrite: boolean;
+}
+
+/** Returns extra Prisma where conditions to apply folder/privacy restrictions */
+function buildDocFilter(ctx: MemberAccessCtx): object {
+  if (ctx.isOwner) return {};
+  const folderFilter =
+    ctx.memberFolderAccess !== null
+      ? ctx.memberFolderAccess.length === 0
+        ? { folderId: "__NONE__" }
+        : { folderId: { in: ctx.memberFolderAccess } }
+      : {};
+  return { isPrivate: 0, ...folderFilter };
+}
+
+function buildFolderFilter(ctx: MemberAccessCtx): object {
+  if (ctx.isOwner) return {};
+  const idFilter =
+    ctx.memberFolderAccess !== null
+      ? ctx.memberFolderAccess.length === 0
+        ? { id: "__NONE__" }
+        : { id: { in: ctx.memberFolderAccess } }
+      : {};
+  return { isPrivate: 0, ...idFilter };
+}
+
+async function getRecentDocuments(userId: string, count: number = 5, ctx: MemberAccessCtx) {
+  const docFilter = buildDocFilter(ctx);
   const documents = await db.document.findMany({
-    where: { userId },
+    where: { userId, deletedAt: null, ...docFilter },
     select: {
       id: true,
       displayName: true,
@@ -397,10 +430,13 @@ async function getRecentDocuments(userId: string, count: number = 5) {
   };
 }
 
-async function searchDocuments(userId: string, query: string) {
+async function searchDocuments(userId: string, query: string, ctx: MemberAccessCtx) {
+  const docFilter = buildDocFilter(ctx);
   const documents = await db.document.findMany({
     where: {
       userId,
+      deletedAt: null,
+      ...docFilter,
       OR: [
         { displayName: { contains: query, mode: "insensitive" } },
         { aiDocumentType: { contains: query, mode: "insensitive" } },
@@ -437,9 +473,10 @@ async function searchDocuments(userId: string, query: string) {
   };
 }
 
-async function getDocumentContent(userId: string, documentId: string) {
+async function getDocumentContent(userId: string, documentId: string, ctx: MemberAccessCtx) {
+  const docFilter = buildDocFilter(ctx);
   const document = await db.document.findFirst({
-    where: { id: documentId, userId },
+    where: { id: documentId, userId, ...docFilter },
     select: {
       id: true,
       displayName: true,
@@ -513,11 +550,12 @@ async function getDocumentContent(userId: string, documentId: string) {
   }
 }
 
-async function summarizeDocument(userId: string, documentId: string) {
+async function summarizeDocument(userId: string, documentId: string, ctx: MemberAccessCtx) {
   console.log("[DocuBot] summarizeDocument called with:", { userId, documentId });
 
+  const docFilter = buildDocFilter(ctx);
   const document = await db.document.findFirst({
-    where: { id: documentId, userId },
+    where: { id: documentId, userId, ...docFilter },
     select: {
       id: true,
       displayName: true,
@@ -731,9 +769,10 @@ async function reclassifyDocument(userId: string, documentId: string) {
   }
 }
 
-async function listFolders(userId: string) {
+async function listFolders(userId: string, ctx: MemberAccessCtx) {
+  const folderFilter = buildFolderFilter(ctx);
   const folders = await db.folder.findMany({
-    where: { userId },
+    where: { userId, ...folderFilter },
     select: {
       id: true,
       name: true,
@@ -986,9 +1025,10 @@ async function reclassifyMultipleDocuments(userId: string, documentIds: string[]
 }
 
 // NEW: Deep analyze document
-async function analyzeDocument(userId: string, documentId: string) {
+async function analyzeDocument(userId: string, documentId: string, ctx: MemberAccessCtx) {
+  const docFilter = buildDocFilter(ctx);
   const document = await db.document.findFirst({
-    where: { id: documentId, userId },
+    where: { id: documentId, userId, ...docFilter },
     select: {
       id: true,
       displayName: true,
@@ -1124,11 +1164,12 @@ RÈGLES :
 }
 
 // NEW: Get expiring documents
-async function getExpiringDocuments(userId: string, days: number = 60) {
+async function getExpiringDocuments(userId: string, days: number = 60, ctx: MemberAccessCtx) {
   const futureDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+  const docFilter = buildDocFilter(ctx);
 
   const documents = await db.document.findMany({
-    where: { userId, expiryDate: { not: null, lte: futureDate } },
+    where: { userId, expiryDate: { not: null, lte: futureDate }, ...docFilter },
     select: {
       id: true,
       displayName: true,
@@ -1170,23 +1211,25 @@ async function getExpiringDocuments(userId: string, days: number = 60) {
 }
 
 // NEW: Get document stats
-async function getDocumentStats(userId: string) {
+async function getDocumentStats(userId: string, ctx: MemberAccessCtx) {
+  const docFilter = buildDocFilter(ctx);
+  const folderFilter = buildFolderFilter(ctx);
   const [totalCount, byCategory, topFolders, storageAgg] = await Promise.all([
-    db.document.count({ where: { userId } }),
+    db.document.count({ where: { userId, ...docFilter } }),
     db.document.groupBy({
       by: ["aiCategory"],
-      where: { userId },
+      where: { userId, ...docFilter },
       _count: { id: true },
       orderBy: { _count: { id: "desc" } },
     }),
     db.folder.findMany({
-      where: { userId },
+      where: { userId, ...folderFilter },
       select: { name: true, _count: { select: { documents: true } } },
       orderBy: { documents: { _count: "desc" } },
       take: 5,
     }),
     db.document.aggregate({
-      where: { userId },
+      where: { userId, ...docFilter },
       _sum: { sizeBytes: true },
     }),
   ]);
@@ -1236,9 +1279,10 @@ async function getAllDescendantFolderIds(userId: string, rootFolderId: string): 
 }
 
 // NEW: List all documents inside a specific folder (and its sub-folders)
-async function listFolderContents(userId: string, folderId: string) {
+async function listFolderContents(userId: string, folderId: string, ctx: MemberAccessCtx) {
+  const folderFilter = buildFolderFilter(ctx);
   const folder = await db.folder.findFirst({
-    where: { id: folderId, userId },
+    where: { id: folderId, userId, ...folderFilter },
   });
 
   if (!folder) {
@@ -1340,20 +1384,33 @@ async function deleteFolderContents(userId: string, folderId: string) {
 // ============================================================================
 // EXECUTE FUNCTION
 // ============================================================================
+const WRITE_FUNCTIONS = new Set([
+  "moveDocument", "moveMultipleDocuments",
+  "deleteDocument", "deleteMultipleDocuments", "deleteFolderContents",
+  "renameDocument", "createFolder", "deleteFolder", "renameFolder",
+  "reclassifyDocument", "reclassifyMultipleDocuments",
+]);
+
 async function executeFunction(
   userId: string,
   functionName: string,
-  args: Record<string, any>
+  args: Record<string, any>,
+  ctx: MemberAccessCtx
 ): Promise<any> {
+  // Lecteur role: block all write operations
+  if (!ctx.canWrite && WRITE_FUNCTIONS.has(functionName)) {
+    return { success: false, error: "Action non autorisée : vous avez un accès en lecture seule." };
+  }
+
   switch (functionName) {
     case "getRecentDocuments":
-      return getRecentDocuments(userId, args.count || 5);
+      return getRecentDocuments(userId, args.count || 5, ctx);
     case "searchDocuments":
-      return searchDocuments(userId, args.query);
+      return searchDocuments(userId, args.query, ctx);
     case "getDocumentContent":
-      return getDocumentContent(userId, args.documentId);
+      return getDocumentContent(userId, args.documentId, ctx);
     case "summarizeDocument":
-      return summarizeDocument(userId, args.documentId);
+      return summarizeDocument(userId, args.documentId, ctx);
     case "moveDocument":
       return moveDocument(userId, args.documentId, args.folderId);
     case "moveMultipleDocuments":
@@ -1375,15 +1432,15 @@ async function executeFunction(
     case "reclassifyMultipleDocuments":
       return reclassifyMultipleDocuments(userId, args.documentIds);
     case "listFolders":
-      return listFolders(userId);
+      return listFolders(userId, ctx);
     case "analyzeDocument":
-      return analyzeDocument(userId, args.documentId);
+      return analyzeDocument(userId, args.documentId, ctx);
     case "getExpiringDocuments":
-      return getExpiringDocuments(userId, args.days || 60);
+      return getExpiringDocuments(userId, args.days || 60, ctx);
     case "getDocumentStats":
-      return getDocumentStats(userId);
+      return getDocumentStats(userId, ctx);
     case "listFolderContents":
-      return listFolderContents(userId, args.folderId);
+      return listFolderContents(userId, args.folderId, ctx);
     case "deleteFolderContents":
       return deleteFolderContents(userId, args.folderId);
     default:
@@ -1488,7 +1545,7 @@ export async function POST(request: NextRequest) {
     // Check subscription - FREE users cannot use DocuBot (unless team member)
     const currentUser = await db.user.findUnique({
       where: { id: session.user.id },
-      select: { planType: true, teamOwnerId: true, subscriptionStatus: true },
+      select: { planType: true, teamOwnerId: true, subscriptionStatus: true, teamRole: true },
     });
     if (!currentUser || (currentUser.planType === "FREE" && !currentUser.teamOwnerId)) {
       return new Response("Abonnement requis pour utiliser DocuBot", { status: 403 });
@@ -1505,6 +1562,10 @@ export async function POST(request: NextRequest) {
 
     // Use effective workspace userId for team members
     const userId = await getEffectiveUserId(session.user.id);
+    const isOwner = userId === session.user.id;
+    const memberFolderAccess = !isOwner ? await getMemberFolderAccess(session.user.id) : null;
+    const canWrite = isOwner || (currentUser!.teamRole !== "lecteur");
+    const accessCtx: MemberAccessCtx = { memberFolderAccess, isOwner, canWrite };
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
@@ -1558,15 +1619,19 @@ export async function POST(request: NextRequest) {
     // Feature 5: extract keywords for smarter context injection
     const msgKeywords = extractKeywords(message);
 
+    // Build context filters for folder/privacy restrictions
+    const ctxDocFilter = buildDocFilter(accessCtx);
+    const ctxFolderFilter = buildFolderFilter(accessCtx);
+
     // Get user context and language preference
     const [folders, recentDocs, userSettings, expiringDocs, relevantDocs] = await Promise.all([
       db.folder.findMany({
-        where: { userId },
+        where: { userId, ...ctxFolderFilter },
         select: { id: true, name: true, parentId: true, _count: { select: { documents: true } } },
         orderBy: { name: "asc" },
       }),
       db.document.findMany({
-        where: { userId },
+        where: { userId, deletedAt: null, ...ctxDocFilter },
         select: {
           id: true,
           displayName: true,
@@ -1583,7 +1648,7 @@ export async function POST(request: NextRequest) {
         select: { language: true },
       }),
       db.document.findMany({
-        where: { userId, expiryDate: { not: null, lte: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000) } },
+        where: { userId, expiryDate: { not: null, lte: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000) }, ...ctxDocFilter },
         select: { displayName: true, expiryDate: true },
         orderBy: { expiryDate: "asc" },
         take: 5,
@@ -1593,6 +1658,8 @@ export async function POST(request: NextRequest) {
         ? db.document.findMany({
             where: {
               userId,
+              deletedAt: null,
+              ...ctxDocFilter,
               OR: msgKeywords.flatMap((k) => [
                 { displayName: { contains: k, mode: "insensitive" } },
                 { aiCategory: { contains: k, mode: "insensitive" } },
@@ -1746,7 +1813,7 @@ export async function POST(request: NextRequest) {
       geminiContents.push({ role: "model", parts: candidate.content.parts });
 
       // Execute the function
-      const functionResult = await executeFunction(userId, functionCall.name, functionCall.args || {});
+      const functionResult = await executeFunction(userId, functionCall.name, functionCall.args || {}, accessCtx);
       console.log(`[DocuBot] Function result:`, functionResult);
 
       // Add function result to conversation

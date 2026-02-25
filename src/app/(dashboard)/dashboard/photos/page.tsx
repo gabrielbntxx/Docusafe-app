@@ -3,7 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { PhotosClient } from "@/components/documents/photos-client";
-import { getEffectiveUserId } from "@/lib/team";
+import { getEffectiveUserId, getMemberFolderAccess } from "@/lib/team";
 
 export default async function PhotosPage() {
   const session = await getServerSession(authOptions);
@@ -15,12 +15,22 @@ export default async function PhotosPage() {
   const effectiveUserId = await getEffectiveUserId(session.user.id);
   const isOwner = effectiveUserId === session.user.id;
 
+  // Folder access restriction for team members
+  const memberFolderAccess = !isOwner ? await getMemberFolderAccess(session.user.id) : null;
+
+  const folderFilter =
+    memberFolderAccess !== null
+      ? memberFolderAccess.length === 0
+        ? { folderId: "__NONE__" as string }
+        : { folderId: { in: memberFolderAccess } }
+      : {};
+
   const photos = await db.document.findMany({
     where: {
       userId: effectiveUserId,
       deletedAt: null,
       fileType: "image",
-      ...(isOwner ? {} : { isPrivate: 0 }),
+      ...(isOwner ? {} : { isPrivate: 0, ...folderFilter }),
     },
     select: {
       id: true,
