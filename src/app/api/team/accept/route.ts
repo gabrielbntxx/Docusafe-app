@@ -103,6 +103,7 @@ export async function POST(req: Request) {
           planType: "BUSINESS",
           memberColor,
           onboardingCompleted: true,
+          folderAccess: "[]", // No folder access by default — owner must explicitly grant
         },
       }),
       db.teamInvitation.update({

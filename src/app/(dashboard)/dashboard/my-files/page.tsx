@@ -3,7 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { MyFilesClient } from "@/components/my-files/my-files-client";
-import { getEffectiveUserId, getTeamMemberMap, hasTeam } from "@/lib/team";
+import { getEffectiveUserId, getTeamMemberMap, hasTeam, getMemberFolderAccess } from "@/lib/team";
 
 export default async function MyFilesPage({
   searchParams,
@@ -19,11 +19,28 @@ export default async function MyFilesPage({
   const effectiveUserId = await getEffectiveUserId(session.user.id);
   const isOwner = effectiveUserId === session.user.id;
 
+  // Folder access restriction for team members
+  const memberFolderAccess = !isOwner ? await getMemberFolderAccess(session.user.id) : null;
+
+  const folderAccessFilter =
+    memberFolderAccess !== null
+      ? memberFolderAccess.length === 0
+        ? { id: "__NONE__" as string }
+        : { id: { in: memberFolderAccess } }
+      : {};
+
+  const docFolderFilter =
+    memberFolderAccess !== null
+      ? memberFolderAccess.length === 0
+        ? { folderId: "__NONE__" as string }
+        : { folderId: { in: memberFolderAccess } }
+      : {};
+
   // Récupérer tous les dossiers (shared workspace aware)
   const folders = await db.folder.findMany({
     where: {
       userId: effectiveUserId,
-      ...(isOwner ? {} : { isPrivate: 0 }),
+      ...(isOwner ? {} : { isPrivate: 0, ...folderAccessFilter }),
     },
     include: {
       _count: {
@@ -45,7 +62,7 @@ export default async function MyFilesPage({
     where: {
       userId: effectiveUserId,
       deletedAt: null,
-      ...(isOwner ? {} : { isPrivate: 0 }),
+      ...(isOwner ? {} : { isPrivate: 0, ...docFolderFilter }),
     },
     include: {
       folder: {

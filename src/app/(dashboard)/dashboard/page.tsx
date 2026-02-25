@@ -3,73 +3,94 @@ import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
+import { getEffectiveUserId, getMemberFolderAccess } from "@/lib/team";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
 
-  // Redirect to login if no session
   if (!session?.user?.id) {
     redirect("/login");
   }
 
-  // Fetch user statistics, real storage, recent documents, and expiring documents in parallel
-  const in60Days = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
-  const [user, storageAgg, recentDocuments, expiringDocuments] = await Promise.all([
-    db.user.findUnique({
-      where: { id: session.user.id },
-      include: {
-        _count: {
-          select: {
-            documents: { where: { deletedAt: null } },
-            folders: true,
-          },
-        },
-      },
-    }),
-    db.document.aggregate({
-      where: { userId: session.user.id, deletedAt: null },
-      _sum: { sizeBytes: true },
-    }),
-    db.document.findMany({
-      where: { userId: session.user.id, deletedAt: null },
-      orderBy: { uploadedAt: "desc" },
-      take: 3,
-      include: {
-        folder: {
-          select: {
-            id: true,
-            name: true,
-            color: true,
-          },
-        },
-      },
-    }),
-    db.document.findMany({
-      where: {
-        userId: session.user.id,
-        deletedAt: null,
-        expiryDate: { not: null, lte: in60Days },
-      },
-      select: {
-        id: true,
-        displayName: true,
-        fileType: true,
-        aiCategory: true,
-        expiryDate: true,
-      },
-      orderBy: { expiryDate: "asc" },
-      take: 8,
-    }),
-  ]);
+  const effectiveUserId = await getEffectiveUserId(session.user.id);
+  const isOwner = effectiveUserId === session.user.id;
 
-  const stats = {
-    documentsCount: user?._count.documents || 0,
-    foldersCount: user?._count.folders || 0,
-    storageUsedBytes: Number(storageAgg._sum.sizeBytes) || 0,
-    planType: user?.planType || "FREE",
+  // Folder access restriction for team members
+  const memberFolderAccess = !isOwner ? await getMemberFolderAccess(session.user.id) : null;
+
+  const folderFilter =
+    memberFolderAccess !== null
+      ? memberFolderAccess.length === 0
+        ? { folderId: "__NONE__" as string }
+        : { folderId: { in: memberFolderAccess } }
+      : {};
+
+  const baseDocWhere = {
+    userId: effectiveUserId,
+    deletedAt: null,
+    ...(isOwner ? {} : { isPrivate: 0, ...folderFilter }),
   };
 
-  // Serialize documents for client
+  const baseFolderWhere = {
+    userId: effectiveUserId,
+    ...(isOwner
+      ? {}
+      : {
+          isPrivate: 0,
+          ...(memberFolderAccess !== null
+            ? memberFolderAccess.length === 0
+              ? { id: "__NONE__" }
+              : { id: { in: memberFolderAccess } }
+            : {}),
+        }),
+  };
+
+  const in60Days = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
+
+  const [docCount, folderCount, storageAgg, recentDocuments, expiringDocuments, ownerUser] =
+    await Promise.all([
+      db.document.count({ where: baseDocWhere }),
+      db.folder.count({ where: baseFolderWhere }),
+      db.document.aggregate({
+        where: { userId: effectiveUserId, deletedAt: null },
+        _sum: { sizeBytes: true },
+      }),
+      db.document.findMany({
+        where: baseDocWhere,
+        orderBy: { uploadedAt: "desc" },
+        take: 3,
+        include: {
+          folder: { select: { id: true, name: true, color: true } },
+        },
+      }),
+      db.document.findMany({
+        where: {
+          ...baseDocWhere,
+          expiryDate: { not: null, lte: in60Days },
+        },
+        select: {
+          id: true,
+          displayName: true,
+          fileType: true,
+          aiCategory: true,
+          expiryDate: true,
+        },
+        orderBy: { expiryDate: "asc" },
+        take: 8,
+      }),
+      db.user.findUnique({
+        where: { id: effectiveUserId },
+        select: { planType: true },
+      }),
+    ]);
+
+  const stats = {
+    documentsCount: docCount,
+    foldersCount: folderCount,
+    storageUsedBytes: Number(storageAgg._sum.sizeBytes) || 0,
+    planType: ownerUser?.planType || "FREE",
+  };
+
   const serializedDocuments = recentDocuments.map((doc) => ({
     id: doc.id,
     displayName: doc.displayName,
@@ -89,5 +110,11 @@ export default async function DashboardPage() {
     expiryDate: doc.expiryDate!.toISOString(),
   }));
 
-  return <DashboardClient stats={stats} recentDocuments={serializedDocuments} expiringDocuments={serializedExpiring} />;
+  return (
+    <DashboardClient
+      stats={stats}
+      recentDocuments={serializedDocuments}
+      expiringDocuments={serializedExpiring}
+    />
+  );
 }

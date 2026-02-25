@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { SearchClient } from "@/components/search/search-client";
+import { getEffectiveUserId, getMemberFolderAccess } from "@/lib/team";
 
 export default async function SearchPage() {
   const session = await getServerSession(authOptions);
@@ -11,11 +12,24 @@ export default async function SearchPage() {
     redirect("/login");
   }
 
-  // Récupérer tous les documents pour la recherche
+  const effectiveUserId = await getEffectiveUserId(session.user.id);
+  const isOwner = effectiveUserId === session.user.id;
+
+  // Folder access restriction for team members
+  const memberFolderAccess = !isOwner ? await getMemberFolderAccess(session.user.id) : null;
+
+  const folderFilter =
+    memberFolderAccess !== null
+      ? memberFolderAccess.length === 0
+        ? { folderId: "__NONE__" as string }
+        : { folderId: { in: memberFolderAccess } }
+      : {};
+
   const documents = await db.document.findMany({
     where: {
-      userId: session.user.id,
+      userId: effectiveUserId,
       deletedAt: null,
+      ...(isOwner ? {} : { isPrivate: 0, ...folderFilter }),
     },
     include: {
       folder: {
@@ -31,10 +45,8 @@ export default async function SearchPage() {
     },
   });
 
-  // Les 5 derniers documents uploadés
   const recentDocuments = documents.slice(0, 5);
 
-  // Sérialiser pour JSON (incluant les données IA pour une recherche intelligente)
   const serializedDocuments = documents.map((doc) => ({
     id: doc.id,
     displayName: doc.displayName,
@@ -47,7 +59,6 @@ export default async function SearchPage() {
     folder: doc.folder,
     tags: doc.tags,
     description: doc.description,
-    // AI analysis data for smart search
     aiDocumentType: doc.aiDocumentType,
     aiCategory: doc.aiCategory,
     aiExtractedData: doc.aiExtractedData,
