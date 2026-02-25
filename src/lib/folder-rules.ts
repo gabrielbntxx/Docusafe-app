@@ -65,10 +65,10 @@ export async function applyFolderRules(
 
     // Check if convert to PDF rule is enabled
     if (rules.convertToPdf?.enabled) {
-      const sourceTypes = rules.convertToPdf.sourceTypes;
-
-      // Check if this file type should be converted
-      if (sourceTypes.includes(mimeType) && canConvertToPdf(mimeType)) {
+      // Use canConvertToPdf() as the single source of truth for supported types.
+      // We intentionally ignore the stored sourceTypes because they may be stale
+      // (saved before new MIME types like text/x-c were added to the converter).
+      if (canConvertToPdf(mimeType)) {
         console.log(`[FolderRules] Converting ${fileName} to PDF (folder: ${folder.name})`);
 
         try {
