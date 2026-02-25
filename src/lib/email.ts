@@ -8,9 +8,10 @@ const resend = process.env.RESEND_API_KEY
 const FROM_EMAIL = process.env.FROM_EMAIL || "DocuSafe <noreply@docusafe.online>";
 const APP_URL = process.env.NEXTAUTH_URL || "https://www.docusafe.online";
 
-// Anti-spam: List-Unsubscribe header for transactional emails
+// Anti-spam: List-Unsubscribe headers (required by Gmail/Yahoo 2024 bulk sender rules)
 const ANTI_SPAM_HEADERS = {
-  "List-Unsubscribe": `<mailto:contact@docusafe.online>`,
+  "List-Unsubscribe": `<https://www.docusafe.online/unsubscribe>, <mailto:contact@docusafe.online>`,
+  "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
   "X-Priority": "3",
 };
 
@@ -176,7 +177,7 @@ function getWelcomeProEmailHtml(name: string): string {
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td align="center">
-                    <a href="https://justif-app-production.up.railway.app/dashboard"
+                    <a href="${APP_URL}/dashboard"
                        style="display: inline-block; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 10px; font-size: 16px; font-weight: 600;">
                       Accéder à mon espace
                     </a>
@@ -453,6 +454,7 @@ export async function sendDocumentEmail(
       to,
       subject: `${senderName} vous a envoyé un document - DocuSafe`,
       html: getDocumentShareEmailHtml(senderName, documentName, downloadUrl, message),
+      headers: ANTI_SPAM_HEADERS,
     });
 
     if (error) {
@@ -614,6 +616,7 @@ export async function sendTeamInvitationEmail(
       to: toEmail,
       subject: `${ownerName} vous invite sur DocuSafe Business`,
       html: getTeamInvitationEmailHtml(ownerName, inviteUrl),
+      headers: ANTI_SPAM_HEADERS,
     });
 
     if (error) {
@@ -765,6 +768,7 @@ export async function sendExpiryAlertEmail(
       to: userEmail,
       subject,
       html: getExpiryAlertEmailHtml(name, documentName, formattedDate, daysLeft, urgency, dashboardUrl),
+      headers: ANTI_SPAM_HEADERS,
     });
 
     if (error) {
