@@ -11,6 +11,35 @@ import {
   Sparkles,
   ChevronDown,
   ChevronUp,
+  ClipboardPlus,
+  ShieldCheck,
+  ClipboardList,
+  UserCheck,
+  BarChart2,
+  Receipt,
+  TrendingUp,
+  Scale,
+  AlertTriangle,
+  Stamp,
+  KeyRound,
+  Handshake,
+  Building2,
+  FileCode2,
+  Shield,
+  Wrench,
+  Briefcase,
+  Banknote,
+  FilePen,
+  GraduationCap,
+  Award,
+  BookOpen,
+  Package,
+  CircleMinus,
+  Lightbulb,
+  Copyright,
+  Users,
+  FileBarChart,
+  BadgeCheck,
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getProfessionDocConfig, type DocType } from "@/lib/professions";
@@ -56,6 +85,248 @@ const DOC_TYPES = [
     icon: Mail,
     color: "rose",
   },
+  // ─── Santé ───────────────────────────────────────────────────────────────────
+  {
+    key: "ordonnance" as DocType,
+    labelKey: "docInvoice" as const,
+    label: "Ordonnance",
+    description: "Prescrivez médicaments ou examens médicaux",
+    icon: ClipboardPlus,
+    color: "teal",
+  },
+  {
+    key: "certificat-medical" as DocType,
+    labelKey: "docInvoice" as const,
+    label: "Certificat médical",
+    description: "Attestez de l'état de santé d'un patient",
+    icon: ShieldCheck,
+    color: "teal",
+  },
+  {
+    key: "compte-rendu-consultation" as DocType,
+    labelKey: "docInvoice" as const,
+    label: "Compte-rendu de consultation",
+    description: "Résumez une consultation médicale",
+    icon: ClipboardList,
+    color: "teal",
+  },
+  {
+    key: "fiche-patient" as DocType,
+    labelKey: "docInvoice" as const,
+    label: "Fiche patient",
+    description: "Créez ou mettez à jour un dossier médical",
+    icon: UserCheck,
+    color: "teal",
+  },
+  // ─── Finance / Comptabilité ───────────────────────────────────────────────────
+  {
+    key: "bilan-comptable" as DocType,
+    labelKey: "docInvoice" as const,
+    label: "Bilan comptable",
+    description: "Établissez un bilan financier annuel",
+    icon: BarChart2,
+    color: "indigo",
+  },
+  {
+    key: "declaration-fiscale" as DocType,
+    labelKey: "docInvoice" as const,
+    label: "Déclaration fiscale",
+    description: "Préparez une déclaration de revenus ou TVA",
+    icon: Receipt,
+    color: "indigo",
+  },
+  {
+    key: "rapport-financier" as DocType,
+    labelKey: "docInvoice" as const,
+    label: "Rapport financier",
+    description: "Synthétisez les performances financières",
+    icon: TrendingUp,
+    color: "indigo",
+  },
+  // ─── Juridique ────────────────────────────────────────────────────────────────
+  {
+    key: "acte-juridique" as DocType,
+    labelKey: "docInvoice" as const,
+    label: "Acte juridique",
+    description: "Rédigez un acte officiel ou notarial",
+    icon: Scale,
+    color: "slate",
+  },
+  {
+    key: "mise-en-demeure" as DocType,
+    labelKey: "docInvoice" as const,
+    label: "Mise en demeure",
+    description: "Envoyez une mise en demeure formelle",
+    icon: AlertTriangle,
+    color: "slate",
+  },
+  {
+    key: "procuration" as DocType,
+    labelKey: "docInvoice" as const,
+    label: "Procuration",
+    description: "Déléguez un pouvoir d'agir à un tiers",
+    icon: Stamp,
+    color: "slate",
+  },
+  // ─── Immobilier ───────────────────────────────────────────────────────────────
+  {
+    key: "bail" as DocType,
+    labelKey: "docInvoice" as const,
+    label: "Bail locatif",
+    description: "Rédigez un contrat de location meublé ou vide",
+    icon: KeyRound,
+    color: "orange",
+  },
+  {
+    key: "compromis-de-vente" as DocType,
+    labelKey: "docInvoice" as const,
+    label: "Compromis de vente",
+    description: "Formalisez une promesse d'achat immobilier",
+    icon: Handshake,
+    color: "orange",
+  },
+  {
+    key: "mandat-immobilier" as DocType,
+    labelKey: "docInvoice" as const,
+    label: "Mandat immobilier",
+    description: "Établissez un mandat d'agence immobilière",
+    icon: Building2,
+    color: "orange",
+  },
+  // ─── Tech / IT ────────────────────────────────────────────────────────────────
+  {
+    key: "cahier-des-charges" as DocType,
+    labelKey: "docInvoice" as const,
+    label: "Cahier des charges",
+    description: "Définissez les spécifications d'un projet",
+    icon: FileCode2,
+    color: "cyan",
+  },
+  {
+    key: "nda" as DocType,
+    labelKey: "docInvoice" as const,
+    label: "NDA / Confidentialité",
+    description: "Protégez vos informations confidentielles",
+    icon: Shield,
+    color: "cyan",
+  },
+  {
+    key: "rapport-technique" as DocType,
+    labelKey: "docInvoice" as const,
+    label: "Rapport technique",
+    description: "Documentez une analyse ou intervention technique",
+    icon: Wrench,
+    color: "cyan",
+  },
+  // ─── RH / Travail ─────────────────────────────────────────────────────────────
+  {
+    key: "contrat-de-travail" as DocType,
+    labelKey: "docInvoice" as const,
+    label: "Contrat de travail",
+    description: "Formalisez une embauche en bonne et due forme",
+    icon: Briefcase,
+    color: "lime",
+  },
+  {
+    key: "fiche-de-paie" as DocType,
+    labelKey: "docInvoice" as const,
+    label: "Fiche de paie",
+    description: "Générez un bulletin de salaire",
+    icon: Banknote,
+    color: "lime",
+  },
+  {
+    key: "avenant" as DocType,
+    labelKey: "docInvoice" as const,
+    label: "Avenant au contrat",
+    description: "Modifiez un contrat de travail existant",
+    icon: FilePen,
+    color: "lime",
+  },
+  // ─── Formation / Éducation ───────────────────────────────────────────────────
+  {
+    key: "convention-de-stage" as DocType,
+    labelKey: "docInvoice" as const,
+    label: "Convention de stage",
+    description: "Encadrez légalement un stage en entreprise",
+    icon: GraduationCap,
+    color: "sky",
+  },
+  {
+    key: "attestation-de-formation" as DocType,
+    labelKey: "docInvoice" as const,
+    label: "Attestation de formation",
+    description: "Certifiez la participation à une formation",
+    icon: Award,
+    color: "sky",
+  },
+  {
+    key: "programme-de-formation" as DocType,
+    labelKey: "docInvoice" as const,
+    label: "Programme de formation",
+    description: "Planifiez le contenu d'une session de formation",
+    icon: BookOpen,
+    color: "sky",
+  },
+  // ─── Commerce / Logistique ────────────────────────────────────────────────────
+  {
+    key: "bon-de-livraison" as DocType,
+    labelKey: "docInvoice" as const,
+    label: "Bon de livraison",
+    description: "Attestez la livraison de marchandises",
+    icon: Package,
+    color: "green",
+  },
+  {
+    key: "note-de-credit" as DocType,
+    labelKey: "docInvoice" as const,
+    label: "Note de crédit (avoir)",
+    description: "Émettez un avoir pour un client",
+    icon: CircleMinus,
+    color: "green",
+  },
+  // ─── Créatif / Communication ──────────────────────────────────────────────────
+  {
+    key: "brief-creatif" as DocType,
+    labelKey: "docInvoice" as const,
+    label: "Brief créatif",
+    description: "Cadrez un projet créatif avec le client",
+    icon: Lightbulb,
+    color: "fuchsia",
+  },
+  {
+    key: "cession-droits" as DocType,
+    labelKey: "docInvoice" as const,
+    label: "Cession de droits",
+    description: "Transférez des droits d'auteur ou d'image",
+    icon: Copyright,
+    color: "fuchsia",
+  },
+  // ─── Admin général ────────────────────────────────────────────────────────────
+  {
+    key: "compte-rendu-reunion" as DocType,
+    labelKey: "docInvoice" as const,
+    label: "Compte-rendu de réunion",
+    description: "Formalisez les décisions d'une réunion",
+    icon: Users,
+    color: "gray",
+  },
+  {
+    key: "rapport" as DocType,
+    labelKey: "docInvoice" as const,
+    label: "Rapport",
+    description: "Rédigez un rapport d'activité ou d'expertise",
+    icon: FileBarChart,
+    color: "gray",
+  },
+  {
+    key: "attestation" as DocType,
+    labelKey: "docInvoice" as const,
+    label: "Attestation",
+    description: "Émettez une attestation officielle",
+    icon: BadgeCheck,
+    color: "gray",
+  },
 ] as const;
 
 const COLOR_MAP = {
@@ -89,6 +360,66 @@ const COLOR_MAP = {
     border: "hover:border-rose-300 dark:hover:border-rose-500/40",
     ring: "ring-rose-300 dark:ring-rose-500/40",
   },
+  teal: {
+    bg: "bg-teal-50 dark:bg-teal-500/10",
+    icon: "text-teal-500",
+    border: "hover:border-teal-300 dark:hover:border-teal-500/40",
+    ring: "ring-teal-300 dark:ring-teal-500/40",
+  },
+  indigo: {
+    bg: "bg-indigo-50 dark:bg-indigo-500/10",
+    icon: "text-indigo-500",
+    border: "hover:border-indigo-300 dark:hover:border-indigo-500/40",
+    ring: "ring-indigo-300 dark:ring-indigo-500/40",
+  },
+  slate: {
+    bg: "bg-slate-100 dark:bg-slate-500/10",
+    icon: "text-slate-500",
+    border: "hover:border-slate-300 dark:hover:border-slate-500/40",
+    ring: "ring-slate-300 dark:ring-slate-500/40",
+  },
+  orange: {
+    bg: "bg-orange-50 dark:bg-orange-500/10",
+    icon: "text-orange-500",
+    border: "hover:border-orange-300 dark:hover:border-orange-500/40",
+    ring: "ring-orange-300 dark:ring-orange-500/40",
+  },
+  cyan: {
+    bg: "bg-cyan-50 dark:bg-cyan-500/10",
+    icon: "text-cyan-500",
+    border: "hover:border-cyan-300 dark:hover:border-cyan-500/40",
+    ring: "ring-cyan-300 dark:ring-cyan-500/40",
+  },
+  lime: {
+    bg: "bg-lime-50 dark:bg-lime-500/10",
+    icon: "text-lime-600",
+    border: "hover:border-lime-300 dark:hover:border-lime-500/40",
+    ring: "ring-lime-300 dark:ring-lime-500/40",
+  },
+  sky: {
+    bg: "bg-sky-50 dark:bg-sky-500/10",
+    icon: "text-sky-500",
+    border: "hover:border-sky-300 dark:hover:border-sky-500/40",
+    ring: "ring-sky-300 dark:ring-sky-500/40",
+  },
+  green: {
+    bg: "bg-green-50 dark:bg-green-500/10",
+    icon: "text-green-600",
+    border: "hover:border-green-300 dark:hover:border-green-500/40",
+    ring: "ring-green-300 dark:ring-green-500/40",
+  },
+  fuchsia: {
+    bg: "bg-fuchsia-50 dark:bg-fuchsia-500/10",
+    icon: "text-fuchsia-500",
+    border: "hover:border-fuchsia-300 dark:hover:border-fuchsia-500/40",
+    ring: "ring-fuchsia-300 dark:ring-fuchsia-500/40",
+  },
+  gray: {
+    bg: "bg-neutral-100 dark:bg-neutral-500/10",
+    icon: "text-neutral-500",
+    border: "hover:border-neutral-300 dark:hover:border-neutral-500/40",
+    ring: "ring-neutral-300 dark:ring-neutral-500/40",
+  },
 };
 
 type Props = {
@@ -113,7 +444,9 @@ export function CreateHub({ profession }: Props) {
     : [];
 
   const renderCard = (doc: (typeof DOC_TYPES)[number], recommended: boolean) => {
-    const colors = COLOR_MAP[doc.color];
+    const colors = COLOR_MAP[doc.color as keyof typeof COLOR_MAP];
+    const docLabel = "label" in doc ? doc.label : t(doc.labelKey);
+    const docDesc = "descriptionEn" in doc && language !== "fr" ? doc.descriptionEn : doc.description;
     return (
       <Link
         key={doc.key}
@@ -135,10 +468,10 @@ export function CreateHub({ profession }: Props) {
         </div>
         <div>
           <p className="text-sm font-semibold text-neutral-900 dark:text-white">
-            {t(doc.labelKey)}
+            {docLabel}
           </p>
           <p className="mt-1 text-xs leading-relaxed text-neutral-400">
-            {language === "fr" ? doc.description : doc.descriptionEn}
+            {docDesc}
           </p>
         </div>
       </Link>

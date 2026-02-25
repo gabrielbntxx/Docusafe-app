@@ -187,7 +187,18 @@ export const ALL_PROFESSIONS: string[] = PROFESSION_CATEGORIES.flatMap((c) => c.
 // PROFESSION → DOC TYPES CONFIG (page Créer)
 // ============================================================================
 
-export type DocType = "facture" | "devis" | "contrat" | "bon-de-commande" | "lettre";
+export type DocType =
+  | "facture" | "devis" | "contrat" | "bon-de-commande" | "lettre"
+  | "ordonnance" | "certificat-medical" | "compte-rendu-consultation" | "fiche-patient"
+  | "bilan-comptable" | "declaration-fiscale" | "rapport-financier"
+  | "acte-juridique" | "mise-en-demeure" | "procuration"
+  | "bail" | "compromis-de-vente" | "mandat-immobilier"
+  | "cahier-des-charges" | "nda" | "rapport-technique"
+  | "contrat-de-travail" | "fiche-de-paie" | "avenant"
+  | "convention-de-stage" | "attestation-de-formation" | "programme-de-formation"
+  | "bon-de-livraison" | "note-de-credit"
+  | "brief-creatif" | "cession-droits"
+  | "compte-rendu-reunion" | "rapport" | "attestation";
 
 export type ProfessionDocConfig = {
   /** Doc types shown by default (in order), with a "Recommandé" badge. */
@@ -200,59 +211,64 @@ export type ProfessionDocConfig = {
 
 export const PROFESSION_CATEGORY_DOC_CONFIG: Record<string, ProfessionDocConfig> = {
   sante: {
-    prioritized: ["lettre", "facture", "contrat"],
-    suggestedFolderName: "Comptabilité Cabinet",
-    nameSuffix: { facture: "Cabinet", lettre: "Médicale", contrat: "Prestataire" },
+    prioritized: ["ordonnance", "certificat-medical", "compte-rendu-consultation", "fiche-patient", "facture"],
+    suggestedFolderName: "Dossiers Patients",
+    nameSuffix: { ordonnance: "Patient", "certificat-medical": "Patient", facture: "Cabinet" },
   },
   finance: {
-    prioritized: ["facture", "devis", "contrat"],
-    suggestedFolderName: "Honoraires & Factures",
-    nameSuffix: { facture: "Honoraires", devis: "Prestation", contrat: "Mission" },
+    prioritized: ["bilan-comptable", "declaration-fiscale", "rapport-financier", "facture", "contrat"],
+    suggestedFolderName: "Dossiers Clients",
+    nameSuffix: { "bilan-comptable": "Annuel", "declaration-fiscale": "TVA", facture: "Honoraires", contrat: "Mission" },
   },
   juridique: {
-    prioritized: ["contrat", "lettre", "facture"],
-    suggestedFolderName: "Honoraires",
-    nameSuffix: { contrat: "Mission", lettre: "Officielle", facture: "Honoraires" },
+    prioritized: ["acte-juridique", "mise-en-demeure", "procuration", "contrat", "facture"],
+    suggestedFolderName: "Dossiers Clients",
+    nameSuffix: { "acte-juridique": "Notarial", "mise-en-demeure": "Formelle", contrat: "Mission", facture: "Honoraires" },
   },
   immobilier: {
-    prioritized: ["devis", "contrat", "bon-de-commande"],
-    suggestedFolderName: "Devis & Factures Chantier",
-    nameSuffix: { devis: "Chantier", contrat: "Prestation", "bon-de-commande": "Fournisseur" },
+    prioritized: ["bail", "compromis-de-vente", "mandat-immobilier", "devis", "facture"],
+    suggestedFolderName: "Mandats & Compromis",
+    nameSuffix: { bail: "Locatif", "compromis-de-vente": "Immobilier", "mandat-immobilier": "Agence", devis: "Chantier" },
   },
   tech: {
-    prioritized: ["facture", "devis", "contrat"],
+    prioritized: ["cahier-des-charges", "nda", "rapport-technique", "contrat", "facture"],
     suggestedFolderName: "Contrats Clients",
-    nameSuffix: { facture: "Prestation", devis: "Projet", contrat: "Mission" },
+    nameSuffix: { "cahier-des-charges": "Projet", nda: "Confidentiel", "rapport-technique": "Analyse", contrat: "Mission", facture: "Prestation" },
   },
   commerce: {
-    prioritized: ["facture", "bon-de-commande", "devis"],
-    suggestedFolderName: "Factures Fournisseurs",
-    nameSuffix: { facture: "Client", "bon-de-commande": "Fournisseur", devis: "Commercial" },
+    prioritized: ["bon-de-livraison", "note-de-credit", "facture", "bon-de-commande", "devis"],
+    suggestedFolderName: "Factures & Commandes",
+    nameSuffix: { "bon-de-livraison": "Client", "note-de-credit": "Avoir", facture: "Client", "bon-de-commande": "Fournisseur" },
   },
   enseignement: {
-    prioritized: ["contrat", "lettre", "devis"],
-    suggestedFolderName: "Contrats Formation",
-    nameSuffix: { contrat: "Formation", lettre: "Pédagogique", devis: "Formation" },
+    prioritized: ["programme-de-formation", "convention-de-stage", "attestation-de-formation", "contrat", "facture"],
+    suggestedFolderName: "Formations & Conventions",
+    nameSuffix: { "programme-de-formation": "Session", "convention-de-stage": "Entreprise", "attestation-de-formation": "Stagiaire", contrat: "Formation" },
   },
   communication: {
-    prioritized: ["devis", "facture", "contrat"],
-    suggestedFolderName: "Devis & Factures",
-    nameSuffix: { devis: "Créatif", facture: "Prestation", contrat: "Droits" },
+    prioritized: ["brief-creatif", "cession-droits", "devis", "facture", "contrat"],
+    suggestedFolderName: "Projets Clients",
+    nameSuffix: { "brief-creatif": "Client", "cession-droits": "Auteur", devis: "Créatif", facture: "Prestation" },
   },
   restauration: {
-    prioritized: ["facture", "bon-de-commande", "contrat"],
-    suggestedFolderName: "Factures Fournisseurs",
-    nameSuffix: { facture: "Fournisseur", "bon-de-commande": "Approvisionnement", contrat: "Employé" },
+    prioritized: ["contrat-de-travail", "fiche-de-paie", "facture", "bon-de-commande", "contrat"],
+    suggestedFolderName: "Comptabilité",
+    nameSuffix: { "contrat-de-travail": "Employé", "fiche-de-paie": "Mensuelle", facture: "Fournisseur", "bon-de-commande": "Approvisionnement" },
   },
   artisanat: {
-    prioritized: ["devis", "facture", "contrat"],
+    prioritized: ["devis", "facture", "contrat", "bon-de-commande", "bon-de-livraison"],
     suggestedFolderName: "Devis & Factures",
-    nameSuffix: { devis: "Chantier", facture: "Client", contrat: "Prestation" },
+    nameSuffix: { devis: "Chantier", facture: "Client", contrat: "Prestation", "bon-de-livraison": "Matériaux" },
+  },
+  rh: {
+    prioritized: ["contrat-de-travail", "fiche-de-paie", "avenant", "attestation", "compte-rendu-reunion"],
+    suggestedFolderName: "Ressources Humaines",
+    nameSuffix: { "contrat-de-travail": "CDI", "fiche-de-paie": "Mensuelle", avenant: "Contrat", attestation: "Travail" },
   },
   liberal: {
-    prioritized: ["facture", "devis", "contrat"],
-    suggestedFolderName: "Factures & Devis",
-    nameSuffix: { facture: "Client", devis: "Prestation", contrat: "Mission" },
+    prioritized: ["facture", "contrat", "devis", "attestation", "rapport"],
+    suggestedFolderName: "Clients",
+    nameSuffix: { facture: "Client", contrat: "Mission", devis: "Prestation" },
   },
 };
 

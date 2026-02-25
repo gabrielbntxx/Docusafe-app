@@ -21,11 +21,51 @@ import { useTranslation } from "@/hooks/useTranslation";
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
 export type DocType =
+  // — Généraux —
   | "facture"
   | "devis"
   | "contrat"
   | "bon-de-commande"
-  | "lettre";
+  | "lettre"
+  // — Santé —
+  | "ordonnance"
+  | "certificat-medical"
+  | "compte-rendu-consultation"
+  | "fiche-patient"
+  // — Finance / Comptabilité —
+  | "bilan-comptable"
+  | "declaration-fiscale"
+  | "rapport-financier"
+  // — Juridique —
+  | "acte-juridique"
+  | "mise-en-demeure"
+  | "procuration"
+  // — Immobilier —
+  | "bail"
+  | "compromis-de-vente"
+  | "mandat-immobilier"
+  // — Tech / IT —
+  | "cahier-des-charges"
+  | "nda"
+  | "rapport-technique"
+  // — RH / Travail —
+  | "contrat-de-travail"
+  | "fiche-de-paie"
+  | "avenant"
+  // — Formation / Éducation —
+  | "convention-de-stage"
+  | "attestation-de-formation"
+  | "programme-de-formation"
+  // — Commerce / Logistique —
+  | "bon-de-livraison"
+  | "note-de-credit"
+  // — Créatif / Communication —
+  | "brief-creatif"
+  | "cession-droits"
+  // — Admin général —
+  | "compte-rendu-reunion"
+  | "rapport"
+  | "attestation";
 
 const TYPE_LABELS: Record<DocType, string> = {
   facture: "Facture",
@@ -33,6 +73,45 @@ const TYPE_LABELS: Record<DocType, string> = {
   contrat: "Contrat de prestation",
   "bon-de-commande": "Bon de commande",
   lettre: "Lettre formelle",
+  // Santé
+  ordonnance: "Ordonnance",
+  "certificat-medical": "Certificat médical",
+  "compte-rendu-consultation": "Compte-rendu de consultation",
+  "fiche-patient": "Fiche patient",
+  // Finance / Comptabilité
+  "bilan-comptable": "Bilan comptable",
+  "declaration-fiscale": "Déclaration fiscale",
+  "rapport-financier": "Rapport financier",
+  // Juridique
+  "acte-juridique": "Acte juridique",
+  "mise-en-demeure": "Mise en demeure",
+  procuration: "Procuration",
+  // Immobilier
+  bail: "Bail locatif",
+  "compromis-de-vente": "Compromis de vente",
+  "mandat-immobilier": "Mandat immobilier",
+  // Tech / IT
+  "cahier-des-charges": "Cahier des charges",
+  nda: "NDA / Accord de confidentialité",
+  "rapport-technique": "Rapport technique",
+  // RH / Travail
+  "contrat-de-travail": "Contrat de travail",
+  "fiche-de-paie": "Fiche de paie",
+  avenant: "Avenant au contrat",
+  // Formation
+  "convention-de-stage": "Convention de stage",
+  "attestation-de-formation": "Attestation de formation",
+  "programme-de-formation": "Programme de formation",
+  // Commerce / Logistique
+  "bon-de-livraison": "Bon de livraison",
+  "note-de-credit": "Note de crédit (avoir)",
+  // Créatif
+  "brief-creatif": "Brief créatif",
+  "cession-droits": "Cession de droits",
+  // Admin
+  "compte-rendu-reunion": "Compte-rendu de réunion",
+  rapport: "Rapport",
+  attestation: "Attestation",
 };
 
 type LineItem = {

@@ -6,11 +6,28 @@ import { DocumentForm, type DocType } from "@/components/create/document-form";
 import { getProfessionDocConfig } from "@/lib/professions";
 
 const VALID_TYPES: DocType[] = [
-  "facture",
-  "devis",
-  "contrat",
-  "bon-de-commande",
-  "lettre",
+  // Généraux
+  "facture", "devis", "contrat", "bon-de-commande", "lettre",
+  // Santé
+  "ordonnance", "certificat-medical", "compte-rendu-consultation", "fiche-patient",
+  // Finance / Comptabilité
+  "bilan-comptable", "declaration-fiscale", "rapport-financier",
+  // Juridique
+  "acte-juridique", "mise-en-demeure", "procuration",
+  // Immobilier
+  "bail", "compromis-de-vente", "mandat-immobilier",
+  // Tech / IT
+  "cahier-des-charges", "nda", "rapport-technique",
+  // RH / Travail
+  "contrat-de-travail", "fiche-de-paie", "avenant",
+  // Formation
+  "convention-de-stage", "attestation-de-formation", "programme-de-formation",
+  // Commerce / Logistique
+  "bon-de-livraison", "note-de-credit",
+  // Créatif
+  "brief-creatif", "cession-droits",
+  // Admin général
+  "compte-rendu-reunion", "rapport", "attestation",
 ];
 
 export default async function CreateTypePage({
