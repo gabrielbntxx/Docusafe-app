@@ -21,6 +21,7 @@ export default async function DocumentsPage({
   const page = Math.max(1, parseInt(searchParams.page as string) || 1);
   const search = (searchParams.search as string) || "";
   const folder = (searchParams.folder as string) || "";
+  const addedBy = (searchParams.addedBy as string) || "";
   // Private space mode: owner-only view of their private documents
   const privateSpace = isOwner && searchParams.space === "private";
 
@@ -50,6 +51,7 @@ export default async function DocumentsPage({
     ...baseWhere,
     ...(search ? { displayName: { contains: search, mode: "insensitive" as const } } : {}),
     ...(folder ? { folderId: folder } : {}),
+    ...(addedBy ? { addedById: addedBy } : {}),
   };
 
   const [documents, totalCount, folders] = await Promise.all([
@@ -95,6 +97,11 @@ export default async function DocumentsPage({
   const isInTeam = !isOwner || (await hasTeam(effectiveUserId));
   const teamMemberMap = isInTeam ? await getTeamMemberMap(effectiveUserId) : {};
 
+  // Build team member list for filter UI (only for owner)
+  const teamMemberList = isOwner
+    ? Object.entries(teamMemberMap).map(([id, m]) => ({ id, name: m.name, color: m.color }))
+    : [];
+
   const serializedDocuments = documents.map((doc) => ({
     ...doc,
     sizeBytes: Number(doc.sizeBytes),
@@ -121,6 +128,8 @@ export default async function DocumentsPage({
       totalCount={totalCount}
       initialSearch={search}
       initialFolder={folder}
+      initialAddedBy={addedBy}
+      teamMembers={teamMemberList}
     />
   );
 }

@@ -29,6 +29,7 @@ import {
   ChevronRight,
   Lock,
   Unlock,
+  User,
 } from "lucide-react";
 import { DocumentPreviewModal } from "./document-preview-modal";
 import { DocumentTriage } from "./document-triage";
@@ -277,6 +278,8 @@ export function DocumentsClient({
   totalCount = 0,
   initialSearch = "",
   initialFolder = "",
+  initialAddedBy = "",
+  teamMembers = [],
 }: {
   documents: Document[];
   folders: FolderType[];
@@ -289,6 +292,8 @@ export function DocumentsClient({
   totalCount?: number;
   initialSearch?: string;
   initialFolder?: string;
+  initialAddedBy?: string;
+  teamMembers?: { id: string; name: string; color: string }[];
 }) {
   const router = useRouter();
   const { t } = useTranslation();
@@ -296,6 +301,7 @@ export function DocumentsClient({
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [selectedFolder, setSelectedFolder] = useState(initialFolder);
+  const [selectedAddedBy, setSelectedAddedBy] = useState(initialAddedBy);
   const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
   const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(new Set());
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -309,15 +315,17 @@ export function DocumentsClient({
   }, [initialTriageMode, documents.length]);
 
   // ── URL builder ───────────────────────────────────────────────────────────────
-  const buildUrl = (overrides: { search?: string; folder?: string; page?: number }) => {
+  const buildUrl = (overrides: { search?: string; folder?: string; page?: number; addedBy?: string }) => {
     const s = overrides.search !== undefined ? overrides.search : searchQuery;
     const f = overrides.folder !== undefined ? overrides.folder : selectedFolder;
+    const a = overrides.addedBy !== undefined ? overrides.addedBy : selectedAddedBy;
     const p = overrides.page ?? 1;
     const params = new URLSearchParams();
     // Always preserve space=private when in private space mode
     if (privateSpaceMode) params.set("space", "private");
     if (s) params.set("search", s);
     if (f) params.set("folder", f);
+    if (a) params.set("addedBy", a);
     if (p > 1) params.set("page", String(p));
     return `/dashboard/documents${params.toString() ? `?${params}` : ""}`;
   };
@@ -339,6 +347,12 @@ export function DocumentsClient({
   const handleFolderChange = (folderId: string) => {
     setSelectedFolder(folderId);
     router.replace(buildUrl({ folder: folderId, page: 1 }));
+  };
+
+  // ── AddedBy filter → immediate URL ────────────────────────────────────────────
+  const handleAddedByChange = (userId: string) => {
+    setSelectedAddedBy(userId);
+    router.replace(buildUrl({ addedBy: userId, page: 1 }));
   };
 
   // ── Page navigation ───────────────────────────────────────────────────────────
@@ -647,6 +661,24 @@ export function DocumentsClient({
                 </select>
               </div>
 
+              {isOwner && teamMembers.length > 1 && (
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+                  <select
+                    value={selectedAddedBy}
+                    onChange={(e) => handleAddedByChange(e.target.value)}
+                    className="appearance-none rounded-xl border-0 bg-neutral-100 py-2.5 pl-10 pr-8 text-sm text-neutral-700 outline-none transition-all focus:ring-2 focus:ring-blue-500/20 dark:bg-neutral-700/50 dark:text-neutral-200"
+                  >
+                    <option value="">Tous les membres</option>
+                    {teamMembers.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name.split(" ")[0]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div className="flex rounded-xl bg-neutral-100 p-1 dark:bg-neutral-700/50">
                 <button
                   onClick={() => setViewMode("grid")}
@@ -680,9 +712,9 @@ export function DocumentsClient({
               </div>
               <p className="font-medium text-neutral-900 dark:text-white">{t("noDocumentsFound")}</p>
               <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                {searchQuery || selectedFolder ? t("tryModifyFilters") : t("startByAdding")}
+                {searchQuery || selectedFolder || selectedAddedBy ? t("tryModifyFilters") : t("startByAdding")}
               </p>
-              {!searchQuery && !selectedFolder && (
+              {!searchQuery && !selectedFolder && !selectedAddedBy && (
                 <Link
                   href="/dashboard/upload"
                   className="mt-6 inline-flex items-center gap-2 rounded-xl bg-blue-500 px-5 py-2.5 text-sm font-medium text-white transition-all hover:bg-blue-600"

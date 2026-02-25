@@ -400,7 +400,11 @@ export default function UploadPage() {
 
     if (!hasError) {
       setTimeout(() => {
-        router.push("/dashboard/my-files");
+        router.push(
+          isPrivateUpload
+            ? "/dashboard/documents?space=private"
+            : "/dashboard/documents"
+        );
       }, 1500);
     }
   };
