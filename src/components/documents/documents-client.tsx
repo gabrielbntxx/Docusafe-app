@@ -314,6 +314,8 @@ export function DocumentsClient({
     const f = overrides.folder !== undefined ? overrides.folder : selectedFolder;
     const p = overrides.page ?? 1;
     const params = new URLSearchParams();
+    // Always preserve space=private when in private space mode
+    if (privateSpaceMode) params.set("space", "private");
     if (s) params.set("search", s);
     if (f) params.set("folder", f);
     if (p > 1) params.set("page", String(p));
