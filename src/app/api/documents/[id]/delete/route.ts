@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { createNotification } from "@/lib/notifications";
-import { getEffectiveUserId } from "@/lib/team";
+import { getEffectiveUserId, canDeleteDocs } from "@/lib/team";
 import { revalidatePath } from "next/cache";
 
 export async function DELETE(
@@ -41,6 +41,17 @@ export async function DELETE(
         { error: "Non autorisé" },
         { status: 403 }
       );
+    }
+
+    // Check role-based permission for team members (editeur & lecteur cannot delete)
+    if (session.user.id !== effectiveUserId) {
+      const allowed = await canDeleteDocs(session.user.id);
+      if (!allowed) {
+        return NextResponse.json(
+          { error: "Votre rôle ne vous permet pas de supprimer des documents" },
+          { status: 403 }
+        );
+      }
     }
 
     // Soft delete: move to trash (keep R2 file for 30-day restore window)

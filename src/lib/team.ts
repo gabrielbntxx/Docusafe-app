@@ -108,6 +108,47 @@ export async function getNextMemberColor(ownerId: string): Promise<string> {
   return TEAM_COLORS[1]; // fallback
 }
 
+// ─── Role helpers ────────────────────────────────────────────────────────────
+
+export type TeamRole = "owner" | "admin" | "editeur" | "lecteur";
+
+/**
+ * Returns the effective role of a user:
+ * - "owner"   : no teamOwnerId, teamRole = "owner" (or solo = no teamRole)
+ * - "admin"   : member with teamRole "admin"
+ * - "editeur" : member with teamRole "editeur"
+ * - "lecteur" : member with teamRole "lecteur"
+ */
+export async function getUserRole(userId: string): Promise<TeamRole | null> {
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { teamOwnerId: true, teamRole: true },
+  });
+  if (!user) return null;
+  if (!user.teamOwnerId) return "owner"; // owner or solo
+  return (user.teamRole as TeamRole) || "editeur";
+}
+
+/** Can upload documents / create folders (owner, admin, editeur) */
+export async function canUpload(userId: string): Promise<boolean> {
+  const role = await getUserRole(userId);
+  return role === "owner" || role === "admin" || role === "editeur";
+}
+
+/** Can delete / purge documents (owner, admin) */
+export async function canDeleteDocs(userId: string): Promise<boolean> {
+  const role = await getUserRole(userId);
+  return role === "owner" || role === "admin";
+}
+
+/** Can invite members and manage team (owner only) */
+export async function canManageTeam(userId: string): Promise<boolean> {
+  const role = await getUserRole(userId);
+  return role === "owner";
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
  * Get a map of userId -> { name, color } for all team members + owner.
  * Used to display who added a document/folder.

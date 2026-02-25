@@ -99,7 +99,7 @@ export async function POST(req: Request) {
         where: { id: session.user.id },
         data: {
           teamOwnerId: invitation.ownerId,
-          teamRole: "member",
+          teamRole: invitation.role || "editeur",
           planType: "BUSINESS",
           memberColor,
           onboardingCompleted: true,

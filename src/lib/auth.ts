@@ -194,6 +194,7 @@ export const authOptions: NextAuthOptions = {
             emailVerified: true,
             onboardingCompleted: true,
             passwordChangedAt: true,
+            teamOwnerId: true,
           },
         });
 
@@ -215,6 +216,7 @@ export const authOptions: NextAuthOptions = {
           session.user.image = dbUser.image;
           session.user.emailVerified = dbUser.emailVerified;
           session.user.onboardingCompleted = dbUser.onboardingCompleted;
+          session.user.teamOwnerId = dbUser.teamOwnerId;
           // Convert BigInt to Number for JSON serialization
           session.user.storageUsedBytes = Number(dbUser.storageUsedBytes);
         }

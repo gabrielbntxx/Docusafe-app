@@ -393,6 +393,7 @@ model TeamInvitation {
   email       String   // Email of the invitee
   token       String   @unique // Unique token for the invitation link
   status      String   @default("pending") // pending, accepted, expired, revoked
+  role        String   @default("editeur") // owner | admin | editeur | lecteur
 
   createdAt   DateTime @default(now())
   expiresAt   DateTime // Expires after 7 days

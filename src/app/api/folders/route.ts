@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { createNotification } from "@/lib/notifications";
-import { getEffectiveUserId } from "@/lib/team";
+import { getEffectiveUserId, canUpload } from "@/lib/team";
 import { hasActiveSubscription } from "@/lib/storage";
 
 // GET - List all folders for the current user
@@ -93,6 +93,17 @@ export async function POST(req: Request) {
         { error: "Votre abonnement est expiré. Veuillez renouveler votre paiement." },
         { status: 403 }
       );
+    }
+
+    // Check role-based permission (lecteur cannot create folders)
+    if (currentUser.teamOwnerId) {
+      const allowed = await canUpload(session.user.id);
+      if (!allowed) {
+        return NextResponse.json(
+          { error: "Votre rôle (Lecteur) ne vous permet pas de créer des dossiers" },
+          { status: 403 }
+        );
+      }
     }
 
     const { name, color, icon, pin, parentId } = await req.json();

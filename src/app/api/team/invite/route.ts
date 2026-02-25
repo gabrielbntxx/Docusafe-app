@@ -15,10 +15,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
 
-    const { email } = await req.json();
+    const body = await req.json();
+    const { email, role: rawRole } = body;
     if (!email || typeof email !== "string") {
       return NextResponse.json({ error: "Email requis" }, { status: 400 });
     }
+
+    const VALID_ROLES = ["admin", "editeur", "lecteur"] as const;
+    type InviteRole = typeof VALID_ROLES[number];
+    const role: InviteRole = VALID_ROLES.includes(rawRole) ? rawRole : "editeur";
 
     const normalizedEmail = email.toLowerCase().trim();
 
@@ -116,6 +121,7 @@ export async function POST(req: Request) {
         email: normalizedEmail,
         token: tokenHash,
         expiresAt,
+        role,
       },
     });
 
@@ -176,6 +182,7 @@ export async function GET() {
         id: true,
         email: true,
         status: true,
+        role: true,
         createdAt: true,
         expiresAt: true,
       },

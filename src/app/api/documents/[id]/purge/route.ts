@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { deleteFromR2 } from "@/lib/storage";
+import { getEffectiveUserId, canDeleteDocs } from "@/lib/team";
 import { revalidatePath } from "next/cache";
 
 // DELETE /api/documents/[id]/purge — permanently delete one trashed document
@@ -23,8 +24,20 @@ export async function DELETE(
       select: { id: true, userId: true, storageKey: true, deletedAt: true, sizeBytes: true },
     });
 
-    if (!document || document.userId !== session.user.id) {
+    const effectiveUserId = await getEffectiveUserId(session.user.id);
+    if (!document || document.userId !== effectiveUserId) {
       return NextResponse.json({ error: "Document non trouvé" }, { status: 404 });
+    }
+
+    // Check role-based permission for team members (only owner/admin can purge)
+    if (session.user.id !== effectiveUserId) {
+      const allowed = await canDeleteDocs(session.user.id);
+      if (!allowed) {
+        return NextResponse.json(
+          { error: "Votre rôle ne vous permet pas de supprimer définitivement des documents" },
+          { status: 403 }
+        );
+      }
     }
 
     // Only allow purging documents that are in the trash

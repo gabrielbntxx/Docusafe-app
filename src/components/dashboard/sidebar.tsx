@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   LayoutDashboard,
   FileText,
@@ -19,7 +19,7 @@ import {
   FilePlus2,
   Image as ImageIcon,
 } from "lucide-react";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useSubscription } from "@/components/providers/subscription-provider";
 import type { TranslationKey } from "@/lib/translations";
@@ -43,8 +43,14 @@ const bottomNavigation: Array<{ nameKey: TranslationKey; href: string; icon: any
 
 export function Sidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { t } = useTranslation();
   const { isRestricted, planType } = useSubscription();
+  const { data: session } = useSession();
+  // Show "Espace Privé" only for workspace owners (not team members)
+  const isOwner = !session?.user?.teamOwnerId;
+  const isPrivateSpaceActive =
+    pathname === "/dashboard/documents" && searchParams.get("space") === "private";
 
   const handleSignOut = async () => {
     await signOut({ callbackUrl: "/" });
@@ -121,6 +127,25 @@ export function Sidebar() {
           })}
         </div>
 
+        {/* Private space — owner only */}
+        {isOwner && (
+          <div className="mt-4">
+            <p className="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+              Espace Privé
+            </p>
+            <Link
+              href="/dashboard/documents?space=private"
+              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+                isPrivateSpaceActive
+                  ? "bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400"
+                  : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-white/5 dark:hover:text-white"
+              }`}
+            >
+              <Lock className="h-5 w-5" />
+              Mon espace privé
+            </Link>
+          </div>
+        )}
       </nav>
 
       {/* Bottom Section - Fixed */}

@@ -21,11 +21,14 @@ export default async function DocumentsPage({
   const page = Math.max(1, parseInt(searchParams.page as string) || 1);
   const search = (searchParams.search as string) || "";
   const folder = (searchParams.folder as string) || "";
+  // Private space mode: owner-only view of their private documents
+  const privateSpace = isOwner && searchParams.space === "private";
 
   const baseWhere = {
-    userId: effectiveUserId,
+    // In private space, scope to owner's actual userId and private docs only
+    userId: privateSpace ? session.user.id : effectiveUserId,
     deletedAt: null,
-    ...(isOwner ? {} : { isPrivate: 0 }),
+    ...(privateSpace ? { isPrivate: 1 } : isOwner ? {} : { isPrivate: 0 }),
   };
 
   const filterWhere = {
@@ -73,6 +76,7 @@ export default async function DocumentsPage({
     uploadedAt: doc.uploadedAt.toISOString(),
     updatedAt: doc.updatedAt.toISOString(),
     expiryDate: doc.expiryDate ? doc.expiryDate.toISOString() : null,
+    isPrivateDoc: isOwner && doc.isPrivate === 1,
     addedBy:
       doc.addedById && teamMemberMap[doc.addedById]
         ? teamMemberMap[doc.addedById]
@@ -84,7 +88,9 @@ export default async function DocumentsPage({
       documents={serializedDocuments}
       folders={folders}
       isTeam={isInTeam}
+      isOwner={isOwner}
       initialTriageMode={searchParams?.triage === "1"}
+      privateSpaceMode={privateSpace}
       page={page}
       totalPages={totalPages}
       totalCount={totalCount}

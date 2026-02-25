@@ -24,7 +24,7 @@ import {
   decryptUserKey,
 } from "@/lib/encryption";
 import { applyFolderRules } from "@/lib/folder-rules";
-import { getEffectiveUserId } from "@/lib/team";
+import { getEffectiveUserId, canUpload } from "@/lib/team";
 import { revalidatePath } from "next/cache";
 
 // Allow up to 120 seconds per upload (large files + encryption + R2 PUT)
@@ -57,6 +57,17 @@ export async function POST(req: Request) {
         { error: "Votre abonnement est expiré. Veuillez renouveler votre paiement." },
         { status: 403 }
       );
+    }
+
+    // Check role-based permission (team members with "lecteur" role cannot upload)
+    if (currentUser.teamOwnerId) {
+      const allowed = await canUpload(session.user.id);
+      if (!allowed) {
+        return NextResponse.json(
+          { error: "Votre rôle (Lecteur) ne vous permet pas d'uploader des documents" },
+          { status: 403 }
+        );
+      }
     }
 
     // Rate limiting pour les uploads

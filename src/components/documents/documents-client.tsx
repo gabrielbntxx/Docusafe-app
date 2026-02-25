@@ -27,6 +27,8 @@ import {
   CheckCircle,
   ChevronLeft,
   ChevronRight,
+  Lock,
+  Unlock,
 } from "lucide-react";
 import { DocumentPreviewModal } from "./document-preview-modal";
 import { DocumentTriage } from "./document-triage";
@@ -49,6 +51,7 @@ type Document = {
   aiExtractedData?: string | null;
   expiryDate?: string | null;
   uploadedAt: string;
+  isPrivateDoc?: boolean;
   folder: { id: string; name: string; color: string | null; icon: string | null } | null;
   addedBy?: { name: string; color: string } | null;
 };
@@ -112,13 +115,15 @@ type CardProps = {
   isSelected: boolean;
   isSelectionMode: boolean;
   isTeam: boolean;
+  isOwner: boolean;
   onView: () => void;
   onDownload: () => void;
   onDelete: () => void;
   onToggleSelect: () => void;
+  onTogglePrivacy?: () => void;
 };
 
-function DocCard({ doc, isSelected, isSelectionMode, isTeam, onView, onDownload, onDelete, onToggleSelect }: CardProps) {
+function DocCard({ doc, isSelected, isSelectionMode, isTeam, isOwner, onView, onDownload, onDelete, onToggleSelect, onTogglePrivacy }: CardProps) {
   const [imgError, setImgError] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
   const { gradientFrom, gradientTo, Icon } = getFileStyle(doc.fileType);
@@ -172,6 +177,15 @@ function DocCard({ doc, isSelected, isSelectionMode, isTeam, onView, onDownload,
         {/* Top: action buttons */}
         {!isSelectionMode && (
           <div className="flex justify-end gap-1.5">
+            {isOwner && onTogglePrivacy && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onTogglePrivacy(); }}
+                className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/20 backdrop-blur-sm text-white hover:bg-violet-500/80 transition"
+                title={doc.isPrivateDoc ? "Rendre public" : "Rendre privé"}
+              >
+                {doc.isPrivateDoc ? <Unlock className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+              </button>
+            )}
             <button
               onClick={(e) => { e.stopPropagation(); onDownload(); }}
               className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition"
@@ -223,6 +237,16 @@ function DocCard({ doc, isSelected, isSelectionMode, isTeam, onView, onDownload,
         </div>
       </div>
 
+      {/* Private badge (always visible, top-left, owner only) */}
+      {doc.isPrivateDoc && (
+        <div className="absolute left-1.5 top-1.5 z-10 pointer-events-none">
+          <span className="inline-flex items-center gap-0.5 rounded-full bg-violet-500/90 px-1.5 py-0.5 text-[9px] font-semibold text-white backdrop-blur-sm">
+            <Lock className="h-2 w-2" />
+            Privé
+          </span>
+        </div>
+      )}
+
       {/* Expiry badge (always visible, bottom-right) */}
       {expiry && (() => {
         const ExpiryIcon = expiry.icon;
@@ -245,6 +269,8 @@ export function DocumentsClient({
   documents,
   folders,
   isTeam = false,
+  isOwner = true,
+  privateSpaceMode = false,
   initialTriageMode = false,
   page = 1,
   totalPages = 1,
@@ -255,6 +281,8 @@ export function DocumentsClient({
   documents: Document[];
   folders: FolderType[];
   isTeam?: boolean;
+  isOwner?: boolean;
+  privateSpaceMode?: boolean;
   initialTriageMode?: boolean;
   page?: number;
   totalPages?: number;
@@ -347,6 +375,15 @@ export function DocumentsClient({
       else alert(t("errorDeleting"));
     } catch {
       alert(t("errorDeleting"));
+    }
+  };
+
+  const handleTogglePrivacy = async (docId: string) => {
+    try {
+      const response = await fetch(`/api/documents/${docId}/privacy`, { method: "PATCH" });
+      if (response.ok) router.refresh();
+    } catch {
+      console.error("Error toggling privacy");
     }
   };
 
@@ -496,7 +533,14 @@ export function DocumentsClient({
           <div className="flex items-center justify-between gap-3">
             <div>
               <h1 className="text-lg sm:text-xl font-bold text-neutral-900 dark:text-white">
-                {t("myDocuments")}
+                {privateSpaceMode ? (
+                  <span className="flex items-center gap-2">
+                    <Lock className="h-5 w-5 text-violet-500" />
+                    Mon espace privé
+                  </span>
+                ) : (
+                  t("myDocuments")
+                )}
                 <span className="ml-2 text-sm font-normal text-neutral-400">({totalCount})</span>
               </h1>
             </div>
@@ -657,10 +701,12 @@ export function DocumentsClient({
                     isSelected={selectedDocuments.has(doc.id)}
                     isSelectionMode={isSelectionMode}
                     isTeam={isTeam}
+                    isOwner={isOwner}
                     onView={() => handleView(doc)}
                     onDownload={() => handleDownload(doc.id)}
                     onDelete={() => handleDelete(doc.id, doc.displayName)}
                     onToggleSelect={() => toggleDocumentSelection(doc.id)}
+                    onTogglePrivacy={() => handleTogglePrivacy(doc.id)}
                   />
                 ))}
               </div>
