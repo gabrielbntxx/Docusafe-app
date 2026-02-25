@@ -770,7 +770,7 @@ export function DocumentForm({ type, profession, suggestedFolderName, nameSuffix
           subtitle: `${form.patientFullName} ${form.patientFirstName ? form.patientFirstName : ""}`,
           sections: [
             { type: "grid" as const, title: "Informations administratives", items: [{ label: "Nom", value: form.patientFullName }, { label: "Prénom", value: form.patientFirstName }, { label: "Date de naissance", value: form.patientDOB }, { label: "N° Séc. soc.", value: form.patientSSN }, { label: "Adresse", value: form.patientCurrentAddress }, { label: "Téléphone", value: form.patientPhone }, { label: "Email", value: form.senderEmail }, { label: "Groupe sanguin", value: form.bloodGroup }] },
-            { type: "keyval" as const, title: "Contact d'urgence", pairs: [{ label: "Nom", value: form.emergencyContactName }, { label: "Téléphone", value: form.emergencyContactPhone }] },
+            { type: "keyval" as const, title: "Contact d&apos;urgence", pairs: [{ label: "Nom", value: form.emergencyContactName }, { label: "Téléphone", value: form.emergencyContactPhone }] },
             ...(form.pastHistory ? [{ type: "text" as const, title: "Antécédents médicaux", content: form.pastHistory }] : []),
             ...(form.allergies ? [{ type: "text" as const, title: "Allergies", content: form.allergies }] : []),
             ...(form.ongoingTreatments ? [{ type: "text" as const, title: "Traitements en cours", content: form.ongoingTreatments }] : []),
@@ -932,8 +932,8 @@ export function DocumentForm({ type, profession, suggestedFolderName, nameSuffix
           title: "CAHIER DES CHARGES",
           subtitle: `${form.projectName || "Projet"} • ${form.senderName} → ${form.clientName}`,
           parties: [
-            { label: "Maître d'ouvrage (client)", lines: [form.clientName, form.clientAddress, form.clientCity, form.clientEmail] },
-            { label: "Maître d'œuvre (prestataire)", lines: [form.senderName, form.senderAddress, form.senderCity, form.senderEmail] },
+            { label: "Maître d&apos;ouvrage (client)", lines: [form.clientName, form.clientAddress, form.clientCity, form.clientEmail] },
+            { label: "Maître d&apos;œuvre (prestataire)", lines: [form.senderName, form.senderAddress, form.senderCity, form.senderEmail] },
           ],
           sections: [
             { type: "text" as const, title: "Contexte et objectifs", content: form.projectContext || "—" },
@@ -1928,7 +1928,7 @@ export function DocumentForm({ type, profession, suggestedFolderName, nameSuffix
               <Field label="Email" value={form.senderEmail} onChange={(v) => set("senderEmail", v)} type="email" optional />
               <Field label="Groupe sanguin" value={form.bloodGroup} onChange={(v) => set("bloodGroup", v)} optional placeholder="A+, O-, B+..." />
             </div>
-            <SectionTitle>Contact d'urgence</SectionTitle>
+            <SectionTitle>Contact d&apos;urgence</SectionTitle>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field label="Nom du contact" value={form.emergencyContactName} onChange={(v) => set("emergencyContactName", v)} optional />
               <Field label="Téléphone" value={form.emergencyContactPhone} onChange={(v) => set("emergencyContactPhone", v)} optional />
@@ -2015,7 +2015,7 @@ export function DocumentForm({ type, profession, suggestedFolderName, nameSuffix
       case "acte-juridique":
         return (
           <>
-            <SectionTitle>Rédacteur de l'acte</SectionTitle>
+            <SectionTitle>Rédacteur de l&apos;acte</SectionTitle>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field label="Nom / Raison sociale" value={form.senderName} onChange={(v) => set("senderName", v)} required className="sm:col-span-2" />
               <Field label="Qualité (Notaire, Huissier, Avocat...)" value={form.signerQuality} onChange={(v) => set("signerQuality", v)} required placeholder="Notaire" />
@@ -2037,7 +2037,7 @@ export function DocumentForm({ type, profession, suggestedFolderName, nameSuffix
               <Field label="Qualité" value={form.party2Quality} onChange={(v) => set("party2Quality", v)} optional placeholder="Acquéreur / Débiteur..." />
               <Field label="Adresse" value={form.party2Address} onChange={(v) => set("party2Address", v)} optional />
             </div>
-            <SectionTitle>Contenu de l'acte</SectionTitle>
+            <SectionTitle>Contenu de l&apos;acte</SectionTitle>
             <TextArea label="Objet et contenu" value={form.actContent} onChange={(v) => set("actContent", v)} rows={8} placeholder="Décrire précisément l'objet et les dispositions de l'acte..." />
             <TextArea label="Conditions suspensives (optionnel)" value={form.legalSuspensiveConditions} onChange={(v) => set("legalSuspensiveConditions", v)} optional rows={3} />
             <TextArea label="Mentions légales obligatoires" value={form.notes} onChange={(v) => set("notes", v)} optional rows={3} placeholder="Obligations d'information, mentions réglementaires..." />
@@ -2231,9 +2231,9 @@ export function DocumentForm({ type, profession, suggestedFolderName, nameSuffix
       case "cahier-des-charges":
         return (
           <>
-            <SectionTitle>Maître d'ouvrage (client)</SectionTitle>
+            <SectionTitle>Maître d&apos;ouvrage (client)</SectionTitle>
             {renderClientSection("Client / Commanditaire")}
-            <SectionTitle>Maître d'œuvre (prestataire)</SectionTitle>
+            <SectionTitle>Maître d&apos;œuvre (prestataire)</SectionTitle>
             {renderSenderSection("Prestataire / Agence")}
             <SectionTitle>Projet</SectionTitle>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -2339,7 +2339,7 @@ export function DocumentForm({ type, profession, suggestedFolderName, nameSuffix
                 </div>
               </>
             )}
-            <SectionTitle>Conditions d'exécution</SectionTitle>
+            <SectionTitle>Conditions d&apos;exécution</SectionTitle>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field label="Période d'essai (semaines)" value={form.trialPeriodWeeks} onChange={(v) => set("trialPeriodWeeks", v)} optional placeholder="Ex : 8 (CDI cadre)" />
               <Field label="Préavis (semaines)" value={form.noticePeriodWeeks} onChange={(v) => set("noticePeriodWeeks", v)} optional placeholder="Selon CCN" />
@@ -2540,7 +2540,7 @@ export function DocumentForm({ type, profession, suggestedFolderName, nameSuffix
           <>
             {renderSenderSection("Émetteur")}
             {renderClientSection("Client")}
-            <SectionTitle>Références de l'avoir</SectionTitle>
+            <SectionTitle>Références de l&apos;avoir</SectionTitle>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <Field label="N° note de crédit" value={form.creditNoteNumber} onChange={(v) => set("creditNoteNumber", v)} required placeholder="AV-2025-001" />
               <Field label="Date" value={form.creditNoteDate} onChange={(v) => set("creditNoteDate", v)} type="date" required />
@@ -2668,7 +2668,7 @@ export function DocumentForm({ type, profession, suggestedFolderName, nameSuffix
       case "attestation":
         return (
           <>
-            <SectionTitle>Émetteur de l'attestation</SectionTitle>
+            <SectionTitle>Émetteur de l&apos;attestation</SectionTitle>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field label="Nom / Raison sociale" value={form.attestationIssuerName} onChange={(v) => set("attestationIssuerName", v)} required className="sm:col-span-2" />
               <Field label="Qualité / Titre" value={form.attestationIssuerQuality} onChange={(v) => set("attestationIssuerQuality", v)} optional placeholder="DRH, Directeur, Notaire, Employeur..." />
