@@ -105,9 +105,25 @@ type LetterData = {
   closing: string;
 };
 
+// ─── Generic structured document ─────────────────────────────────────────────
+
+type GenericSection =
+  | { type: "text"; title: string; content: string }
+  | { type: "keyval"; title: string; pairs: Array<{ label: string; value: string }> }
+  | { type: "grid"; title: string; items: Array<{ label: string; value: string }> }
+  | { type: "table"; title: string; headers: string[]; rows: string[][] };
+
+type GenericDocData = {
+  title: string;
+  subtitle: string;
+  parties?: Array<{ label: string; lines: string[] }>;
+  sections: GenericSection[];
+  signatures?: Array<{ label: string }>;
+};
+
 type GenerateRequest = {
-  type: "facture" | "devis" | "contrat" | "bon-de-commande" | "lettre";
-  data: InvoiceData | QuoteData | ContractData | PurchaseOrderData | LetterData;
+  type: string;
+  data: InvoiceData | QuoteData | ContractData | PurchaseOrderData | LetterData | GenericDocData;
 };
 
 // ─── PDF helpers ──────────────────────────────────────────────────────────────
@@ -453,6 +469,108 @@ function generateLetter(doc: PDFKit.PDFDocument, d: LetterData) {
   drawFooter(doc);
 }
 
+// ─── Generic structured document renderer ─────────────────────────────────────
+
+function renderSectionBar(doc: PDFKit.PDFDocument, title: string, y: number): number {
+  doc.rect(MARGIN, y, COL_W, 20).fill(LIGHT);
+  doc.fillColor(BLUE).font("Helvetica-Bold").fontSize(8.5)
+    .text(title.toUpperCase(), MARGIN + 8, y + 6);
+  return y + 24;
+}
+
+function generateStructuredDoc(doc: PDFKit.PDFDocument, d: GenericDocData) {
+  drawHeader(doc, d.title, d.subtitle);
+  let y = 108;
+
+  // Parties
+  if (d.parties && d.parties.length >= 2) {
+    y = twoColumns(
+      doc, y,
+      d.parties[0].label, d.parties[0].lines.filter(Boolean),
+      d.parties[1].label, d.parties[1].lines.filter(Boolean)
+    );
+    y += 10;
+  } else if (d.parties && d.parties.length === 1) {
+    const p = d.parties[0];
+    doc.fillColor(GRAY).font("Helvetica-Bold").fontSize(8).text(p.label.toUpperCase(), MARGIN, y);
+    p.lines.filter(Boolean).forEach((l, i) =>
+      doc.fillColor(DARK).font("Helvetica").fontSize(9).text(l, MARGIN, y + 14 + i * 13)
+    );
+    y += 14 + p.lines.filter(Boolean).length * 13 + 16;
+  }
+
+  for (const section of d.sections) {
+    if (y > 740) { doc.addPage(); y = 50; }
+    y = renderSectionBar(doc, section.title, y);
+
+    if (section.type === "text") {
+      if (section.content) {
+        doc.fillColor(DARK).font("Helvetica").fontSize(9)
+          .text(section.content, MARGIN, y, { width: COL_W, lineGap: 2.5 });
+        y += doc.heightOfString(section.content, { width: COL_W, lineGap: 2.5 }) + 14;
+      }
+    } else if (section.type === "keyval") {
+      for (const pair of section.pairs) {
+        if (!pair.value) continue;
+        if (y > 750) { doc.addPage(); y = 50; }
+        doc.fillColor(GRAY).font("Helvetica-Bold").fontSize(8.5)
+          .text(`${pair.label} :`, MARGIN, y, { width: 180, continued: true });
+        doc.fillColor(DARK).font("Helvetica").fontSize(9)
+          .text(` ${pair.value}`, { width: COL_W - 185 });
+        y += 16;
+      }
+      y += 4;
+    } else if (section.type === "grid") {
+      const cellW = (COL_W - 10) / 2;
+      let colIndex = 0;
+      let rowStart = y;
+      section.items.forEach((item, i) => {
+        const x = MARGIN + colIndex * (cellW + 10);
+        doc.fillColor(GRAY).font("Helvetica-Bold").fontSize(7.5).text(item.label.toUpperCase(), x, rowStart);
+        doc.fillColor(DARK).font("Helvetica").fontSize(9).text(item.value || "—", x, rowStart + 10, { width: cellW });
+        colIndex++;
+        if (colIndex === 2 || i === section.items.length - 1) {
+          rowStart += 30;
+          colIndex = 0;
+        }
+      });
+      y = rowStart + 6;
+    } else if (section.type === "table") {
+      const colW2 = COL_W / section.headers.length;
+      doc.rect(MARGIN, y, COL_W, 18).fill(BLUE);
+      doc.fillColor(WHITE).font("Helvetica-Bold").fontSize(7.5);
+      section.headers.forEach((h, i) => doc.text(h, MARGIN + i * colW2 + 4, y + 5, { width: colW2 - 8 }));
+      y += 18;
+      section.rows.forEach((row, ri) => {
+        if (y > 750) { doc.addPage(); y = 50; }
+        doc.rect(MARGIN, y, COL_W, 18).fill(ri % 2 === 0 ? WHITE : LIGHT);
+        doc.fillColor(DARK).font("Helvetica").fontSize(8);
+        row.forEach((cell, i) => doc.text(cell || "—", MARGIN + i * colW2 + 4, y + 4, { width: colW2 - 8 }));
+        y += 18;
+      });
+      doc.rect(MARGIN, y, COL_W, 1).fill("#E5E7EB");
+      y += 12;
+    }
+  }
+
+  if (d.signatures && d.signatures.length > 0) {
+    if (y > 700) { doc.addPage(); y = 50; }
+    y += 16;
+    y = renderSectionBar(doc, "Signatures", y);
+    const sigW = (COL_W - 20 * (d.signatures.length - 1)) / d.signatures.length;
+    d.signatures.forEach((sig, i) => {
+      const xSig = MARGIN + i * (sigW + 20);
+      doc.rect(xSig, y, sigW, 55).stroke("#E5E7EB");
+      doc.fillColor(GRAY).font("Helvetica").fontSize(8).text(sig.label, xSig + 4, y + 4, { width: sigW - 8 });
+    });
+    y += 70;
+    doc.fillColor(GRAY).font("Helvetica").fontSize(8)
+      .text(`Fait le : ${new Date().toLocaleDateString("fr-FR")}`, MARGIN, y, { width: COL_W, align: "right" });
+  }
+
+  drawFooter(doc);
+}
+
 // ─── Route handler ─────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
@@ -504,20 +622,36 @@ export async function POST(req: NextRequest) {
           generateLetter(doc, data as LetterData);
           break;
         default:
-          doc.end();
-          reject(new Error("Type de document inconnu"));
-          return;
+          if (data && "sections" in (data as object)) {
+            generateStructuredDoc(doc, data as GenericDocData);
+          } else {
+            doc.end();
+            reject(new Error("Type de document inconnu"));
+            return;
+          }
+          break;
       }
 
       doc.end();
     });
 
     const filenameParts: Record<string, string> = {
-      facture: "Facture",
-      devis: "Devis",
-      contrat: "Contrat",
-      "bon-de-commande": "BonDeCommande",
-      lettre: "Lettre",
+      facture: "Facture", devis: "Devis", contrat: "Contrat",
+      "bon-de-commande": "BonDeCommande", lettre: "Lettre",
+      ordonnance: "Ordonnance", "certificat-medical": "CertificatMedical",
+      "compte-rendu-consultation": "CompteRenduConsultation", "fiche-patient": "FichePatient",
+      "bilan-comptable": "BilanComptable", "declaration-fiscale": "DeclarationFiscale",
+      "rapport-financier": "RapportFinancier", "acte-juridique": "ActeJuridique",
+      "mise-en-demeure": "MiseEnDemeure", procuration: "Procuration",
+      bail: "Bail", "compromis-de-vente": "CompromisDeVente",
+      "mandat-immobilier": "MandatImmobilier", "cahier-des-charges": "CahierDesCharges",
+      nda: "NDA", "rapport-technique": "RapportTechnique",
+      "contrat-de-travail": "ContratDeTravail", "fiche-de-paie": "FicheDePaie",
+      avenant: "Avenant", "convention-de-stage": "ConventionDeStage",
+      "attestation-de-formation": "AttestationFormation", "programme-de-formation": "ProgrammeFormation",
+      "bon-de-livraison": "BonDeLivraison", "note-de-credit": "NoteDeCredit",
+      "brief-creatif": "BriefCreatif", "cession-droits": "CessionDroits",
+      "compte-rendu-reunion": "CompteRenduReunion", rapport: "Rapport", attestation: "Attestation",
     };
     const filename = `${filenameParts[type]}_${Date.now()}.pdf`;
 
