@@ -19,19 +19,34 @@ type FileWithPath = {
   file: File;
   relativePath: string;
   folderName: string | null;
-  subfolderPath: string | null; // The full path from root to parent folder (e.g., "root/sub1/sub2")
+  subfolderPath: string | null;
 };
 
 type FolderStructure = {
-  [folderPath: string]: string; // Maps folder path to folder ID
+  [folderPath: string]: string;
+};
+
+type FolderPreviewItem = {
+  file: File;
+  name: string;
+  size: number;
+  subfolderPath: string | null;
 };
 
 export default function UploadPage() {
   const router = useRouter();
   const { isRestricted } = useSubscription();
   const [files, setFiles] = useState<File[]>([]);
-  const [folderFiles, setFolderFiles] = useState<FileWithPath[]>([]);
+
+  // Folder upload: heavy data in ref, only lightweight state for display
+  const folderDataRef = useRef<FileWithPath[]>([]);
   const [folderName, setFolderName] = useState<string | null>(null);
+  const [folderTotalCount, setFolderTotalCount] = useState(0);
+  const [folderPreview, setFolderPreview] = useState<FolderPreviewItem[]>([]);
+  const [folderProgress, setFolderProgress] = useState(0); // 0-100
+  const [folderFailedCount, setFolderFailedCount] = useState(0);
+  const progressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
@@ -91,10 +106,8 @@ export default function UploadPage() {
     setIsDragging(false);
 
     const droppedFiles = Array.from(e.dataTransfer.files);
-    // Accept most files - let the backend validate
+    const blockedExtensions = ['.exe', '.bat', '.cmd', '.msi', '.dll', '.scr', '.com'];
     const validFiles = droppedFiles.filter(file => {
-      // Block only executable files
-      const blockedExtensions = ['.exe', '.bat', '.cmd', '.msi', '.dll', '.scr', '.com'];
       const ext = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
       return !blockedExtensions.includes(ext);
     });
@@ -106,74 +119,61 @@ export default function UploadPage() {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
       setFiles(prev => [...prev, ...selectedFiles]);
-      // Clear folder selection when adding individual files
-      setFolderFiles([]);
-      setFolderName(null);
+      clearFolder();
     }
   };
 
   const handleFolderSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const fileList = Array.from(e.target.files);
+    const fileList = e.target.files;
+    if (!fileList || fileList.length === 0) return;
 
-      // Extract folder name from the first file's path
-      const firstPath = (fileList[0] as any).webkitRelativePath || "";
-      const rootFolderName = firstPath.split("/")[0] || "Dossier importé";
+    const blockedExtensions = ['.exe', '.bat', '.cmd', '.msi', '.dll', '.scr', '.com'];
+    const firstPath = (fileList[0] as any).webkitRelativePath || "";
+    const rootFolderName = firstPath.split("/")[0] || "Dossier importé";
 
-      // Block only executable files
-      const blockedExtensions = ['.exe', '.bat', '.cmd', '.msi', '.dll', '.scr', '.com'];
+    // Build metadata array — single pass, no DOM allocation, no React state for each file
+    const allMeta: FileWithPath[] = [];
+    for (let i = 0; i < fileList.length; i++) {
+      const file = fileList[i];
+      const path = (file as any).webkitRelativePath || file.name;
+      if (path.includes("/.") || path.startsWith(".")) continue;
+      const ext = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
+      if (blockedExtensions.includes(ext)) continue;
 
-      const filesWithPaths: FileWithPath[] = fileList
-        .filter(file => {
-          // Skip hidden files and directories
-          const path = (file as any).webkitRelativePath || file.name;
-          if (path.includes("/.") || path.startsWith(".")) return false;
-          // Skip blocked executable types
-          const ext = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
-          if (blockedExtensions.includes(ext)) return false;
-          return true;
-        })
-        .map(file => {
-          const relativePath = (file as any).webkitRelativePath || file.name;
-          const pathParts = relativePath.split("/");
-          // Remove the filename to get the folder path
-          pathParts.pop();
-          const subfolderPath = pathParts.length > 0 ? pathParts.join("/") : null;
+      const parts = path.split("/");
+      parts.pop();
+      const subfolderPath = parts.length > 0 ? parts.join("/") : null;
 
-          return {
-            file,
-            relativePath,
-            folderName: rootFolderName,
-            subfolderPath, // e.g., "rootFolder/subfolder1/subfolder2"
-          };
-        });
-
-      if (filesWithPaths.length > 0) {
-        setFolderFiles(filesWithPaths);
-        setFolderName(rootFolderName);
-        // Clear individual files when selecting a folder
-        setFiles([]);
-      }
+      allMeta.push({ file, relativePath: path, folderName: rootFolderName, subfolderPath });
     }
+
+    if (allMeta.length === 0) return;
+
+    // Store everything in ref — zero React re-renders for the bulk data
+    folderDataRef.current = allMeta;
+    setFolderName(rootFolderName);
+    setFolderTotalCount(allMeta.length);
+    // Only first 8 items stored in state for display
+    setFolderPreview(allMeta.slice(0, 8).map(f => ({
+      file: f.file,
+      name: f.file.name,
+      size: f.file.size,
+      subfolderPath: f.subfolderPath,
+    })));
+    setFiles([]);
   };
 
   const removeFile = (index: number) => {
     setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const removeFolderFile = (index: number) => {
-    setFolderFiles(prev => {
-      const newFiles = prev.filter((_, i) => i !== index);
-      if (newFiles.length === 0) {
-        setFolderName(null);
-      }
-      return newFiles;
-    });
-  };
-
   const clearFolder = () => {
-    setFolderFiles([]);
+    folderDataRef.current = [];
     setFolderName(null);
+    setFolderTotalCount(0);
+    setFolderPreview([]);
+    setFolderProgress(0);
+    setFolderFailedCount(0);
     if (folderInputRef.current) {
       folderInputRef.current.value = "";
     }
@@ -182,9 +182,7 @@ export default function UploadPage() {
   // Handle files from cloud picker
   const handleCloudFilesSelected = (cloudFiles: File[]) => {
     setFiles(prev => [...prev, ...cloudFiles]);
-    // Clear folder selection when adding cloud files
-    setFolderFiles([]);
-    setFolderName(null);
+    clearFolder();
   };
 
   // Helper function to create or get a folder
@@ -208,7 +206,6 @@ export default function UploadPage() {
         const folderData = await folderResponse.json();
         return folderData.id;
       } else {
-        // Folder might already exist, try to find it
         const queryParam = parentId ? `?parentId=${parentId}` : "?parentId=root";
         const listResponse = await fetch(`/api/folders${queryParam}`);
         if (listResponse.ok) {
@@ -227,7 +224,7 @@ export default function UploadPage() {
 
   const handleUpload = async () => {
     const hasFiles = files.length > 0;
-    const hasFolderFiles = folderFiles.length > 0;
+    const hasFolderFiles = folderTotalCount > 0;
 
     if (!hasFiles && !hasFolderFiles) return;
 
@@ -236,66 +233,94 @@ export default function UploadPage() {
     setFileErrors({});
     setAiResults({});
     setUploadedCount(0);
+    setFolderProgress(0);
+    setFolderFailedCount(0);
 
     let hasError = false;
-    const folderIdMap: FolderStructure = {}; // Maps folder path -> folder ID
+    const folderIdMap: FolderStructure = {};
 
-    // If uploading a folder with subfolders, create the entire folder structure first
+    // Build folder structure — parallelized by depth level
     if (hasFolderFiles && folderName) {
-      // Get all unique folder paths and sort them by depth (parents first)
+      const allFolderData = folderDataRef.current;
       const allFolderPaths = new Set<string>();
-      folderFiles.forEach(f => {
+      for (const f of allFolderData) {
         if (f.subfolderPath) {
-          // Add all parent paths too
           const parts = f.subfolderPath.split("/");
           let currentPath = "";
-          parts.forEach(part => {
+          for (const part of parts) {
             currentPath = currentPath ? `${currentPath}/${part}` : part;
             allFolderPaths.add(currentPath);
-          });
+          }
         }
-      });
+      }
 
-      // Sort by depth (fewer slashes = created first)
-      const sortedPaths = Array.from(allFolderPaths).sort((a, b) => {
-        return a.split("/").length - b.split("/").length;
-      });
+      // Group by depth level, create all folders at same depth in parallel
+      const byDepth = new Map<number, string[]>();
+      for (const p of allFolderPaths) {
+        const depth = p.split("/").length;
+        const arr = byDepth.get(depth) ?? [];
+        arr.push(p);
+        byDepth.set(depth, arr);
+      }
 
-      console.log("[Upload] Creating folder structure:", sortedPaths);
-
-      // Create each folder in order
-      for (const folderPath of sortedPaths) {
-        const parts = folderPath.split("/");
-        const currentFolderName = parts[parts.length - 1];
-        const parentPath = parts.slice(0, -1).join("/") || null;
-        const parentId = parentPath ? folderIdMap[parentPath] : null;
-
-        console.log(`[Upload] Creating folder: "${currentFolderName}" with parent: "${parentPath}" (parentId: ${parentId})`);
-
-        const folderId = await createOrGetFolder(currentFolderName, parentId);
-        if (folderId) {
-          folderIdMap[folderPath] = folderId;
-          console.log(`[Upload] Folder created: ${folderPath} -> ${folderId}`);
-        }
+      const depths = Array.from(byDepth.keys()).sort((a, b) => a - b);
+      for (const depth of depths) {
+        const paths = byDepth.get(depth)!;
+        await Promise.all(paths.map(async (folderPath) => {
+          const parts = folderPath.split("/");
+          const name = parts[parts.length - 1];
+          const parentPath = parts.slice(0, -1).join("/") || null;
+          const parentId = parentPath ? (folderIdMap[parentPath] ?? null) : null;
+          const folderId = await createOrGetFolder(name, parentId);
+          if (folderId) folderIdMap[folderPath] = folderId;
+        }));
       }
     }
 
-    // Upload files (either individual or from folder)
+    // Build upload queue
     const filesToUpload = hasFolderFiles
-      ? folderFiles.map(f => ({
+      ? folderDataRef.current.map(f => ({
           file: f.file,
           name: f.file.name,
-          folderId: f.subfolderPath ? folderIdMap[f.subfolderPath] : null,
+          folderId: f.subfolderPath ? (folderIdMap[f.subfolderPath] ?? null) : null,
+          isFolder: true,
         }))
-      : files.map(f => ({ file: f, name: f.name, folderId: selectedDestinationFolderId }));
+      : files.map(f => ({ file: f, name: f.name, folderId: selectedDestinationFolderId, isFolder: false }));
 
-    // ── Parallel upload with concurrency=4 and auto-retry ───────────────────
-    const CONCURRENCY = 4;
-    const MAX_RETRIES = 2;
-    let fatalError = false;
+    const totalCount = filesToUpload.length;
+
+    // Counters (plain variables, not state, for hot-path updates)
     let completedCount = 0;
+    let failedCount = 0;
+    let fatalError = false;
 
-    const uploadOne = async ({ file, name, folderId }: { file: File; name: string; folderId: string | null }) => {
+    // Debounced progress update for folder uploads — max 1 setState per 80ms
+    const scheduleProgressUpdate = hasFolderFiles
+      ? () => {
+          if (progressTimerRef.current) clearTimeout(progressTimerRef.current);
+          progressTimerRef.current = setTimeout(() => {
+            setUploadedCount(completedCount);
+            setFolderProgress(Math.round((completedCount / totalCount) * 100));
+            setFolderFailedCount(failedCount);
+          }, 80);
+        }
+      : () => {};
+
+    // Higher concurrency for folder uploads
+    const CONCURRENCY = hasFolderFiles ? 10 : 4;
+    const MAX_RETRIES = 2;
+
+    const uploadOne = async ({
+      file,
+      name,
+      folderId,
+      isFolder,
+    }: {
+      file: File;
+      name: string;
+      folderId: string | null;
+      isFolder: boolean;
+    }) => {
       if (fatalError) return;
 
       for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -310,15 +335,18 @@ export default function UploadPage() {
           const res = await fetch("/api/documents/upload", {
             method: "POST",
             body: fd,
-            signal: AbortSignal.timeout(120_000), // 2-min per-file timeout
+            signal: AbortSignal.timeout(120_000),
           });
 
           if (res.ok) {
             const data = await res.json();
-            setUploadProgress(prev => ({ ...prev, [name]: aiSortingEnabled && !folderId ? 50 : 100 }));
 
-            // AI sorting after successful upload
-            if (aiSortingEnabled && !folderId && data.document?.id) {
+            if (!isFolder) {
+              setUploadProgress(prev => ({ ...prev, [name]: aiSortingEnabled && !folderId ? 50 : 100 }));
+            }
+
+            // AI sorting (individual files only)
+            if (!isFolder && aiSortingEnabled && !folderId && data.document?.id) {
               try {
                 const ar = await fetch("/api/documents/analyze", {
                   method: "PUT",
@@ -337,13 +365,16 @@ export default function UploadPage() {
               }
             }
 
-            setUploadProgress(prev => ({ ...prev, [name]: 100 }));
-            completedCount++;
-            setUploadedCount(completedCount);
-            return; // success
+            if (!isFolder) {
+              setUploadProgress(prev => ({ ...prev, [name]: 100 }));
+              setUploadedCount(++completedCount);
+            } else {
+              completedCount++;
+              scheduleProgressUpdate();
+            }
+            return;
           }
 
-          // Parse error
           const errData = await res.json().catch(() => ({}));
           const errMsg = (errData as { error?: string }).error || "Erreur lors de l'upload";
 
@@ -351,14 +382,14 @@ export default function UploadPage() {
             fatalError = true;
             hasError = true;
             setError(errMsg);
-            setFileErrors(prev => ({ ...prev, [name]: errMsg }));
+            if (!isFolder) setFileErrors(prev => ({ ...prev, [name]: errMsg }));
             return;
           }
 
           if (res.status === 400) {
-            // Validation error: don't retry
             hasError = true;
-            setFileErrors(prev => ({ ...prev, [name]: errMsg }));
+            if (!isFolder) setFileErrors(prev => ({ ...prev, [name]: errMsg }));
+            else { failedCount++; scheduleProgressUpdate(); }
             return;
           }
 
@@ -369,21 +400,22 @@ export default function UploadPage() {
           }
 
           hasError = true;
-          setFileErrors(prev => ({ ...prev, [name]: errMsg }));
+          if (!isFolder) setFileErrors(prev => ({ ...prev, [name]: errMsg }));
+          else { failedCount++; scheduleProgressUpdate(); }
         } catch {
-          // Network error: retryable
           if (attempt < MAX_RETRIES) {
             await new Promise<void>(r => setTimeout(r, 1500 * (attempt + 1)));
             continue;
           }
           hasError = true;
-          setFileErrors(prev => ({ ...prev, [name]: "Erreur réseau" }));
+          if (!isFolder) setFileErrors(prev => ({ ...prev, [name]: "Erreur réseau" }));
+          else { failedCount++; scheduleProgressUpdate(); }
         }
         break;
       }
     };
 
-    // Worker pool: CONCURRENCY workers each pull from the queue until empty
+    // Worker pool — CONCURRENCY workers draining the queue
     const uploadQueue = [...filesToUpload];
     const workers = Array.from(
       { length: Math.min(CONCURRENCY, filesToUpload.length) },
@@ -395,6 +427,14 @@ export default function UploadPage() {
       }
     );
     await Promise.all(workers);
+
+    // Final progress flush
+    if (hasFolderFiles) {
+      if (progressTimerRef.current) clearTimeout(progressTimerRef.current);
+      setUploadedCount(completedCount);
+      setFolderProgress(100);
+      setFolderFailedCount(failedCount);
+    }
 
     setIsUploading(false);
 
@@ -412,31 +452,22 @@ export default function UploadPage() {
   const getFileIcon = (file: File) => {
     const ext = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
 
-    // Images
     if (file.type.startsWith("image/") || ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.tiff', '.heic'].includes(ext)) {
       return ImageIcon;
     }
-    // PDF
     if (file.type === "application/pdf" || ext === '.pdf') return FileText;
-    // Audio
     if (file.type.startsWith("audio/") || ['.mp3', '.wav', '.ogg', '.flac', '.aac', '.m4a'].includes(ext)) {
       return Music;
     }
-    // Video
     if (file.type.startsWith("video/") || ['.mp4', '.mov', '.webm', '.avi', '.mkv'].includes(ext)) {
       return Video;
     }
-    // Spreadsheets
     if (['.xls', '.xlsx', '.numbers', '.csv'].includes(ext)) return FileSpreadsheet;
-    // Presentations
     if (['.ppt', '.pptx', '.key'].includes(ext)) return Presentation;
-    // Code files
     if (['.py', '.js', '.ts', '.tsx', '.c', '.cpp', '.h', '.java', '.cs', '.go', '.rs', '.rb', '.php', '.swift', '.kt', '.html', '.css', '.scss', '.json', '.xml', '.yaml', '.yml', '.sh', '.sql', '.md'].includes(ext)) {
       return FileCode;
     }
-    // Archives
     if (['.zip', '.rar', '.7z', '.gz', '.tar'].includes(ext)) return Archive;
-    // Documents (Word, Pages, etc.)
     if (['.doc', '.docx', '.pages', '.rtf', '.txt'].includes(ext)) return FileText;
 
     return File;
@@ -450,7 +481,7 @@ export default function UploadPage() {
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i];
   };
 
-  const hasSelection = files.length > 0 || folderFiles.length > 0;
+  const hasSelection = files.length > 0 || folderTotalCount > 0;
 
   if (isRestricted) {
     return (
@@ -629,14 +660,13 @@ export default function UploadPage() {
       </div>
 
       {/* Selected Folder Info */}
-      {folderName && folderFiles.length > 0 && (() => {
-        // Count unique subfolders
+      {folderName && folderTotalCount > 0 && (() => {
         const uniqueFolders = new Set(
-          folderFiles
+          folderDataRef.current
             .filter(f => f.subfolderPath)
             .map(f => f.subfolderPath)
         );
-        const subfolderCount = uniqueFolders.size - 1; // Exclude root folder
+        const subfolderCount = Math.max(0, uniqueFolders.size - 1);
 
         return (
           <div className="rounded-3xl bg-gradient-to-r from-violet-50 to-purple-50 p-5 dark:from-violet-500/10 dark:to-purple-500/10 border border-violet-200 dark:border-violet-500/20">
@@ -650,7 +680,7 @@ export default function UploadPage() {
                     {folderName}
                   </h3>
                   <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                    {folderFiles.length} fichier{folderFiles.length > 1 ? "s" : ""}
+                    {folderTotalCount.toLocaleString("fr-FR")} fichier{folderTotalCount > 1 ? "s" : ""}
                     {subfolderCount > 0 && (
                       <span> • {subfolderCount} sous-dossier{subfolderCount > 1 ? "s" : ""}</span>
                     )}
@@ -756,7 +786,7 @@ export default function UploadPage() {
       )}
 
       {/* Destination Folder Selector (individual files only) */}
-      {files.length > 0 && folderFiles.length === 0 && (
+      {files.length > 0 && folderTotalCount === 0 && (
         <div className="rounded-3xl border border-neutral-200 bg-white p-5 dark:border-neutral-700 dark:bg-neutral-800/50">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 dark:bg-blue-500/20">
@@ -790,12 +820,12 @@ export default function UploadPage() {
       )}
 
       {/* Files List */}
-      {(files.length > 0 || folderFiles.length > 0) && (
+      {(files.length > 0 || folderTotalCount > 0) && (
         <div className="space-y-4 rounded-3xl bg-white p-6 shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
-              {folderFiles.length > 0
-                ? `Dossier "${folderName}" (${folderFiles.length} fichiers)`
+              {folderTotalCount > 0
+                ? `Dossier "${folderName}" (${folderTotalCount.toLocaleString("fr-FR")} fichiers)`
                 : `Fichiers sélectionnés (${files.length})`}
             </h3>
             <button
@@ -902,101 +932,106 @@ export default function UploadPage() {
               );
             })}
 
-            {/* Folder files */}
-            {folderFiles.map((fileData, index) => {
-              const FileIcon = getFileIcon(fileData.file);
-              const progress = uploadProgress[fileData.file.name] || 0;
-              const fileError = fileErrors[fileData.file.name];
-
-              return (
-                <div
-                  key={`folder-${index}`}
-                  className={`flex items-center gap-4 rounded-2xl p-4 transition-all ${
-                    fileError
-                      ? "bg-red-50 dark:bg-red-500/10"
-                      : "bg-violet-50/50 dark:bg-violet-500/5"
-                  }`}
-                >
-                  <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${
-                    fileError
-                      ? "bg-red-100 dark:bg-red-500/20"
-                      : progress === 100
-                      ? "bg-green-100 dark:bg-green-500/20"
-                      : "bg-violet-100 dark:bg-violet-500/20"
-                  }`}>
-                    {fileError ? (
-                      <X className="h-6 w-6 text-red-600 dark:text-red-400" />
-                    ) : progress === 100 ? (
-                      <FileCheck className="h-6 w-6 text-green-600 dark:text-green-400" />
-                    ) : isUploading && progress > 0 && progress < 100 ? (
-                      <Loader2 className="h-6 w-6 text-violet-600 dark:text-violet-400 animate-spin" />
-                    ) : (
-                      <FileIcon className="h-6 w-6 text-violet-600 dark:text-violet-400" />
-                    )}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <p className="truncate font-medium text-neutral-900 dark:text-white">
-                      {fileData.file.name}
-                    </p>
-                    <div className="flex items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
-                      <span>{formatFileSize(fileData.file.size)}</span>
-                      {fileData.subfolderPath && fileData.subfolderPath !== folderName && (
-                        <>
-                          <span>•</span>
-                          <span className="truncate text-violet-500 dark:text-violet-400">
-                            📁 {fileData.subfolderPath}
-                          </span>
-                        </>
-                      )}
+            {/* Folder files — show only preview + overall progress */}
+            {folderTotalCount > 0 && (
+              <>
+                {/* Overall progress bar during upload */}
+                {isUploading && (
+                  <div className="rounded-2xl bg-violet-50 dark:bg-violet-500/10 p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 text-violet-600 dark:text-violet-400 animate-spin" />
+                        <span className="text-sm font-medium text-violet-700 dark:text-violet-300">
+                          Import en cours…
+                        </span>
+                      </div>
+                      <span className="text-sm text-violet-600 dark:text-violet-400">
+                        {uploadedCount.toLocaleString("fr-FR")} / {folderTotalCount.toLocaleString("fr-FR")}
+                        {folderFailedCount > 0 && (
+                          <span className="ml-2 text-red-500">({folderFailedCount} erreur{folderFailedCount > 1 ? "s" : ""})</span>
+                        )}
+                      </span>
                     </div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-violet-200 dark:bg-violet-900">
+                      <div
+                        className="h-full bg-gradient-to-r from-violet-500 to-purple-500 transition-all duration-300"
+                        style={{ width: `${folderProgress}%` }}
+                      />
+                    </div>
+                    <p className="mt-1.5 text-xs text-violet-500 dark:text-violet-400">
+                      {folderProgress}% — {10} uploads en parallèle
+                    </p>
+                  </div>
+                )}
 
-                    {fileError && (
-                      <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-                        {fileError}
-                      </p>
-                    )}
+                {/* Completion state */}
+                {!isUploading && folderProgress === 100 && (
+                  <div className="rounded-2xl bg-green-50 dark:bg-green-500/10 p-4 flex items-center gap-3">
+                    <FileCheck className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    <span className="text-sm font-medium text-green-700 dark:text-green-300">
+                      {uploadedCount.toLocaleString("fr-FR")} fichier{uploadedCount > 1 ? "s" : ""} importé{uploadedCount > 1 ? "s" : ""}
+                      {folderFailedCount > 0 && ` — ${folderFailedCount} erreur${folderFailedCount > 1 ? "s" : ""}`}
+                    </span>
+                  </div>
+                )}
 
-                    {isUploading && progress > 0 && !fileError && progress < 100 && (
-                      <div className="mt-2">
-                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-violet-200 dark:bg-violet-900">
-                          <div
-                            className="h-full bg-gradient-to-r from-violet-500 to-purple-500 transition-all"
-                            style={{ width: `${progress}%` }}
-                          />
+                {/* Preview of first 8 files */}
+                {folderPreview.map((item, index) => {
+                  const FileIcon = getFileIcon(item.file);
+                  return (
+                    <div
+                      key={`preview-${index}`}
+                      className="flex items-center gap-4 rounded-2xl p-4 bg-violet-50/50 dark:bg-violet-500/5"
+                    >
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-500/20">
+                        <FileIcon className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="truncate text-sm font-medium text-neutral-900 dark:text-white">
+                          {item.name}
+                        </p>
+                        <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+                          <span>{formatFileSize(item.size)}</span>
+                          {item.subfolderPath && item.subfolderPath !== folderName && (
+                            <>
+                              <span>•</span>
+                              <span className="truncate text-violet-500 dark:text-violet-400">
+                                📁 {item.subfolderPath}
+                              </span>
+                            </>
+                          )}
                         </div>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  );
+                })}
 
-                  {progress !== 100 && !isUploading && (
-                    <button
-                      onClick={() => removeFolderFile(index)}
-                      disabled={isUploading}
-                      className="flex h-9 w-9 items-center justify-center rounded-xl text-neutral-400 transition-colors hover:bg-red-100 hover:text-red-600 disabled:opacity-50 dark:hover:bg-red-500/20 dark:hover:text-red-400"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
+                {/* "And N more files" summary */}
+                {folderTotalCount > folderPreview.length && (
+                  <div className="rounded-2xl border border-dashed border-violet-200 dark:border-violet-500/20 p-3 text-center">
+                    <p className="text-sm text-violet-600 dark:text-violet-400">
+                      + {(folderTotalCount - folderPreview.length).toLocaleString("fr-FR")} autres fichiers
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           <div className="flex gap-3 pt-4">
             <button
               onClick={handleUpload}
-              disabled={isUploading || (files.length === 0 && folderFiles.length === 0)}
+              disabled={isUploading || (files.length === 0 && folderTotalCount === 0)}
               className={`flex-1 rounded-xl py-3 text-sm font-semibold text-white shadow-lg transition-all hover:shadow-xl disabled:opacity-50 disabled:shadow-none ${
-                folderFiles.length > 0
+                folderTotalCount > 0
                   ? "bg-gradient-to-r from-violet-500 to-purple-600 shadow-violet-500/25"
                   : "bg-gradient-to-r from-blue-500 to-blue-600 shadow-blue-500/25"
               }`}
             >
               {isUploading
-                ? `${uploadedCount} / ${files.length || folderFiles.length} fichiers importés…`
-                : folderFiles.length > 0
-                ? `Importer le dossier (${folderFiles.length} fichiers)`
+                ? `${uploadedCount.toLocaleString("fr-FR")} / ${(files.length || folderTotalCount).toLocaleString("fr-FR")} fichiers importés…`
+                : folderTotalCount > 0
+                ? `Importer le dossier (${folderTotalCount.toLocaleString("fr-FR")} fichiers)`
                 : `Uploader ${files.length} fichier${files.length > 1 ? "s" : ""}`}
             </button>
             {isUploading ? (
