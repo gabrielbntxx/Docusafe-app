@@ -176,7 +176,8 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const { name, color, icon, rules } = await req.json();
+    const body = await req.json();
+    const { name, color, icon, rules, parentId } = body;
 
     // Check if folder exists and belongs to user
     const folder = await db.folder.findUnique({
@@ -194,6 +195,28 @@ export async function PATCH(
       return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
     }
 
+    // Validate parentId move if provided
+    if ("parentId" in body) {
+      if (parentId !== null && parentId !== undefined) {
+        // Prevent moving into itself
+        if (parentId === id) {
+          return NextResponse.json({ error: "Un dossier ne peut pas être son propre parent" }, { status: 400 });
+        }
+        // Validate target exists and belongs to user
+        const targetParent = await db.folder.findFirst({
+          where: { id: parentId, userId: session.user.id },
+        });
+        if (!targetParent) {
+          return NextResponse.json({ error: "Dossier cible invalide" }, { status: 400 });
+        }
+        // Prevent circular reference: target must not be a descendant of this folder
+        const descendants = await getAllDescendantFolderIds(id, session.user.id);
+        if (descendants.includes(parentId)) {
+          return NextResponse.json({ error: "Déplacement circulaire interdit" }, { status: 400 });
+        }
+      }
+    }
+
     // Update the folder
     const updatedFolder = await db.folder.update({
       where: { id },
@@ -202,6 +225,7 @@ export async function PATCH(
         ...(color && { color }),
         ...(icon && { icon }),
         ...(rules !== undefined && { rules: stringifyFolderRules(rules as FolderRules) }),
+        ...("parentId" in body && { parentId: parentId ?? null }),
       },
       include: {
         _count: {

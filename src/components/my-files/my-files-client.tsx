@@ -32,6 +32,7 @@ import {
   Send,
   Mail,
   AlertCircle,
+  FolderInput,
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { PinModal } from "@/components/folders/pin-modal";
@@ -174,7 +175,11 @@ export function MyFilesClient({
 
   // Drag and drop state
   const [draggedDocument, setDraggedDocument] = useState<string | null>(null);
+  const [draggedFolder, setDraggedFolder] = useState<string | null>(null);
   const [dropTargetFolder, setDropTargetFolder] = useState<string | null>(null);
+
+  // Move folder modal
+  const [moveFolderTarget, setMoveFolderTarget] = useState<FolderType | null>(null);
 
   // Mobile move menu
   const [movingDocumentId, setMovingDocumentId] = useState<string | null>(null);
@@ -438,6 +443,43 @@ export function MyFilesClient({
     }
   };
 
+  // Move a folder to a new parent (or root)
+  const handleMoveFolder = async (folderId: string, targetParentId: string | null) => {
+    const folder = localFolders.find(f => f.id === folderId);
+    if (!folder) return;
+    if (folder.parentId === targetParentId) return; // no-op
+
+    // Client-side circular reference guard
+    const descendants = getDescendantFolderIds(folderId, localFolders);
+    if (targetParentId === folderId || (targetParentId && descendants.includes(targetParentId))) return;
+
+    const oldParentId = folder.parentId;
+
+    // Optimistic update
+    setLocalFolders(prev => prev.map(f => {
+      if (f.id === folderId) return { ...f, parentId: targetParentId };
+      if (f.id === oldParentId) return { ...f, childrenCount: Math.max(0, (f.childrenCount || 0) - 1) };
+      if (f.id === targetParentId) return { ...f, childrenCount: (f.childrenCount || 0) + 1 };
+      return f;
+    }));
+
+    const res = await fetch(`/api/folders/${folderId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ parentId: targetParentId }),
+    });
+
+    if (!res.ok) {
+      // Revert optimistic update
+      setLocalFolders(prev => prev.map(f => {
+        if (f.id === folderId) return { ...f, parentId: oldParentId };
+        if (f.id === oldParentId) return { ...f, childrenCount: (f.childrenCount || 0) + 1 };
+        if (f.id === targetParentId) return { ...f, childrenCount: Math.max(0, (f.childrenCount || 0) - 1) };
+        return f;
+      }));
+    }
+  };
+
   // Drag and drop handlers
   const handleDragStart = (e: React.DragEvent, documentId: string) => {
     setDraggedDocument(documentId);
@@ -445,8 +487,15 @@ export function MyFilesClient({
     e.dataTransfer.setData("text/plain", documentId);
   };
 
+  const handleFolderDragStart = (e: React.DragEvent, folderId: string) => {
+    setDraggedFolder(folderId);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("folder-id", folderId);
+  };
+
   const handleDragEnd = () => {
     setDraggedDocument(null);
+    setDraggedFolder(null);
     setDropTargetFolder(null);
   };
 
@@ -462,10 +511,17 @@ export function MyFilesClient({
 
   const handleDrop = async (e: React.DragEvent, targetFolderId: string | null) => {
     e.preventDefault();
+
+    const folderDragId = e.dataTransfer.getData("folder-id");
     const documentId = e.dataTransfer.getData("text/plain");
 
-    if (documentId && draggedDocument) {
-      // Check if target folder has PIN
+    if (folderDragId && draggedFolder) {
+      // Drop folder onto another folder
+      if (targetFolderId && targetFolderId !== folderDragId) {
+        await handleMoveFolder(folderDragId, targetFolderId);
+      }
+    } else if (documentId && draggedDocument) {
+      // Drop document onto folder (existing logic)
       if (targetFolderId) {
         const targetFolder = localFolders.find(f => f.id === targetFolderId);
         if (targetFolder?.hasPin && !unlockedFolders.has(targetFolderId)) {
@@ -480,6 +536,7 @@ export function MyFilesClient({
     }
 
     setDraggedDocument(null);
+    setDraggedFolder(null);
     setDropTargetFolder(null);
   };
 
@@ -1003,12 +1060,15 @@ export function MyFilesClient({
                 return (
                 <div
                   key={folder.id}
+                  draggable={!isSelectionMode}
+                  onDragStart={(e) => { if (!isSelectionMode) { e.stopPropagation(); handleFolderDragStart(e, folder.id); } }}
+                  onDragEnd={handleDragEnd}
                   onDragOver={(e) => !isSelectionMode && handleDragOver(e, folder.id)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => !isSelectionMode && handleDrop(e, folder.id)}
                   onClick={() => isSelectionMode && toggleFolderSelection(folder.id)}
                   className={`group flex items-center gap-2 lg:gap-3 rounded-xl p-2 lg:p-3 transition-all ${
-                    dropTargetFolder === folder.id && draggedDocument
+                    dropTargetFolder === folder.id && (draggedDocument || draggedFolder)
                       ? "bg-violet-100 ring-2 ring-violet-500 dark:bg-violet-500/20"
                       : isRootSelected
                       ? "bg-blue-50 ring-2 ring-blue-500 dark:bg-blue-500/10"
@@ -1140,6 +1200,17 @@ export function MyFilesClient({
                           >
                             <Edit2 className="h-4 w-4 text-neutral-500" />
                             {t("editFolder")}
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMoveFolderTarget(folder);
+                              setFolderMenuId(null);
+                            }}
+                            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                          >
+                            <FolderInput className="h-4 w-4 text-orange-500" />
+                            Déplacer vers…
                           </button>
                           <div className="my-1 border-t border-neutral-100 dark:border-neutral-700" />
                           <button
@@ -1318,12 +1389,15 @@ export function MyFilesClient({
                     return (
                     <div
                       key={subfolder.id}
+                      draggable={!isSelectionMode}
+                      onDragStart={(e) => { if (!isSelectionMode) { e.stopPropagation(); handleFolderDragStart(e, subfolder.id); } }}
+                      onDragEnd={handleDragEnd}
                       onDragOver={(e) => !isSelectionMode && handleDragOver(e, subfolder.id)}
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => !isSelectionMode && handleDrop(e, subfolder.id)}
                       onClick={() => isSelectionMode && toggleFolderSelection(subfolder.id)}
                       className={`group flex items-center gap-2 lg:gap-3 rounded-xl p-2 lg:p-3 transition-all ${
-                        dropTargetFolder === subfolder.id && draggedDocument
+                        dropTargetFolder === subfolder.id && (draggedDocument || draggedFolder)
                           ? "bg-violet-100 ring-2 ring-violet-500 dark:bg-violet-500/20"
                           : isFolderSelected
                           ? "bg-blue-50 ring-2 ring-blue-500 dark:bg-blue-500/10"
@@ -1436,6 +1510,17 @@ export function MyFilesClient({
                               >
                                 <Edit2 className="h-4 w-4 text-neutral-500" />
                                 {t("editFolder")}
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setMoveFolderTarget(subfolder);
+                                  setFolderMenuId(null);
+                                }}
+                                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                              >
+                                <FolderInput className="h-4 w-4 text-orange-500" />
+                                Déplacer vers…
                               </button>
                               <div className="my-1 border-t border-neutral-100 dark:border-neutral-700" />
                               <button
@@ -1687,6 +1772,92 @@ export function MyFilesClient({
           onClose={() => setRulesFolder(null)}
           onSave={() => router.refresh()}
         />
+      )}
+
+      {/* Move Folder Modal */}
+      {moveFolderTarget && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl dark:bg-neutral-900 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+              <div>
+                <h3 className="text-base font-semibold text-neutral-900 dark:text-white">Déplacer vers…</h3>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate max-w-[220px]">{moveFolderTarget.name}</p>
+              </div>
+              <button
+                onClick={() => setMoveFolderTarget(null)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="max-h-72 overflow-y-auto p-2">
+              {/* Option: move to root */}
+              <button
+                onClick={() => { handleMoveFolder(moveFolderTarget.id, null); setMoveFolderTarget(null); }}
+                disabled={moveFolderTarget.parentId === null}
+                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all ${
+                  moveFolderTarget.parentId === null
+                    ? "opacity-40 cursor-not-allowed text-neutral-400"
+                    : "text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                }`}
+              >
+                <Home className="h-4 w-4 text-neutral-500 flex-shrink-0" />
+                <span className="font-medium">Racine (sans dossier parent)</span>
+              </button>
+              {/* Other folders */}
+              {(() => {
+                const descendants = getDescendantFolderIds(moveFolderTarget.id, localFolders);
+                const excluded = new Set([moveFolderTarget.id, ...descendants]);
+                const available = localFolders.filter(f => !excluded.has(f.id));
+                if (available.length === 0) {
+                  return (
+                    <p className="px-3 py-4 text-center text-xs text-neutral-400">Aucun autre dossier disponible</p>
+                  );
+                }
+                return available.map(f => {
+                  const isCurrentParent = moveFolderTarget.parentId === f.id;
+                  const parentName = f.parentId ? localFolders.find(p => p.id === f.parentId)?.name : null;
+                  return (
+                    <button
+                      key={f.id}
+                      onClick={() => { handleMoveFolder(moveFolderTarget.id, f.id); setMoveFolderTarget(null); }}
+                      disabled={isCurrentParent}
+                      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all ${
+                        isCurrentParent
+                          ? "opacity-40 cursor-not-allowed"
+                          : "hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                      }`}
+                    >
+                      <span
+                        className="flex h-7 w-7 items-center justify-center rounded-lg flex-shrink-0"
+                        style={{ backgroundColor: f.color + "20" }}
+                      >
+                        <Folder className="h-3.5 w-3.5" style={{ color: f.color }} />
+                      </span>
+                      <span className="flex flex-col items-start min-w-0">
+                        <span className="text-neutral-700 dark:text-neutral-300 truncate max-w-[180px]">{f.name}</span>
+                        {parentName && (
+                          <span className="text-[10px] text-neutral-400 truncate max-w-[180px]">dans {parentName}</span>
+                        )}
+                      </span>
+                      {isCurrentParent && (
+                        <span className="ml-auto text-xs text-neutral-400">actuel</span>
+                      )}
+                    </button>
+                  );
+                });
+              })()}
+            </div>
+            <div className="px-4 py-3 border-t border-neutral-100 dark:border-neutral-800">
+              <button
+                onClick={() => setMoveFolderTarget(null)}
+                className="w-full rounded-xl py-2 text-sm text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Send by Email Modal */}
