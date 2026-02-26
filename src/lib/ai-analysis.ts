@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import crypto from "crypto";
 import { extractAppleQuickLookPdf, APPLE_IWORK_MIME_TYPES } from "@/lib/pdf-converter";
 import { getProfessionAIContext } from "@/lib/professions";
+import * as XLSX from "xlsx";
 
 // ============================================================================
 // DOCUMENT TYPES - Beaucoup plus de types pour une classification précise
@@ -1418,6 +1419,14 @@ const OFFICE_MIME_TYPES = new Set([
   "application/vnd.apple.keynote",
 ]);
 
+// Spreadsheet MIME types — Gemini cannot read Excel binary; we extract text instead
+const SPREADSHEET_MIME_TYPES = new Set([
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.oasis.opendocument.spreadsheet",
+  "application/vnd.apple.numbers",
+]);
+
 /**
  * Upload file to Gemini File API for large files
  * Returns the file URI to use in generateContent
@@ -1588,12 +1597,32 @@ async function buildFileContentParts(
       console.error("[AI] File API upload failed:", uploadError);
       return null; // Signal to fall back to filename classification
     }
-  } else if (APPLE_IWORK_MIME_TYPES.has(mimeType)) {
+  } else if (APPLE_IWORK_MIME_TYPES.has(mimeType) && !SPREADSHEET_MIME_TYPES.has(mimeType)) {
     const quickLookPdf = await extractAppleQuickLookPdf(fileBuffer);
     if (quickLookPdf) {
       parts.push({ inline_data: { mime_type: "application/pdf", data: quickLookPdf.toString("base64") } });
     } else {
       return null; // Signal to fall back
+    }
+  } else if (SPREADSHEET_MIME_TYPES.has(mimeType) || !!fileName.match(/\.(xls|xlsx|ods)$/i)) {
+    // Gemini cannot parse Excel binaries — extract sheet content as text instead
+    try {
+      const workbook = XLSX.read(fileBuffer, { type: "buffer", cellText: true, cellNF: false });
+      const sheetTexts: string[] = [];
+      for (const sheetName of workbook.SheetNames.slice(0, 5)) {
+        const sheet = workbook.Sheets[sheetName];
+        const csv = XLSX.utils.sheet_to_csv(sheet, { FS: "\t", blankrows: false });
+        const trimmed = csv.trim().substring(0, 10000);
+        if (trimmed.length > 0) {
+          sheetTexts.push(`=== Feuille : ${sheetName} ===\n${trimmed}`);
+        }
+      }
+      const fullText = sheetTexts.join("\n\n").substring(0, 50000);
+      parts.push({ text: `\n\n=== CONTENU DU FICHIER EXCEL "${fileName}" ===\n${fullText || "(fichier vide)"}` });
+      console.log("[AI] Excel extracted:", sheetTexts.length, "sheet(s),", fullText.length, "chars");
+    } catch (xlsxErr) {
+      console.error("[AI] Excel extraction failed, falling back to filename:", xlsxErr);
+      return null; // Signal to fall back to filename classification
     }
   } else {
     parts.push({ inline_data: { mime_type: geminiMimeType, data: fileBuffer.toString("base64") } });
@@ -1662,7 +1691,17 @@ async function classifyDocument(
   }
 
   if (sortingRuleContext) {
-    fullPrompt += `\n\n## 📋 RÈGLES DE TRI PERSONNALISÉES DE L'UTILISATEUR\n${sortingRuleContext}\n\n⚠️ Ces règles sont PRIORITAIRES. Respecte-les scrupuleusement pour nommer et choisir les dossiers.`;
+    fullPrompt += `\n\n## 📋 RÈGLES DE TRI PERSONNALISÉES DE L'UTILISATEUR
+${sortingRuleContext}
+
+⚠️ Ces règles sont PRIORITAIRES sur toute autre logique de classement.
+Traduis-les OBLIGATOIREMENT dans ton JSON :
+- Si la règle demande de regrouper dans un même dossier avec des sous-dossiers par type :
+  → Cherche d'abord un dossier parent existant dans l'arborescence.
+  → Si ce parent existe : utilise folderAction="create_subfolder" avec parentFolderId=son ID et suggestedFolder=nom du type de document.
+  → Si aucun parent n'existe : utilise folderAction="create_new" et nomme suggestedFolder selon la règle (ex: "Documents", "Fichiers Reçus").
+- Si la règle donne un nom précis de dossier : utilise ce nom exact dans suggestedFolder.
+- Si la règle mentionne un critère de nommage (patient, fournisseur, date…) : inclus ce critère dans suggestedFolder.`;
   }
 
   if (folderContext) {
