@@ -26,6 +26,9 @@ const TEXT_MIME_TYPES = new Set([
   "text/css", "text/javascript", "application/x-yaml", "text/yaml",
 ]);
 
+const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
 function isTextPreviewable(mimeType: string): boolean {
   return TEXT_MIME_TYPES.has(mimeType) || mimeType.startsWith("text/");
 }
@@ -47,6 +50,9 @@ export function DocumentPreviewModal({
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [blobMimeType, setBlobMimeType] = useState<string | null>(null);
   const [textContent, setTextContent] = useState<string | null>(null);
+  const [docxHtml, setDocxHtml] = useState<string | null>(null);
+  const [xlsxSheets, setXlsxSheets] = useState<{ name: string; data: string[][] }[] | null>(null);
+  const [activeSheet, setActiveSheet] = useState(0);
 
   // Fetch document and create blob URL
   useEffect(() => {
@@ -58,23 +64,52 @@ export function DocumentPreviewModal({
       setBlobUrl(null);
       setBlobMimeType(null);
       setTextContent(null);
+      setDocxHtml(null);
+      setXlsxSheets(null);
+      setActiveSheet(0);
 
       fetch(`/api/documents/${document.id}/view`)
-        .then((response) => {
+        .then(async (response) => {
           if (!response.ok) throw new Error("Failed to fetch document");
+
+          // .docx → convert to HTML using mammoth
+          if (document.mimeType === DOCX_MIME) {
+            const arrayBuffer = await response.arrayBuffer();
+            const mammoth = await import("mammoth");
+            const result = await mammoth.convertToHtml({ arrayBuffer });
+            setDocxHtml(result.value || "<p><em>Document vide</em></p>");
+            setIsLoading(false);
+            return;
+          }
+
+          // .xlsx → parse with SheetJS
+          if (document.mimeType === XLSX_MIME) {
+            const arrayBuffer = await response.arrayBuffer();
+            const XLSX = await import("xlsx");
+            const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: "array" });
+            const sheets = workbook.SheetNames.map((name) => ({
+              name,
+              data: (XLSX.utils.sheet_to_json(workbook.Sheets[name], { header: 1, defval: "" }) as string[][]),
+            }));
+            setXlsxSheets(sheets.length > 0 ? sheets : null);
+            setIsLoading(false);
+            return;
+          }
+
           // For text-previewable files, read as text
           if (isTextPreviewable(document.mimeType)) {
-            return response.text().then((text) => {
-              setTextContent(text);
-              setIsLoading(false);
-            });
-          }
-          return response.blob().then((blob) => {
-            currentBlobUrl = URL.createObjectURL(blob);
-            setBlobUrl(currentBlobUrl);
-            setBlobMimeType(blob.type || document.mimeType);
+            const text = await response.text();
+            setTextContent(text);
             setIsLoading(false);
-          });
+            return;
+          }
+
+          // Default: create blob URL (PDF, image, audio, video)
+          const blob = await response.blob();
+          currentBlobUrl = URL.createObjectURL(blob);
+          setBlobUrl(currentBlobUrl);
+          setBlobMimeType(blob.type || document.mimeType);
+          setIsLoading(false);
         })
         .catch(() => {
           setHasError(true);
@@ -374,6 +409,82 @@ export function DocumentPreviewModal({
               >
                 Votre navigateur ne supporte pas la lecture vidéo.
               </video>
+            </div>
+          ) : docxHtml !== null ? (
+            <div className="h-full min-h-[60vh] overflow-auto p-4 sm:p-8">
+              <div className="mx-auto max-w-3xl rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 shadow-lg">
+                <div className="flex items-center gap-2 px-5 py-3 border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 rounded-t-xl">
+                  <FileText className="h-4 w-4 text-blue-500" />
+                  <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">Word · .docx</span>
+                </div>
+                <div
+                  className="docx-preview p-6 text-sm leading-relaxed text-neutral-900 dark:text-neutral-100 [&_h1]:text-xl [&_h1]:font-bold [&_h1]:mb-4 [&_h1]:text-neutral-900 dark:[&_h1]:text-white [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:mb-3 [&_h3]:font-semibold [&_h3]:mb-2 [&_p]:mb-3 [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-3 [&_li]:mb-1 [&_strong]:font-semibold [&_em]:italic [&_table]:w-full [&_table]:border-collapse [&_table]:mb-4 [&_td]:border [&_td]:border-neutral-200 dark:[&_td]:border-neutral-700 [&_td]:px-3 [&_td]:py-1.5 [&_th]:border [&_th]:border-neutral-200 dark:[&_th]:border-neutral-700 [&_th]:px-3 [&_th]:py-1.5 [&_th]:font-semibold [&_th]:bg-neutral-50 dark:[&_th]:bg-neutral-800"
+                  dangerouslySetInnerHTML={{ __html: docxHtml }}
+                />
+              </div>
+            </div>
+          ) : xlsxSheets !== null ? (
+            <div className="flex h-full min-h-[60vh] flex-col overflow-hidden">
+              {/* Sheet tabs */}
+              {xlsxSheets.length > 1 && (
+                <div className="flex gap-1 overflow-x-auto border-b border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-4 pt-3 flex-shrink-0">
+                  {xlsxSheets.map((sheet, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setActiveSheet(i)}
+                      className={`flex-shrink-0 rounded-t-lg px-4 py-1.5 text-xs font-medium transition-colors ${
+                        i === activeSheet
+                          ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-x border-t border-neutral-200 dark:border-neutral-700"
+                          : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+                      }`}
+                    >
+                      {sheet.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {/* Table */}
+              <div className="flex-1 overflow-auto p-4">
+                <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-auto bg-white dark:bg-neutral-900 shadow-sm">
+                  {xlsxSheets[activeSheet]?.data.length > 0 ? (
+                    <table className="min-w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-neutral-200 dark:border-neutral-700 bg-emerald-50 dark:bg-emerald-500/10">
+                          {(xlsxSheets[activeSheet].data[0] || []).map((cell, ci) => (
+                            <th
+                              key={ci}
+                              className="px-3 py-2 text-left font-semibold text-emerald-800 dark:text-emerald-300 whitespace-nowrap border-r border-neutral-200 dark:border-neutral-700 last:border-0"
+                            >
+                              {String(cell ?? "")}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {xlsxSheets[activeSheet].data.slice(1).map((row, ri) => (
+                          <tr
+                            key={ri}
+                            className={`border-b border-neutral-100 dark:border-neutral-800 last:border-0 ${
+                              ri % 2 === 0 ? "" : "bg-neutral-50 dark:bg-neutral-800/30"
+                            }`}
+                          >
+                            {row.map((cell, ci) => (
+                              <td
+                                key={ci}
+                                className="px-3 py-1.5 text-neutral-800 dark:text-neutral-200 whitespace-nowrap border-r border-neutral-100 dark:border-neutral-800 last:border-0"
+                              >
+                                {String(cell ?? "")}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <p className="p-6 text-sm text-neutral-400 text-center">Feuille vide</p>
+                  )}
+                </div>
+              </div>
             </div>
           ) : textContent !== null ? (
             <div className="h-full min-h-[60vh] p-4 sm:p-8">
