@@ -37,6 +37,8 @@ model User {
   notificationsEnabled Int       @default(1) // 1 = enabled, 0 = disabled
   aiSortingEnabled     Int       @default(1) // 1 = enabled, 0 = disabled (user preference)
   profession           String?   // User's profession for AI personalization (BUSINESS plan)
+  sortingRule          String?   // Free-text sorting instruction for AI
+  sortingRuleEnabled   Int       @default(0) // 1 = active, 0 = inactive
 
   // Security
   passwordChangedAt    DateTime? // Tracks password changes to invalidate old JWTs

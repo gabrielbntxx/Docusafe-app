@@ -1652,12 +1652,17 @@ async function classifyDocument(
   apiKey: string,
   folderContext?: string,
   professionContext?: string,
+  sortingRuleContext?: string,
 ): Promise<AIAnalysisResult> {
   const today = new Date().toISOString().split("T")[0];
   let fullPrompt = CLASSIFICATION_PROMPT + `\n\n## 📅 DATE ACTUELLE: ${today}`;
 
   if (professionContext) {
     fullPrompt += `\n\n## 👤 CONTEXTE MÉTIER DE L'UTILISATEUR\n${professionContext}`;
+  }
+
+  if (sortingRuleContext) {
+    fullPrompt += `\n\n## 📋 RÈGLES DE TRI PERSONNALISÉES DE L'UTILISATEUR\n${sortingRuleContext}\n\n⚠️ Ces règles sont PRIORITAIRES. Respecte-les scrupuleusement pour nommer et choisir les dossiers.`;
   }
 
   if (folderContext) {
@@ -1760,6 +1765,7 @@ export async function analyzeDocumentWithAI(
   mimeType: string,
   folderContext?: string,
   professionContext?: string,
+  sortingRuleContext?: string,
 ): Promise<AIAnalysisResult> {
   const apiKey = process.env.GEMINI_API_KEY;
   const fileSize = fileBuffer.length;
@@ -1800,7 +1806,7 @@ export async function analyzeDocumentWithAI(
     }
 
     // ── PASS 1: Classification ──
-    const result = await classifyDocument(fileContentParts, fileName, apiKey, folderContext, professionContext);
+    const result = await classifyDocument(fileContentParts, fileName, apiKey, folderContext, professionContext, sortingRuleContext);
 
     // ── PASS 2: Deep extraction (only for categories with specialized prompts) ──
     const categoryKey = TYPE_TO_CATEGORY[result.documentType] || "AUTRE";
@@ -1884,10 +1890,13 @@ export async function analyzeDocument(
     return { success: false, error: canUse.reason };
   }
 
-  // Fetch user's folder tree + profession for AI context
+  // Fetch user's folder tree + profession + sorting rule for AI context
   const [folderTree, userProfile] = await Promise.all([
     getUserFolderTree(userId),
-    db.user.findUnique({ where: { id: userId }, select: { profession: true, planType: true } }),
+    db.user.findUnique({
+      where: { id: userId },
+      select: { profession: true, planType: true, sortingRule: true, sortingRuleEnabled: true },
+    }),
   ]);
   const folderContext = serializeFolderTree(folderTree);
   console.log("[analyzeDocument] Folder context for AI:", folderTree.length, "root folders");
@@ -1902,9 +1911,19 @@ export async function analyzeDocument(
     console.log("[analyzeDocument] Using profession context for:", userProfile!.profession);
   }
 
-  // Analyze with AI (with folder hierarchy + profession context)
+  // Build sorting rule context (all plans, if enabled)
+  const sortingRuleContext =
+    userProfile?.sortingRuleEnabled === 1 && userProfile?.sortingRule
+      ? userProfile.sortingRule
+      : undefined;
+
+  if (sortingRuleContext) {
+    console.log("[analyzeDocument] Using sorting rule:", sortingRuleContext.substring(0, 60));
+  }
+
+  // Analyze with AI (with folder hierarchy + profession context + sorting rule)
   console.log("[analyzeDocument] Calling analyzeDocumentWithAI...");
-  const result = await analyzeDocumentWithAI(fileBuffer, fileName, mimeType, folderContext, professionContext);
+  const result = await analyzeDocumentWithAI(fileBuffer, fileName, mimeType, folderContext, professionContext, sortingRuleContext);
   console.log("[analyzeDocument] AI result:", result.documentType, "confidence:", result.confidence, "suggestedFolder:", result.suggestedFolder, "folderAction:", result.folderAction);
 
   // Cache the result

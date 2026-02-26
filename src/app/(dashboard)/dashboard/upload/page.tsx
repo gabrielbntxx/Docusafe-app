@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { X, FileText, File, Image as ImageIcon, FileCheck, Cloud, Sparkles, Wand2, FolderOpen, Loader2, Music, Video, FolderUp, Folder, FileCode, FileSpreadsheet, Presentation, Archive, CloudCog, Lock, CreditCard } from "lucide-react";
+import { X, FileText, File, Image as ImageIcon, FileCheck, Cloud, Sparkles, Wand2, FolderOpen, Loader2, Music, Video, FolderUp, Folder, FileCode, FileSpreadsheet, Presentation, Archive, CloudCog, Lock, CreditCard, ClipboardList, Pencil, Trash2, Check } from "lucide-react";
 import { CloudPicker } from "@/components/cloud-picker/cloud-picker";
 import { useSubscription } from "@/components/providers/subscription-provider";
 
@@ -63,6 +63,14 @@ export default function UploadPage() {
   const [aiResults, setAiResults] = useState<{ [key: string]: { category: string; type: string } }>({});
   const [uploadedCount, setUploadedCount] = useState(0);
 
+  // Sorting rule state
+  const [savedRule, setSavedRule] = useState<{ text: string; enabled: boolean } | null>(null);
+  const [ruleText, setRuleText] = useState("");
+  const [ruleEnabled, setRuleEnabled] = useState(false);
+  const [ruleOpen, setRuleOpen] = useState(false);
+  const [savingRule, setSavingRule] = useState(false);
+  const [deletingRule, setDeletingRule] = useState(false);
+
   // Destination folder selector (for individual file uploads)
   const [availableFolders, setAvailableFolders] = useState<Array<{ id: string; name: string; color: string | null }>>([]);
   const [selectedDestinationFolderId, setSelectedDestinationFolderId] = useState<string | null>(null);
@@ -80,6 +88,20 @@ export default function UploadPage() {
       .then((data) => {
         setAiStatus(data);
         setAiSortingEnabled(data.aiSortingEnabled && data.allowed);
+      })
+      .catch(console.error);
+  }, []);
+
+  // Load sorting rule on mount
+  useEffect(() => {
+    fetch("/api/user/sorting-rule")
+      .then((res) => res.json())
+      .then((d) => {
+        if (d.sortingRule) {
+          setSavedRule({ text: d.sortingRule, enabled: d.sortingRuleEnabled === 1 });
+          setRuleText(d.sortingRule);
+          setRuleEnabled(d.sortingRuleEnabled === 1);
+        }
       })
       .catch(console.error);
   }, []);
@@ -518,6 +540,58 @@ export default function UploadPage() {
 
   const hasSelection = files.length > 0 || folderTotalCount > 0;
 
+  const handleSaveRule = async () => {
+    if (!ruleText.trim()) return;
+    setSavingRule(true);
+    try {
+      const res = await fetch("/api/user/sorting-rule", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sortingRule: ruleText.trim(), sortingRuleEnabled: 1 }),
+      });
+      if (res.ok) {
+        setSavedRule({ text: ruleText.trim(), enabled: true });
+        setRuleEnabled(true);
+        setRuleOpen(false);
+      }
+    } catch (err) {
+      console.error("Error saving sorting rule:", err);
+    } finally {
+      setSavingRule(false);
+    }
+  };
+
+  const handleToggleRule = async (enabled: boolean) => {
+    setRuleEnabled(enabled);
+    try {
+      await fetch("/api/user/sorting-rule", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sortingRuleEnabled: enabled ? 1 : 0 }),
+      });
+      setSavedRule((prev) => prev ? { ...prev, enabled } : prev);
+    } catch (err) {
+      console.error("Error toggling sorting rule:", err);
+    }
+  };
+
+  const handleDeleteRule = async () => {
+    setDeletingRule(true);
+    try {
+      const res = await fetch("/api/user/sorting-rule", { method: "DELETE" });
+      if (res.ok) {
+        setSavedRule(null);
+        setRuleText("");
+        setRuleEnabled(false);
+        setRuleOpen(false);
+      }
+    } catch (err) {
+      console.error("Error deleting sorting rule:", err);
+    } finally {
+      setDeletingRule(false);
+    }
+  };
+
   if (isRestricted) {
     return (
       <div className="mx-auto max-w-4xl">
@@ -778,6 +852,104 @@ export default function UploadPage() {
             <p className="mt-3 text-xs text-amber-600 dark:text-amber-400">
               Limite mensuelle atteinte. Passez à Premium pour un tri illimité.
             </p>
+          )}
+        </div>
+      )}
+
+      {/* Sorting Rule Block — only when AI sorting is on */}
+      {files.length > 0 && aiStatus?.allowed && aiSortingEnabled && (
+        <div className="rounded-3xl border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-5 dark:border-blue-500/20 dark:from-blue-500/10 dark:to-indigo-500/10">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 dark:bg-blue-500/20">
+                <ClipboardList className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-neutral-900 dark:text-white">
+                  Règles de tri personnalisées
+                </h3>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                  {savedRule
+                    ? "Indiquez à LIA comment classer vos documents"
+                    : "Ajoutez une instruction de tri pour LIA"}
+                </p>
+              </div>
+            </div>
+            {/* Toggle — only visible when a rule is saved */}
+            {savedRule && (
+              <button
+                onClick={() => handleToggleRule(!ruleEnabled)}
+                disabled={isUploading}
+                className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${
+                  ruleEnabled ? "bg-blue-500" : "bg-neutral-300 dark:bg-neutral-600"
+                } ${isUploading ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                <span
+                  className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                    ruleEnabled ? "left-6" : "left-1"
+                  }`}
+                />
+              </button>
+            )}
+          </div>
+
+          {/* State B — rule saved, textarea closed */}
+          {savedRule && !ruleOpen && (
+            <div className="mt-3 flex items-start justify-between gap-3 rounded-xl bg-white/60 px-4 py-3 dark:bg-white/5">
+              <p className="flex-1 text-sm italic text-neutral-700 dark:text-neutral-300">
+                &ldquo;{savedRule.text}&rdquo;
+              </p>
+              <div className="flex shrink-0 items-center gap-1">
+                <button
+                  onClick={() => { setRuleText(savedRule.text); setRuleOpen(true); }}
+                  disabled={isUploading}
+                  className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-blue-600 transition hover:bg-blue-100 dark:text-blue-400 dark:hover:bg-blue-500/20"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Modifier
+                </button>
+                <button
+                  onClick={handleDeleteRule}
+                  disabled={isUploading || deletingRule}
+                  className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-500 transition hover:bg-red-50 dark:hover:bg-red-500/10"
+                >
+                  {deletingRule ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* State A — no rule yet, or textarea open for editing */}
+          {(!savedRule || ruleOpen) && (
+            <div className="mt-3 space-y-2">
+              <textarea
+                value={ruleText}
+                onChange={(e) => setRuleText(e.target.value)}
+                placeholder='Ex : "Classe les factures par nom de fournisseur", "Trie les ordonnances par nom de patient", "Organise par numéro de commande"...'
+                disabled={isUploading}
+                rows={3}
+                className="w-full resize-none rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm text-neutral-800 placeholder-neutral-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/20 dark:border-blue-500/30 dark:bg-neutral-800 dark:text-white dark:placeholder-neutral-500"
+              />
+              <div className="flex justify-end gap-2">
+                {savedRule && ruleOpen && (
+                  <button
+                    onClick={() => setRuleOpen(false)}
+                    disabled={isUploading}
+                    className="rounded-xl px-4 py-2 text-sm text-neutral-500 transition hover:bg-white/60 dark:hover:bg-white/5"
+                  >
+                    Annuler
+                  </button>
+                )}
+                <button
+                  onClick={handleSaveRule}
+                  disabled={isUploading || savingRule || !ruleText.trim()}
+                  className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {savingRule ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                  Enregistrer
+                </button>
+              </div>
+            </div>
           )}
         </div>
       )}

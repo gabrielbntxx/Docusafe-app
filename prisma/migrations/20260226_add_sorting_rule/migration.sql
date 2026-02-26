@@ -1,0 +1,2 @@
+ALTER TABLE "User" ADD COLUMN "sortingRule" TEXT;
+ALTER TABLE "User" ADD COLUMN "sortingRuleEnabled" INTEGER NOT NULL DEFAULT 0;
