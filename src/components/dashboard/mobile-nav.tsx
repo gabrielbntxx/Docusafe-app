@@ -61,9 +61,11 @@ export function MobileNav() {
       }
     };
 
-    if (userId) {
-      fetchNotifications();
-    }
+    if (!userId) return;
+    fetchNotifications();
+    // Poll every 30s so badge stays up-to-date without manual refresh
+    const interval = setInterval(fetchNotifications, 30_000);
+    return () => clearInterval(interval);
   }, [userId]);
 
   // Close menu on navigation to prevent stale overlay

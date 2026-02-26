@@ -1002,10 +1002,16 @@ export function WorkflowClient({
                         {run.stepStatuses.map((s, i) => {
                           const member = getMember(s.assigneeId);
                           const isActive = run.status === "in_progress" && i === run.currentStep;
+                          const tooltipText = [
+                            member?.name,
+                            s.respondedAt ? new Date(s.respondedAt).toLocaleDateString("fr-FR") : null,
+                            s.comment ? `"${s.comment}"` : null,
+                          ].filter(Boolean).join(" · ");
                           return (
                             <div
                               key={i}
-                              className={`flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs ${
+                              title={tooltipText || undefined}
+                              className={`flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs cursor-default ${
                                 s.status === "approved"
                                   ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
                                   : s.status === "rejected"
@@ -1028,6 +1034,31 @@ export function WorkflowClient({
                           );
                         })}
                       </div>
+
+                      {/* Rejection comment — visible inline */}
+                      {(() => {
+                        const rejectedStep = run.stepStatuses.find((s) => s.status === "rejected" && s.comment);
+                        if (!rejectedStep) return null;
+                        const rejector = getMember(rejectedStep.assigneeId);
+                        return (
+                          <div className="mt-3 flex items-start gap-2 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 px-3 py-2.5">
+                            <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-500" />
+                            <div className="text-xs">
+                              <span className="font-medium text-red-700 dark:text-red-400">
+                                Rejeté par {rejector?.name ?? "un approbateur"}
+                                {rejectedStep.respondedAt && (
+                                  <span className="font-normal text-red-500 dark:text-red-500 ml-1">
+                                    · {new Date(rejectedStep.respondedAt).toLocaleDateString("fr-FR")}
+                                  </span>
+                                )}
+                              </span>
+                              <p className="mt-0.5 text-red-600 dark:text-red-400 italic">
+                                &ldquo;{rejectedStep.comment}&rdquo;
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 );

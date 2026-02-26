@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useTranslation } from "@/hooks/useTranslation";
-import { Bell, FileText, Folder, Trash2, CheckCheck, AlertTriangle, Sparkles } from "lucide-react";
+import { Bell, FileText, Folder, Trash2, CheckCheck, AlertTriangle, Sparkles, GitBranch, CheckCircle2, XCircle, Clock } from "lucide-react";
 
 type Notification = {
   id: string;
@@ -26,9 +26,11 @@ export function NotificationsDropdown() {
 
   const userId = session?.user?.id;
   useEffect(() => {
-    if (userId) {
-      fetchNotifications();
-    }
+    if (!userId) return;
+    fetchNotifications();
+    // Poll every 30s so new notifications appear without manual refresh
+    const interval = setInterval(fetchNotifications, 30_000);
+    return () => clearInterval(interval);
   }, [userId]);
 
   const fetchNotifications = async () => {
@@ -69,6 +71,10 @@ export function NotificationsDropdown() {
     if (type === "folder_updated") return <Folder className="h-5 w-5 text-blue-600 dark:text-blue-400" />;
     if (type === "plan_upgraded") return <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400" />;
     if (type === "storage_warning") return <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />;
+    if (type === "workflow_step_pending") return <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />;
+    if (type === "workflow_completed") return <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />;
+    if (type === "workflow_rejected") return <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />;
+    if (type === "workflow_reminder") return <GitBranch className="h-5 w-5 text-blue-600 dark:text-blue-400" />;
     return <Bell className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />;
   };
 
