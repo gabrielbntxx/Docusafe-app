@@ -240,7 +240,8 @@ export async function PUT(req: Request) {
         analysis.result.suggestedFolder,
         analysis.result.folderAction,
         analysis.result.targetFolderId,
-        analysis.result.parentFolderId
+        analysis.result.parentFolderId,
+        analysis.result.suggestedParentFolder
       );
     } catch (folderError) {
       console.error("[Analyze PUT] Folder creation failed:", folderError);

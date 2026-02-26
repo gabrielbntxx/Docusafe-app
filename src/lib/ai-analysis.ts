@@ -587,6 +587,7 @@ export type AIAnalysisResult = {
   folderAction?: "use_existing" | "create_new" | "create_subfolder";
   targetFolderId?: string;   // ID du dossier existant si use_existing
   parentFolderId?: string;   // ID du parent si create_subfolder
+  suggestedParentFolder?: string; // Nom du dossier parent à créer si parentFolderId est null
   extractedData: ExtractedData;
   rawResponse?: string;
 };
@@ -1026,7 +1027,7 @@ Tu dois créer des noms de dossiers PRÉCIS et CONTEXTUELS, jamais génériques!
 
 Réponds UNIQUEMENT avec ce JSON (PAS de \`\`\`, PAS de markdown):
 
-{"documentType":"type_exact","confidence":0.95,"suggestedName":"Nom fichier descriptif","suggestedFolder":"Nom Dossier Ultra Précis","folderAction":"use_existing|create_new|create_subfolder","targetFolderId":"id_du_dossier_existant_ou_null","parentFolderId":"id_du_parent_pour_sous_dossier_ou_null","extractedData":{"date":"2024-01-15","expiryDate":"2034-01-15","amount":"150.00€","issuer":"Émetteur","recipient":"Destinataire","reference":"REF123","subject":"Sujet principal détaillé","topic":"Matière/Thème précis","location":"Lieu","people":"Personnes","language":"Langue","duration":"Durée si applicable","genre":"Genre si musique/vidéo","description":"Description détaillée du contenu"}}
+{"documentType":"type_exact","confidence":0.95,"suggestedName":"Nom fichier descriptif","suggestedFolder":"Nom Dossier Ultra Précis","folderAction":"use_existing|create_new|create_subfolder","targetFolderId":"id_du_dossier_existant_ou_null","parentFolderId":"id_du_parent_pour_sous_dossier_ou_null","suggestedParentFolder":"Nom du dossier parent à créer si parentFolderId est null sinon null","extractedData":{"date":"2024-01-15","expiryDate":"2034-01-15","amount":"150.00€","issuer":"Émetteur","recipient":"Destinataire","reference":"REF123","subject":"Sujet principal détaillé","topic":"Matière/Thème précis","location":"Lieu","people":"Personnes","language":"Langue","duration":"Durée si applicable","genre":"Genre si musique/vidéo","description":"Description détaillée du contenu"}}
 
 ## 🚨 RAPPELS CRITIQUES
 1. suggestedFolder doit être PRÉCIS: "Cours Informatique" pas "Études"
@@ -1071,7 +1072,7 @@ const CLASSIFICATION_PROMPT = `Tu es DocuSafe AI. Analyse ce fichier et classifi
 - PAS générique: "Études", "Photos", "Documents"
 
 ## FORMAT DE RÉPONSE (JSON uniquement, pas de markdown)
-{"documentType":"type_exact","confidence":0.95,"suggestedName":"Nom descriptif","suggestedFolder":"Dossier Précis","folderAction":"use_existing|create_new|create_subfolder","targetFolderId":"id_ou_null","parentFolderId":"id_ou_null","extractedData":{"date":"2024-01-15","description":"Description courte du contenu"}}`;
+{"documentType":"type_exact","confidence":0.95,"suggestedName":"Nom descriptif","suggestedFolder":"Dossier Précis","folderAction":"use_existing|create_new|create_subfolder","targetFolderId":"id_ou_null","parentFolderId":"id_ou_null","suggestedParentFolder":"Nom du dossier parent à créer si parentFolderId est null sinon null","extractedData":{"date":"2024-01-15","description":"Description courte du contenu"}}`;
 
 // ============================================================================
 // PASS 2 - Type-specific deep extraction prompts
@@ -1583,9 +1584,46 @@ async function buildFileContentParts(
                       mimeType.startsWith("text/") ||
                       !!fileName.match(/\.(py|js|ts|jsx|tsx|java|c|cpp|h|hpp|cs|rb|php|swift|kt|go|rs|scala|pl|lua|sh|bash|sql|css|html|htm|xml|json|yaml|yml|md|txt|csv|tsv|ini|cfg|conf|log|rtf)$/i);
 
+  const isCsv = mimeType === "text/csv" || !!fileName.match(/\.(csv|tsv)$/i);
+
   const parts: ContentPart[] = [];
 
-  if (isTextBased) {
+  if (isCsv) {
+    // Parse CSV/TSV with xlsx for structured output (headers + row count + 30-row sample)
+    try {
+      const sep = fileName.match(/\.tsv$/i) ? "\t" : ",";
+      const workbook = XLSX.read(fileBuffer, { type: "buffer", raw: false, FS: sep });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const rows: string[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" }) as string[][];
+
+      const headers = rows[0] ?? [];
+      const dataRows = rows.slice(1);
+      const totalRows = dataRows.length;
+      const sampleRows = dataRows.slice(0, 30);
+
+      const headerLine = headers.map(h => `"${String(h).replace(/"/g, '""')}"`).join(" | ");
+      const sampleLines = sampleRows.map(row =>
+        headers.map((_, i) => `"${String(row[i] ?? "").replace(/"/g, '""')}"`).join(" | ")
+      );
+
+      const structured = [
+        `Colonnes (${headers.length}) : ${headerLine}`,
+        `Nombre total de lignes : ${totalRows}`,
+        ``,
+        `--- Exemple (${sampleLines.length} premières lignes) ---`,
+        ...sampleLines,
+      ].join("\n").substring(0, 50000);
+
+      parts.push({ text: `\n\n=== CONTENU DU FICHIER CSV "${fileName}" ===\n${structured || "(fichier vide)"}` });
+      console.log("[AI] CSV parsed:", headers.length, "columns,", totalRows, "rows");
+    } catch (csvErr) {
+      console.error("[AI] CSV parsing failed, falling back to raw text:", csvErr);
+      const textContent = fileBuffer.toString("utf-8");
+      const truncated = textContent.length > 50000 ? textContent.substring(0, 50000) + "\n\n[... tronqué ...]" : textContent;
+      parts.push({ text: `\n\n=== CONTENU DU FICHIER "${fileName}" ===\n\`\`\`\n${truncated}\n\`\`\`` });
+    }
+  } else if (isTextBased) {
     const textContent = fileBuffer.toString("utf-8");
     const truncated = textContent.length > 100000 ? textContent.substring(0, 100000) + "\n\n[... contenu tronqué ...]" : textContent;
     parts.push({ text: `\n\n=== CONTENU DU FICHIER "${fileName}" ===\n\`\`\`\n${truncated}\n\`\`\`` });
@@ -1695,13 +1733,41 @@ async function classifyDocument(
 ${sortingRuleContext}
 
 ⚠️ Ces règles sont PRIORITAIRES sur toute autre logique de classement.
-Traduis-les OBLIGATOIREMENT dans ton JSON :
-- Si la règle demande de regrouper dans un même dossier avec des sous-dossiers par type :
-  → Cherche d'abord un dossier parent existant dans l'arborescence.
-  → Si ce parent existe : utilise folderAction="create_subfolder" avec parentFolderId=son ID et suggestedFolder=nom du type de document.
-  → Si aucun parent n'existe : utilise folderAction="create_new" et nomme suggestedFolder selon la règle (ex: "Documents", "Fichiers Reçus").
-- Si la règle donne un nom précis de dossier : utilise ce nom exact dans suggestedFolder.
-- Si la règle mentionne un critère de nommage (patient, fournisseur, date…) : inclus ce critère dans suggestedFolder.`;
+Tu DOIS les appliquer dans ton JSON en suivant ces directives :
+
+### CAS 1 — Tri par critère identifié dans le document (patient, fournisseur, projet, client…)
+→ folderAction="create_subfolder"
+→ suggestedParentFolder = nom générique du groupe (ex: "Patients", "Fournisseurs", "Projets")
+→ suggestedFolder = valeur extraite du document (ex: nom du patient, nom du fournisseur)
+→ parentFolderId = ID du dossier parent s'il existe dans l'arborescence, sinon null
+
+### CAS 2 — Tri par type de document dans un dossier commun
+→ folderAction="create_subfolder"
+→ suggestedParentFolder = nom du dossier commun (ex: "Documents Reçus", "Archives")
+→ suggestedFolder = type précis du document (ex: "Factures", "Contrats", "Rapports")
+→ parentFolderId = ID du dossier commun s'il existe, sinon null
+
+### CAS 3 — Tri alphabétique (par première lettre ou par nom)
+→ folderAction="create_subfolder"
+→ suggestedParentFolder = nom du groupe alphabétique (ex: "A-B", "C-D", "M")
+→ suggestedFolder = valeur alphabétique exacte issue du document
+→ parentFolderId = ID du dossier alphabétique s'il existe, sinon null
+
+### CAS 4 — Tri par date (année, mois, trimestre…)
+→ folderAction="create_subfolder"
+→ suggestedParentFolder = l'année (ex: "2024", "2025")
+→ suggestedFolder = le mois ou trimestre (ex: "Janvier", "T1")
+→ parentFolderId = ID du dossier année s'il existe, sinon null
+
+### CAS 5 — Dossier racine unique (pas de sous-dossier)
+→ folderAction="use_existing" si le dossier existe, sinon "create_new"
+→ suggestedFolder = nom exact demandé par la règle
+→ targetFolderId = ID du dossier s'il existe, sinon null
+
+### RAPPELS
+- Cherche TOUJOURS dans l'arborescence existante avant de créer
+- Si tu ne peux pas extraire le critère demandé (patient, fournisseur…) du document : utilise folderAction="create_new" avec suggestedFolder basé sur la règle
+- suggestedParentFolder est OBLIGATOIRE quand folderAction="create_subfolder" et parentFolderId=null`;
   }
 
   if (folderContext) {
@@ -1739,6 +1805,7 @@ ${folderContext}`;
     folderAction: parsed.folderAction || "create_new",
     targetFolderId: parsed.targetFolderId || undefined,
     parentFolderId: parsed.parentFolderId || undefined,
+    suggestedParentFolder: parsed.suggestedParentFolder || undefined,
     extractedData: {
       date: parsed.extractedData?.date || undefined,
       expiryDate: parsed.extractedData?.expiryDate || undefined,
@@ -1986,7 +2053,8 @@ export async function getOrCreateCategoryFolder(
   suggestedFolder?: string,
   folderAction?: string,
   targetFolderId?: string,
-  parentFolderId?: string
+  parentFolderId?: string,
+  suggestedParentFolder?: string
 ): Promise<string> {
   const targetFolderName = suggestedFolder || category;
 
@@ -2048,6 +2116,62 @@ export async function getOrCreateCategoryFolder(
       return newSub.id;
     }
     console.log(`[AI Smart Folder] ⚠ parentFolderId "${parentFolderId}" not found, falling back to name matching`);
+  }
+
+  // PATH 2b: create_subfolder but parentFolderId is null — create parent by suggestedParentFolder name
+  if (folderAction === "create_subfolder" && !parentFolderId && suggestedParentFolder && suggestedFolder) {
+    const categoryInfo = getCategoryInfo();
+    const normalize = (str: string) =>
+      str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+
+    // Try to find existing parent by name first
+    const existingParent = await db.folder.findFirst({
+      where: {
+        userId,
+        parentId: null, // root level only
+        name: { equals: suggestedParentFolder, mode: "insensitive" as const },
+      },
+      select: { id: true, name: true },
+    });
+
+    const parent = existingParent ?? await (async () => {
+      // Fuzzy search before creating
+      const allRoot = await db.folder.findMany({
+        where: { userId, parentId: null },
+        select: { id: true, name: true },
+      });
+      const fuzzy = allRoot.find(f =>
+        normalize(f.name) === normalize(suggestedParentFolder) ||
+        normalize(f.name).includes(normalize(suggestedParentFolder)) ||
+        normalize(suggestedParentFolder).includes(normalize(f.name))
+      );
+      if (fuzzy) return fuzzy;
+      // Create new parent
+      const created = await db.folder.create({
+        data: { userId, name: suggestedParentFolder, icon: categoryInfo.icon, color: categoryInfo.color },
+      });
+      console.log(`[AI Smart Folder] ➕ Created parent folder: "${created.name}"`);
+      return created;
+    })();
+
+    // Now find or create the subfolder under the parent
+    const existingSub = await db.folder.findFirst({
+      where: {
+        userId,
+        parentId: parent.id,
+        name: { equals: suggestedFolder, mode: "insensitive" as const },
+      },
+      select: { id: true, name: true },
+    });
+    if (existingSub) {
+      console.log(`[AI Smart Folder] ✓ Subfolder already exists: "${existingSub.name}" under "${parent.name}"`);
+      return existingSub.id;
+    }
+    const newSub = await db.folder.create({
+      data: { userId, name: suggestedFolder, parentId: parent.id, icon: categoryInfo.icon, color: categoryInfo.color },
+    });
+    console.log(`[AI Smart Folder] ✓ Created subfolder via PATH 2b: "${newSub.name}" under "${parent.name}"`);
+    return newSub.id;
   }
 
   // PATH 3: Create new at root OR fallback name-based matching
