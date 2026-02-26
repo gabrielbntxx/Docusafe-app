@@ -660,49 +660,38 @@ export function MyFilesClient({
 
     setIsBulkDeleting(true);
     try {
-      // Delete selected documents
+      // Delete selected documents via atomic bulk endpoint
       if (docCount > 0) {
-        const docsToDelete = Array.from(selectedDocuments);
-        const folderCountUpdates: Record<string, number> = {};
-        docsToDelete.forEach(docId => {
-          const doc = localDocuments.find(d => d.id === docId);
-          if (doc?.folderId) {
-            folderCountUpdates[doc.folderId] = (folderCountUpdates[doc.folderId] || 0) + 1;
-          }
+        const res = await fetch("/api/documents/bulk-delete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids: Array.from(selectedDocuments) }),
         });
-        setLocalDocuments(prev => prev.filter(d => !docsToDelete.includes(d.id)));
-        if (Object.keys(folderCountUpdates).length > 0) {
-          setLocalFolders(prev => prev.map(f =>
-            folderCountUpdates[f.id]
-              ? { ...f, documentCount: Math.max(0, f.documentCount - folderCountUpdates[f.id]) }
-              : f
-          ));
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          alert(data.error || "Erreur lors de la suppression des documents");
+          return;
         }
-        await Promise.all(docsToDelete.map(docId =>
-          fetch(`/api/documents/${docId}`, { method: "DELETE" })
-        ));
       }
 
       // Delete selected folders (and all their descendants)
       if (folderCount > 0) {
         const foldersToDelete = Array.from(selectedFolders);
-        const allRemovedIds = new Set<string>();
-        foldersToDelete.forEach(fId => {
-          allRemovedIds.add(fId);
-          getDescendantFolderIds(fId, localFolders).forEach(id => allRemovedIds.add(id));
-        });
-        setLocalFolders(prev => prev.filter(f => !allRemovedIds.has(f.id)));
-        setLocalDocuments(prev => prev.map(d =>
-          d.folderId && allRemovedIds.has(d.folderId) ? { ...d, folderId: null, folder: null } : d
-        ));
-        await Promise.all(foldersToDelete.map(fId =>
-          fetch(`/api/folders/${fId}`, { method: "DELETE" })
-        ));
+        const results = await Promise.allSettled(
+          foldersToDelete.map(fId => fetch(`/api/folders/${fId}`, { method: "DELETE" }))
+        );
+        const anyFolderFailed = results.some(
+          r => r.status === "rejected" || (r.status === "fulfilled" && !r.value.ok)
+        );
+        if (anyFolderFailed) {
+          alert("Certains dossiers n'ont pas pu être supprimés");
+        }
       }
 
       setSelectedDocuments(new Set());
       setSelectedFolders(new Set());
       setIsSelectionMode(false);
+      router.refresh();
     } catch (error) {
       console.error("Bulk delete error:", error);
       alert("Erreur lors de la suppression");
