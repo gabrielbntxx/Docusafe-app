@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { decryptDocument, decryptUserKey, removeEncryptionMarker } from "@/lib/encryption";
 import { analyzeDocumentWithAI, getOrCreateCategoryFolder } from "@/lib/ai-analysis";
 import { getEffectiveUserId, getMemberFolderAccess } from "@/lib/team";
+import { getProfessionAIContext } from "@/lib/professions";
 import { checkRateLimit } from "@/lib/security";
 
 // Helper to get user encryption key
@@ -1645,7 +1646,7 @@ export async function POST(request: NextRequest) {
       }),
       db.user.findUnique({
         where: { id: userId },
-        select: { language: true },
+        select: { language: true, profession: true },
       }),
       db.document.findMany({
         where: { userId, expiryDate: { not: null, lte: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000) }, ...ctxDocFilter },
@@ -1754,7 +1755,11 @@ export async function POST(request: NextRequest) {
       : `DOSSIERS DISPONIBLES:\n${foldersContext}\n\nDOCUMENTS (1 = le plus récent = "dernier document"):\n${docsContext}${expiringContext}${relevantContext}\n\nRAPPEL: Position 1 = document le plus récent. Quand l'utilisateur dit "mon dernier document", utilise celui en position 1.`;
 
     const basePrompt = isEnglish ? DOCUBOT_SYSTEM_PROMPT_EN : DOCUBOT_SYSTEM_PROMPT_FR;
-    const systemPrompt = basePrompt.replace("{context}", context);
+    const professionContext = userSettings?.profession
+      ? getProfessionAIContext(userSettings.profession)
+      : "";
+    const systemPrompt = basePrompt.replace("{context}", context) +
+      (professionContext ? `\n\n${professionContext}` : "");
 
     // Build conversation
     const conversationHistory = (history || []).slice(-8).map((msg: any) => ({
