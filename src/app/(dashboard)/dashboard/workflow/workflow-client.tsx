@@ -240,7 +240,7 @@ function ConfigureModal({
               <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
                 {existing ? "Modifier" : "Configurer"} — {def.label}
               </h2>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">Définissez les étapes d'approbation</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">Définissez les étapes d&apos;approbation</p>
             </div>
           </div>
           <button onClick={onClose} className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800">
@@ -763,7 +763,7 @@ export function WorkflowClient({
           {teamMembers.length === 0 && (
             <p className="mt-3 text-sm text-amber-600 dark:text-amber-400 flex items-center gap-2">
               <AlertCircle className="h-4 w-4" />
-              Invitez des membres d'équipe pour configurer des étapes de validation.
+              Invitez des membres d&apos;équipe pour configurer des étapes de validation.
             </p>
           )}
         </section>
