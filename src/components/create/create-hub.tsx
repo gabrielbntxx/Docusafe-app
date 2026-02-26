@@ -43,6 +43,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getProfessionDocConfig, type DocType } from "@/lib/professions";
+import { OfficeCreator } from "./office-creator";
 
 const DOC_TYPES = [
   {
@@ -480,6 +481,9 @@ export function CreateHub({ profession }: Props) {
 
   return (
     <div className="space-y-6">
+      {/* ── Office Creator (Word + Excel) — always at top ── */}
+      <OfficeCreator />
+
       <div>
         <h1 className="text-xl font-semibold text-neutral-900 dark:text-white">
           {t("createDocuments")}

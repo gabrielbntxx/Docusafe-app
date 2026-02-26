@@ -32,6 +32,7 @@
     "@react-email/render": "^2.0.4",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
+    "docx": "^9.6.0",
     "jszip": "^3.10.1",
     "lucide-react": "^0.562.0",
     "mailparser": "^3.9.3",
@@ -47,6 +48,7 @@
     "sharp": "^0.34.5",
     "stripe": "^20.2.0",
     "tailwind-merge": "^3.4.0",
+    "xlsx": "^0.18.5",
     "zod": "^4.3.5"
   },
   "devDependencies": {
