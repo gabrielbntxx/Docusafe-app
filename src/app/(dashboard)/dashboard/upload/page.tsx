@@ -46,7 +46,9 @@ export default function UploadPage() {
   const [folderProgress, setFolderProgress] = useState(0); // 0-100
   const [folderFailedCount, setFolderFailedCount] = useState(0);
   const [isBuildingFolders, setIsBuildingFolders] = useState(false);
+  const [uploadCancelled, setUploadCancelled] = useState(false);
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const cancelUploadRef = useRef(false);
 
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -170,14 +172,21 @@ export default function UploadPage() {
 
   const clearFolder = () => {
     folderDataRef.current = [];
+    cancelUploadRef.current = false;
     setFolderName(null);
     setFolderTotalCount(0);
     setFolderPreview([]);
     setFolderProgress(0);
     setFolderFailedCount(0);
+    setUploadCancelled(false);
+    setIsBuildingFolders(false);
     if (folderInputRef.current) {
       folderInputRef.current.value = "";
     }
+  };
+
+  const handleCancelUpload = () => {
+    cancelUploadRef.current = true;
   };
 
   // Handle files from cloud picker
@@ -230,6 +239,8 @@ export default function UploadPage() {
     if (!hasFiles && !hasFolderFiles) return;
 
     setIsUploading(true);
+    setUploadCancelled(false);
+    cancelUploadRef.current = false;
     setError(null);
     setFileErrors({});
     setAiResults({});
@@ -416,7 +427,7 @@ export default function UploadPage() {
       const allFiles = folderDataRef.current;
       let queueIndex = 0;
       const workers = Array.from({ length: Math.min(CONCURRENCY, allFiles.length) }, async () => {
-        while (queueIndex < allFiles.length && !fatalError) {
+        while (queueIndex < allFiles.length && !fatalError && !cancelUploadRef.current) {
           const f = allFiles[queueIndex++];
           await uploadOne({
             file: f.file,
@@ -430,7 +441,7 @@ export default function UploadPage() {
     } else {
       const uploadQueue = [...files.map(f => ({ file: f, name: f.name, folderId: selectedDestinationFolderId, isFolder: false }))];
       const workers = Array.from({ length: Math.min(CONCURRENCY, uploadQueue.length) }, async () => {
-        while (uploadQueue.length > 0 && !fatalError) {
+        while (uploadQueue.length > 0 && !fatalError && !cancelUploadRef.current) {
           const item = uploadQueue.shift();
           if (item) await uploadOne(item);
         }
@@ -443,13 +454,24 @@ export default function UploadPage() {
       clearInterval(progressIntervalRef.current);
       progressIntervalRef.current = null;
     }
+
+    setIsBuildingFolders(false);
+    setIsUploading(false);
+
+    if (cancelUploadRef.current) {
+      // User cancelled — show how many were imported before cancellation
+      setUploadedCount(completedCount);
+      setFolderProgress(0);
+      setFolderFailedCount(failedCount);
+      setUploadCancelled(true);
+      return;
+    }
+
     if (hasFolderFiles) {
       setUploadedCount(completedCount);
       setFolderProgress(100);
       setFolderFailedCount(failedCount);
     }
-
-    setIsUploading(false);
 
     if (!hasError) {
       setTimeout(() => {
@@ -984,13 +1006,34 @@ export default function UploadPage() {
                 )}
 
                 {/* Completion state */}
-                {!isUploading && folderProgress === 100 && (
+                {!isUploading && folderProgress === 100 && !uploadCancelled && (
                   <div className="rounded-2xl bg-green-50 dark:bg-green-500/10 p-4 flex items-center gap-3">
                     <FileCheck className="h-5 w-5 text-green-600 dark:text-green-400" />
                     <span className="text-sm font-medium text-green-700 dark:text-green-300">
                       {uploadedCount.toLocaleString("fr-FR")} fichier{uploadedCount > 1 ? "s" : ""} importé{uploadedCount > 1 ? "s" : ""}
                       {folderFailedCount > 0 && ` — ${folderFailedCount} erreur${folderFailedCount > 1 ? "s" : ""}`}
                     </span>
+                  </div>
+                )}
+
+                {/* Cancelled state */}
+                {!isUploading && uploadCancelled && (
+                  <div className="rounded-2xl bg-amber-50 dark:bg-amber-500/10 p-4 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <X className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                      <span className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                        Import annulé —{" "}
+                        {uploadedCount > 0
+                          ? `${uploadedCount.toLocaleString("fr-FR")} fichier${uploadedCount > 1 ? "s" : ""} déjà importé${uploadedCount > 1 ? "s" : ""}`
+                          : "aucun fichier importé"}
+                      </span>
+                    </div>
+                    <button
+                      onClick={clearFolder}
+                      className="text-xs text-amber-600 dark:text-amber-400 underline hover:no-underline"
+                    >
+                      Réinitialiser
+                    </button>
                   </div>
                 )}
 
@@ -1055,8 +1098,8 @@ export default function UploadPage() {
             </button>
             {isUploading ? (
               <button
-                disabled
-                className="rounded-xl border border-neutral-200 bg-white px-6 py-3 text-sm font-medium text-neutral-700 opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
+                onClick={handleCancelUpload}
+                className="rounded-xl border border-red-200 bg-white px-6 py-3 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:border-red-500/30 dark:bg-neutral-800 dark:text-red-400 dark:hover:bg-red-500/10"
               >
                 Annuler
               </button>

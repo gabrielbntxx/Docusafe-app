@@ -63,6 +63,18 @@ export async function GET(
   }
 }
 
+// Recursively collect all descendant folder IDs for a given parent
+async function getAllDescendantFolderIds(parentId: string, userId: string): Promise<string[]> {
+  const children = await db.folder.findMany({
+    where: { parentId, userId },
+    select: { id: true },
+  });
+  if (children.length === 0) return [];
+  const childIds = children.map(c => c.id);
+  const grandChildIds = await Promise.all(childIds.map(id => getAllDescendantFolderIds(id, userId)));
+  return [...childIds, ...grandChildIds.flat()];
+}
+
 // DELETE - Delete a folder
 export async function DELETE(
   req: Request,
@@ -108,17 +120,26 @@ export async function DELETE(
       );
     }
 
-    // Move documents to null (uncategorized) before deleting folder
-    if (folder._count.documents > 0) {
-      await db.document.updateMany({
-        where: { folderId: id },
-        data: { folderId: null },
-      });
-    }
+    // Collect this folder + all descendants
+    const descendantIds = await getAllDescendantFolderIds(id, session.user.id);
+    const allFolderIds = [id, ...descendantIds];
 
-    // Delete the folder
-    await db.folder.delete({
-      where: { id },
+    // Move all documents in the tree to null (uncategorized)
+    await db.document.updateMany({
+      where: { folderId: { in: allFolderIds } },
+      data: { folderId: null },
+    });
+
+    // Nullify parentId on all folders in the set to break FK self-references
+    // before bulk delete (avoids constraint violations regardless of DB engine)
+    await db.folder.updateMany({
+      where: { id: { in: allFolderIds } },
+      data: { parentId: null },
+    });
+
+    // Delete the entire tree at once
+    await db.folder.deleteMany({
+      where: { id: { in: allFolderIds } },
     });
 
     // Créer une notification
