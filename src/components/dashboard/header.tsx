@@ -3,13 +3,19 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useSubscription } from "@/components/providers/subscription-provider";
 import { NotificationsDropdown } from "./notifications-dropdown";
+import { TeamQuickPanel } from "./team-quick-panel";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Users } from "lucide-react";
 
 export function Header() {
   const { data: session } = useSession();
   const { t } = useTranslation();
+  const { planType } = useSubscription();
+  const isOwner = !session?.user?.teamOwnerId;
+  const showTeamButton = planType === "BUSINESS" && isOwner;
+  const [isTeamPanelOpen, setIsTeamPanelOpen] = useState(false);
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   // Greeting computed client-side only to avoid hydration mismatch (server/client timezone diff)
   const [greeting, setGreeting] = useState<string>("");
@@ -56,6 +62,15 @@ export function Header() {
 
           {/* Right: Actions */}
           <div className="flex items-center gap-3">
+            {showTeamButton && (
+              <button
+                onClick={() => setIsTeamPanelOpen(true)}
+                className="relative rounded-xl p-2 transition-all hover:bg-neutral-100 active:scale-95 dark:hover:bg-neutral-700"
+                title="Mon équipe"
+              >
+                <Users className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
+              </button>
+            )}
             <NotificationsDropdown />
 
             <Link
@@ -87,6 +102,7 @@ export function Header() {
           </div>
         </div>
       </div>
+      <TeamQuickPanel isOpen={isTeamPanelOpen} onClose={() => setIsTeamPanelOpen(false)} />
     </header>
   );
 }
