@@ -45,7 +45,7 @@ export default function UploadPage() {
   const [folderPreview, setFolderPreview] = useState<FolderPreviewItem[]>([]);
   const [folderProgress, setFolderProgress] = useState(0); // 0-100
   const [folderFailedCount, setFolderFailedCount] = useState(0);
-  const progressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -277,38 +277,25 @@ export default function UploadPage() {
       }
     }
 
-    // Build upload queue
-    const filesToUpload = hasFolderFiles
-      ? folderDataRef.current.map(f => ({
-          file: f.file,
-          name: f.file.name,
-          folderId: f.subfolderPath ? (folderIdMap[f.subfolderPath] ?? null) : null,
-          isFolder: true,
-        }))
-      : files.map(f => ({ file: f, name: f.name, folderId: selectedDestinationFolderId, isFolder: false }));
-
-    const totalCount = filesToUpload.length;
-
     // Counters (plain variables, not state, for hot-path updates)
     let completedCount = 0;
     let failedCount = 0;
     let fatalError = false;
 
-    // Debounced progress update for folder uploads — max 1 setState per 80ms
-    const scheduleProgressUpdate = hasFolderFiles
-      ? () => {
-          if (progressTimerRef.current) clearTimeout(progressTimerRef.current);
-          progressTimerRef.current = setTimeout(() => {
-            setUploadedCount(completedCount);
-            setFolderProgress(Math.round((completedCount / totalCount) * 100));
-            setFolderFailedCount(failedCount);
-          }, 80);
-        }
-      : () => {};
-
     // Higher concurrency for folder uploads
     const CONCURRENCY = hasFolderFiles ? 10 : 4;
     const MAX_RETRIES = 2;
+
+    // For folder uploads: fixed interval updates every 300ms — no debounce that
+    // blocks updates when files complete faster than the debounce window.
+    if (hasFolderFiles) {
+      const totalCount = folderDataRef.current.length;
+      progressIntervalRef.current = setInterval(() => {
+        setUploadedCount(completedCount);
+        setFolderProgress(Math.round((completedCount / totalCount) * 100));
+        setFolderFailedCount(failedCount);
+      }, 300);
+    }
 
     const uploadOne = async ({
       file,
@@ -370,7 +357,6 @@ export default function UploadPage() {
               setUploadedCount(++completedCount);
             } else {
               completedCount++;
-              scheduleProgressUpdate();
             }
             return;
           }
@@ -389,7 +375,7 @@ export default function UploadPage() {
           if (res.status === 400) {
             hasError = true;
             if (!isFolder) setFileErrors(prev => ({ ...prev, [name]: errMsg }));
-            else { failedCount++; scheduleProgressUpdate(); }
+            else failedCount++;
             return;
           }
 
@@ -401,7 +387,7 @@ export default function UploadPage() {
 
           hasError = true;
           if (!isFolder) setFileErrors(prev => ({ ...prev, [name]: errMsg }));
-          else { failedCount++; scheduleProgressUpdate(); }
+          else failedCount++;
         } catch {
           if (attempt < MAX_RETRIES) {
             await new Promise<void>(r => setTimeout(r, 1500 * (attempt + 1)));
@@ -409,28 +395,45 @@ export default function UploadPage() {
           }
           hasError = true;
           if (!isFolder) setFileErrors(prev => ({ ...prev, [name]: "Erreur réseau" }));
-          else { failedCount++; scheduleProgressUpdate(); }
+          else failedCount++;
         }
         break;
       }
     };
 
-    // Worker pool — CONCURRENCY workers draining the queue
-    const uploadQueue = [...filesToUpload];
-    const workers = Array.from(
-      { length: Math.min(CONCURRENCY, filesToUpload.length) },
-      async () => {
+    // Worker pool — shared index into folderDataRef (no 90k array copy)
+    if (hasFolderFiles) {
+      const allFiles = folderDataRef.current;
+      let queueIndex = 0;
+      const workers = Array.from({ length: Math.min(CONCURRENCY, allFiles.length) }, async () => {
+        while (queueIndex < allFiles.length && !fatalError) {
+          const f = allFiles[queueIndex++];
+          await uploadOne({
+            file: f.file,
+            name: f.file.name,
+            folderId: f.subfolderPath ? (folderIdMap[f.subfolderPath] ?? null) : null,
+            isFolder: true,
+          });
+        }
+      });
+      await Promise.all(workers);
+    } else {
+      const uploadQueue = [...files.map(f => ({ file: f, name: f.name, folderId: selectedDestinationFolderId, isFolder: false }))];
+      const workers = Array.from({ length: Math.min(CONCURRENCY, uploadQueue.length) }, async () => {
         while (uploadQueue.length > 0 && !fatalError) {
           const item = uploadQueue.shift();
           if (item) await uploadOne(item);
         }
-      }
-    );
-    await Promise.all(workers);
+      });
+      await Promise.all(workers);
+    }
 
-    // Final progress flush
+    // Stop interval and do final flush
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
     if (hasFolderFiles) {
-      if (progressTimerRef.current) clearTimeout(progressTimerRef.current);
       setUploadedCount(completedCount);
       setFolderProgress(100);
       setFolderFailedCount(failedCount);
