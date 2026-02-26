@@ -1070,6 +1070,7 @@ const CLASSIFICATION_PROMPT = `Tu es DocuSafe AI. Analyse ce fichier et classifi
 ## NOMMAGE DOSSIERS
 - PRÉCIS: "Cours Informatique", "Factures Amazon", "Photos Vacances Portugal"
 - PAS générique: "Études", "Photos", "Documents"
+- Fichiers .py/.js/.ts/.sh/.sql et tout code source → toujours suggestedFolder="Code" ou "Scripts Python" etc. — jamais une ville ou un nom de personne
 
 ## FORMAT DE RÉPONSE (JSON uniquement, pas de markdown)
 {"documentType":"type_exact","confidence":0.95,"suggestedName":"Nom descriptif","suggestedFolder":"Dossier Précis","folderAction":"use_existing|create_new|create_subfolder","targetFolderId":"id_ou_null","parentFolderId":"id_ou_null","suggestedParentFolder":"Nom du dossier parent à créer si parentFolderId est null sinon null","extractedData":{"date":"2024-01-15","description":"Description courte du contenu"}}`;
@@ -1767,7 +1768,12 @@ Tu DOIS les appliquer dans ton JSON en suivant ces directives :
 ### RAPPELS
 - Cherche TOUJOURS dans l'arborescence existante avant de créer
 - Si tu ne peux pas extraire le critère demandé (patient, fournisseur…) du document : utilise folderAction="create_new" avec suggestedFolder basé sur la règle
-- suggestedParentFolder est OBLIGATOIRE quand folderAction="create_subfolder" et parentFolderId=null`;
+- suggestedParentFolder est OBLIGATOIRE quand folderAction="create_subfolder" et parentFolderId=null
+
+### 🚫 EXCEPTION ABSOLUE — FICHIERS CODE ET SCRIPTS
+Les fichiers avec une extension de code (.py, .js, .ts, .jsx, .tsx, .java, .c, .cpp, .cs, .rb, .php, .go, .rs, .sh, .bash, .sql, .html, .css, .json, .yaml, .yml, .xml) NE SUIVENT PAS les règles de tri ci-dessus.
+Pour ces fichiers : folderAction="create_new", suggestedFolder="Code" (ou sous-catégorie précise : "Scripts Python", "Scripts SQL"…).
+Ne cherche JAMAIS à les rattacher à une ville, un patient ou un fournisseur.`;
   }
 
   if (folderContext) {
