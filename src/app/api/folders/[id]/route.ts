@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -126,6 +127,10 @@ export async function DELETE(
       "folder_deleted",
       folder.name
     );
+
+    // Revalider les pages qui affichent les compteurs de dossiers/documents
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/my-files");
 
     return NextResponse.json({ success: true });
   } catch (error) {

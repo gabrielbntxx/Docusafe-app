@@ -45,6 +45,7 @@ export default function UploadPage() {
   const [folderPreview, setFolderPreview] = useState<FolderPreviewItem[]>([]);
   const [folderProgress, setFolderProgress] = useState(0); // 0-100
   const [folderFailedCount, setFolderFailedCount] = useState(0);
+  const [isBuildingFolders, setIsBuildingFolders] = useState(false);
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [isDragging, setIsDragging] = useState(false);
@@ -239,8 +240,29 @@ export default function UploadPage() {
     let hasError = false;
     const folderIdMap: FolderStructure = {};
 
-    // Build folder structure — parallelized by depth level
+    // Counters declared early so the interval closure can read them
+    let completedCount = 0;
+    let failedCount = 0;
+    let fatalError = false;
+
+    // Higher concurrency for folder uploads
+    const CONCURRENCY = hasFolderFiles ? 10 : 4;
+    const MAX_RETRIES = 2;
+
+    // Start interval NOW — before folder creation — so the display updates
+    // even during the preparation phase (not just after uploads begin).
+    if (hasFolderFiles) {
+      const totalCount = folderDataRef.current.length;
+      progressIntervalRef.current = setInterval(() => {
+        setUploadedCount(completedCount);
+        setFolderProgress(totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0);
+        setFolderFailedCount(failedCount);
+      }, 300);
+    }
+
+    // Build folder structure — parallelized by depth level (max 8 at once per level)
     if (hasFolderFiles && folderName) {
+      setIsBuildingFolders(true);
       const allFolderData = folderDataRef.current;
       const allFolderPaths = new Set<string>();
       for (const f of allFolderData) {
@@ -254,7 +276,6 @@ export default function UploadPage() {
         }
       }
 
-      // Group by depth level, create all folders at same depth in parallel
       const byDepth = new Map<number, string[]>();
       for (const p of allFolderPaths) {
         const depth = p.split("/").length;
@@ -266,35 +287,24 @@ export default function UploadPage() {
       const depths = Array.from(byDepth.keys()).sort((a, b) => a - b);
       for (const depth of depths) {
         const paths = byDepth.get(depth)!;
-        await Promise.all(paths.map(async (folderPath) => {
-          const parts = folderPath.split("/");
-          const name = parts[parts.length - 1];
-          const parentPath = parts.slice(0, -1).join("/") || null;
-          const parentId = parentPath ? (folderIdMap[parentPath] ?? null) : null;
-          const folderId = await createOrGetFolder(name, parentId);
-          if (folderId) folderIdMap[folderPath] = folderId;
-        }));
+        // Cap at 8 parallel folder-creation requests per level to avoid rate-limits
+        const FOLDER_CONCURRENCY = 8;
+        const folderQueue = [...paths];
+        const folderWorkers = Array.from({ length: Math.min(FOLDER_CONCURRENCY, paths.length) }, async () => {
+          while (folderQueue.length > 0) {
+            const folderPath = folderQueue.shift();
+            if (!folderPath) continue;
+            const parts = folderPath.split("/");
+            const name = parts[parts.length - 1];
+            const parentPath = parts.slice(0, -1).join("/") || null;
+            const parentId = parentPath ? (folderIdMap[parentPath] ?? null) : null;
+            const folderId = await createOrGetFolder(name, parentId);
+            if (folderId) folderIdMap[folderPath] = folderId;
+          }
+        });
+        await Promise.all(folderWorkers);
       }
-    }
-
-    // Counters (plain variables, not state, for hot-path updates)
-    let completedCount = 0;
-    let failedCount = 0;
-    let fatalError = false;
-
-    // Higher concurrency for folder uploads
-    const CONCURRENCY = hasFolderFiles ? 10 : 4;
-    const MAX_RETRIES = 2;
-
-    // For folder uploads: fixed interval updates every 300ms — no debounce that
-    // blocks updates when files complete faster than the debounce window.
-    if (hasFolderFiles) {
-      const totalCount = folderDataRef.current.length;
-      progressIntervalRef.current = setInterval(() => {
-        setUploadedCount(completedCount);
-        setFolderProgress(Math.round((completedCount / totalCount) * 100));
-        setFolderFailedCount(failedCount);
-      }, 300);
+      setIsBuildingFolders(false);
     }
 
     const uploadOne = async ({
@@ -945,24 +955,30 @@ export default function UploadPage() {
                       <div className="flex items-center gap-2">
                         <Loader2 className="h-4 w-4 text-violet-600 dark:text-violet-400 animate-spin" />
                         <span className="text-sm font-medium text-violet-700 dark:text-violet-300">
-                          Import en cours…
+                          {isBuildingFolders ? "Création de la structure de dossiers…" : "Import en cours…"}
                         </span>
                       </div>
                       <span className="text-sm text-violet-600 dark:text-violet-400">
-                        {uploadedCount.toLocaleString("fr-FR")} / {folderTotalCount.toLocaleString("fr-FR")}
-                        {folderFailedCount > 0 && (
-                          <span className="ml-2 text-red-500">({folderFailedCount} erreur{folderFailedCount > 1 ? "s" : ""})</span>
+                        {isBuildingFolders ? (
+                          <span>Préparation…</span>
+                        ) : (
+                          <>
+                            {uploadedCount.toLocaleString("fr-FR")} / {folderTotalCount.toLocaleString("fr-FR")}
+                            {folderFailedCount > 0 && (
+                              <span className="ml-2 text-red-500">({folderFailedCount} erreur{folderFailedCount > 1 ? "s" : ""})</span>
+                            )}
+                          </>
                         )}
                       </span>
                     </div>
                     <div className="h-2 w-full overflow-hidden rounded-full bg-violet-200 dark:bg-violet-900">
                       <div
-                        className="h-full bg-gradient-to-r from-violet-500 to-purple-500 transition-all duration-300"
-                        style={{ width: `${folderProgress}%` }}
+                        className={`h-full bg-gradient-to-r from-violet-500 to-purple-500 transition-all duration-300 ${isBuildingFolders ? "animate-pulse" : ""}`}
+                        style={{ width: isBuildingFolders ? "100%" : `${folderProgress}%` }}
                       />
                     </div>
                     <p className="mt-1.5 text-xs text-violet-500 dark:text-violet-400">
-                      {folderProgress}% — {10} uploads en parallèle
+                      {isBuildingFolders ? "Création des dossiers en parallèle…" : `${folderProgress}% — 10 uploads en parallèle`}
                     </p>
                   </div>
                 )}
