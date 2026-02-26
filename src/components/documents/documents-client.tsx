@@ -432,11 +432,16 @@ export function DocumentsClient({
     if (!confirm(`Supprimer ${count} document${count > 1 ? "s" : ""} ?`)) return;
     setIsBulkDeleting(true);
     try {
-      await Promise.all(
-        Array.from(selectedDocuments).map((id) =>
-          fetch(`/api/documents/${id}/delete`, { method: "DELETE" })
-        )
-      );
+      const res = await fetch("/api/documents/bulk-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: Array.from(selectedDocuments) }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Erreur lors de la suppression");
+        return;
+      }
       setSelectedDocuments(new Set());
       setIsSelectionMode(false);
       router.refresh();
