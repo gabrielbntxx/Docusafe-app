@@ -63,14 +63,16 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts      Account[]
-  sessions      Session[]
-  documents     Document[]
-  folders       Folder[]
-  notifications Notification[]
-  teamOwner     User?     @relation("TeamMembers", fields: [teamOwnerId], references: [id])
-  teamMembers   User[]    @relation("TeamMembers")
-  teamInvitations TeamInvitation[]
+  accounts           Account[]
+  sessions           Session[]
+  documents          Document[]
+  folders            Folder[]
+  notifications      Notification[]
+  teamOwner          User?     @relation("TeamMembers", fields: [teamOwnerId], references: [id])
+  teamMembers        User[]    @relation("TeamMembers")
+  teamInvitations    TeamInvitation[]
+  workflowTemplates  WorkflowTemplate[]
+  workflowRuns       WorkflowRun[]
 
   @@index([email])
   @@index([stripeCustomerId])
@@ -127,6 +129,7 @@ model Folder {
   parent      Folder?   @relation("FolderHierarchy", fields: [parentId], references: [id])
   children    Folder[]  @relation("FolderHierarchy")
   documents   Document[]
+  workflowRuns WorkflowRun[]
 
   @@index([userId])
   @@index([parentId])
@@ -173,6 +176,7 @@ model Document {
 
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   folder          Folder?   @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  workflowRuns    WorkflowRun[]
 
   @@index([userId])
   @@index([folderId])
@@ -404,4 +408,52 @@ model TeamInvitation {
   @@index([token])
   @@index([ownerId])
   @@index([email])
+}
+
+// ============================================
+// WORKFLOWS (Business plan)
+// ============================================
+
+model WorkflowTemplate {
+  id           String   @id @default(cuid())
+  userId       String
+  name         String
+  type         String   // INVOICE_VALIDATION | LEAVE_REQUEST | CONTRACT_APPROVAL | DOCUMENT_REVIEW
+  steps        String   @default("[]")
+  // JSON: [{order:1, title:"...", assigneeId:"userId"}]
+  deadlineDays Int      @default(7)
+  reminderDays Int      @default(2)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  runs  WorkflowRun[]
+
+  @@index([userId])
+}
+
+model WorkflowRun {
+  id             String    @id @default(cuid())
+  templateId     String
+  userId         String
+  documentId     String?
+  folderId       String?
+  status         String    @default("in_progress")
+  // in_progress | completed | rejected | cancelled
+  currentStep    Int       @default(0)
+  stepStatuses   String    @default("[]")
+  // JSON: [{order,assigneeId,status:"pending"|"approved"|"rejected",comment?,respondedAt?}]
+  deadline       DateTime?
+  reminderSentAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  template  WorkflowTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document  Document?        @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  folder    Folder?          @relation(fields: [folderId], references: [id], onDelete: SetNull)
+
+  @@index([templateId])
+  @@index([userId])
+  @@index([status])
 }

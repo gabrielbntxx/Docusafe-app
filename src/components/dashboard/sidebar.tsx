@@ -18,6 +18,7 @@ import {
   ArrowLeftRight,
   FilePlus2,
   Image as ImageIcon,
+  GitBranch,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -33,6 +34,7 @@ const navigation: Array<{ nameKey: TranslationKey; href: string; icon: any; tuto
   { nameKey: "requests", href: "/dashboard/requests", icon: FileUp },
   { nameKey: "triageMode", href: "/dashboard/documents?triage=1", icon: ArrowLeftRight },
   { nameKey: "createDocuments", href: "/dashboard/create", icon: FilePlus2, businessOnly: true },
+  { nameKey: "workflow", href: "/dashboard/workflow", icon: GitBranch, businessOnly: true },
   { nameKey: "docubot", href: "/dashboard/docubot", icon: Bot, tutorialId: "docubot-link" },
 ];
 

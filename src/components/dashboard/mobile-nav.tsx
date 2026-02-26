@@ -18,6 +18,7 @@ import {
   FilePlus2,
   Image as ImageIcon,
   Lock,
+  GitBranch,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -26,6 +27,7 @@ import type { TranslationKey } from "@/lib/translations";
 
 const menuItems: Array<{ nameKey: TranslationKey; href: string; icon: React.ElementType; description: string; businessOnly?: boolean }> = [
   { nameKey: "createDocuments", href: "/dashboard/create", icon: FilePlus2, description: "Générez des documents professionnels", businessOnly: true },
+  { nameKey: "workflow", href: "/dashboard/workflow", icon: GitBranch, description: "Validation et approbation de documents", businessOnly: true },
   { nameKey: "myPhotos", href: "/dashboard/photos", icon: ImageIcon, description: "Vos photos et images" },
   { nameKey: "docubot", href: "/dashboard/docubot", icon: Bot, description: "Ton assistant intelligent" },
   { nameKey: "requests", href: "/dashboard/requests", icon: FileUp, description: "Demandes de documents" },

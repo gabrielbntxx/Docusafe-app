@@ -439,6 +439,7 @@ export const translations = {
     // Document Creation (Business)
     createDocuments: "Create",
     createDocumentsDesc: "Generate professional business documents",
+    workflow: "Workflow",
     chooseDocumentType: "Choose a document type",
     docInvoice: "Invoice",
     docQuote: "Quote / Estimate",
@@ -896,6 +897,7 @@ export const translations = {
     // Document Creation (Business)
     createDocuments: "Créer",
     createDocumentsDesc: "Générez des documents professionnels",
+    workflow: "Workflow",
     chooseDocumentType: "Choisissez un type de document",
     docInvoice: "Facture",
     docQuote: "Devis",
