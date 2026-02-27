@@ -5,6 +5,7 @@ import {
   X,
   Share2,
   Folder,
+  FolderOpen,
   FileText,
   Image as ImageIcon,
   File,
@@ -16,6 +17,8 @@ import {
   Music,
   Video,
   Link2,
+  ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 
 type FolderType = {
@@ -23,6 +26,7 @@ type FolderType = {
   name: string;
   color: string;
   documentCount: number;
+  parentId: string | null;
 };
 
 type DocumentType = {
@@ -63,8 +67,8 @@ export function ShareModal({
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
-  // Documents not in any folder
   const uncategorizedDocuments = documents.filter((doc) => !doc.folderId);
 
   const getFileIcon = (fileType: string) => {
@@ -85,6 +89,14 @@ export function ShareModal({
     setSelectedFolders(newSet);
   };
 
+  const toggleExpand = (folderId: string) => {
+    setExpandedFolders(prev => {
+      const next = new Set(prev);
+      if (next.has(folderId)) next.delete(folderId); else next.add(folderId);
+      return next;
+    });
+  };
+
   const toggleDocument = (docId: string) => {
     const newSet = new Set(selectedDocuments);
     if (newSet.has(docId)) {
@@ -93,6 +105,79 @@ export function ShareModal({
       newSet.add(docId);
     }
     setSelectedDocuments(newSet);
+  };
+
+  // Render folders as a collapsible tree (like the Mes Dossiers sidebar)
+  const renderFolderTree = (parentId: string | null, depth: number): React.ReactNode => {
+    const children = folders.filter(f => f.parentId === parentId);
+    if (children.length === 0) return null;
+    return children.map(folder => {
+      const hasChildren = folders.some(f => f.parentId === folder.id);
+      const isExpanded = expandedFolders.has(folder.id);
+      const isSelected = selectedFolders.has(folder.id);
+      return (
+        <div key={folder.id}>
+          <div
+            style={{ paddingLeft: `${8 + depth * 20}px` }}
+            className={`group flex items-center gap-2 rounded-xl pr-2 py-2 transition-all ${
+              isSelected
+                ? "bg-blue-50 ring-1 ring-blue-400 dark:bg-blue-500/10"
+                : "hover:bg-neutral-50 dark:hover:bg-neutral-800/60"
+            }`}
+          >
+            {/* Expand chevron */}
+            <button
+              onClick={(e) => { e.stopPropagation(); if (hasChildren) toggleExpand(folder.id); }}
+              className={`flex h-5 w-5 items-center justify-center flex-shrink-0 rounded text-neutral-400 ${hasChildren ? "hover:bg-neutral-200 dark:hover:bg-neutral-700" : ""}`}
+            >
+              {hasChildren
+                ? (isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />)
+                : <span className="h-3 w-3 block" />}
+            </button>
+
+            {/* Folder icon */}
+            <button
+              onClick={() => toggleFolder(folder.id)}
+              className="flex h-8 w-8 items-center justify-center rounded-lg flex-shrink-0"
+              style={{ backgroundColor: folder.color + "20" }}
+            >
+              {isExpanded
+                ? <FolderOpen className="h-4 w-4" style={{ color: folder.color }} />
+                : <Folder className="h-4 w-4" style={{ color: folder.color }} />}
+            </button>
+
+            {/* Name + count */}
+            <button
+              onClick={() => { toggleFolder(folder.id); if (hasChildren && !isExpanded) toggleExpand(folder.id); }}
+              className="flex-1 min-w-0 text-left"
+            >
+              <p className={`truncate text-sm font-medium ${isSelected ? "text-blue-700 dark:text-blue-400" : "text-neutral-800 dark:text-neutral-200"}`}>
+                {folder.name}
+              </p>
+              <p className="text-xs text-neutral-400">
+                {folder.documentCount} doc{folder.documentCount !== 1 ? "s" : ""}
+                {hasChildren && ` · contient des sous-dossiers`}
+              </p>
+            </button>
+
+            {/* Checkbox */}
+            <button
+              onClick={() => toggleFolder(folder.id)}
+              className={`h-5 w-5 rounded-full border-2 transition-colors flex-shrink-0 ${
+                isSelected
+                  ? "border-blue-500 bg-blue-500"
+                  : "border-neutral-300 dark:border-neutral-600"
+              }`}
+            >
+              {isSelected && <Check className="h-full w-full text-white p-0.5" />}
+            </button>
+          </div>
+
+          {/* Children */}
+          {isExpanded && renderFolderTree(folder.id, depth + 1)}
+        </div>
+      );
+    });
   };
 
   const handleCreateShare = async () => {
@@ -147,6 +232,7 @@ export function ShareModal({
   const handleClose = () => {
     setSelectedFolders(new Set());
     setSelectedDocuments(new Set());
+    setExpandedFolders(new Set());
     setExpiresIn("7d");
     setPassword("");
     setEnablePassword(false);
@@ -245,87 +331,62 @@ export function ShareModal({
                 </div>
               )}
 
-              {/* Folders */}
+              {/* Folders — hierarchical tree */}
               {folders.length > 0 && (
                 <div>
-                  <h4 className="mb-3 text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                    Dossiers
-                  </h4>
-                  <div className="space-y-2">
-                    {folders.map((folder) => (
-                      <button
-                        key={folder.id}
-                        onClick={() => toggleFolder(folder.id)}
-                        className={`flex w-full items-center gap-3 rounded-xl p-3 transition-all ${
-                          selectedFolders.has(folder.id)
-                            ? "bg-blue-50 ring-2 ring-blue-500 dark:bg-blue-500/10"
-                            : "bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700"
-                        }`}
-                      >
-                        <div
-                          className="flex h-10 w-10 items-center justify-center rounded-xl"
-                          style={{ backgroundColor: folder.color + "20" }}
-                        >
-                          <Folder className="h-5 w-5" style={{ color: folder.color }} />
-                        </div>
-                        <div className="flex-1 text-left">
-                          <p className="font-medium text-neutral-900 dark:text-white">
-                            {folder.name}
-                          </p>
-                          <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                            {folder.documentCount} document{folder.documentCount !== 1 ? "s" : ""}
-                          </p>
-                        </div>
-                        <div
-                          className={`h-5 w-5 rounded-full border-2 transition-colors ${
-                            selectedFolders.has(folder.id)
-                              ? "border-blue-500 bg-blue-500"
-                              : "border-neutral-300 dark:border-neutral-600"
-                          }`}
-                        >
-                          {selectedFolders.has(folder.id) && (
-                            <Check className="h-full w-full text-white p-0.5" />
-                          )}
-                        </div>
-                      </button>
-                    ))}
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                      Dossiers
+                    </h4>
+                    {selectedFolders.size > 0 && (
+                      <span className="text-xs text-blue-500 font-medium">
+                        {selectedFolders.size} sélectionné{selectedFolders.size > 1 ? "s" : ""}
+                      </span>
+                    )}
                   </div>
+                  <div className="rounded-2xl bg-neutral-50 dark:bg-neutral-800/40 p-2">
+                    {renderFolderTree(null, 0)}
+                  </div>
+                  <p className="mt-1.5 text-xs text-neutral-400 dark:text-neutral-500">
+                    Sélectionner un dossier inclut automatiquement tous ses sous-dossiers et fichiers.
+                  </p>
                 </div>
               )}
 
               {/* Uncategorized Documents */}
               {uncategorizedDocuments.length > 0 && (
                 <div>
-                  <h4 className="mb-3 text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  <h4 className="mb-2 text-sm font-medium text-neutral-700 dark:text-neutral-300">
                     Documents non classés
                   </h4>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                  <div className="space-y-1 max-h-48 overflow-y-auto rounded-2xl bg-neutral-50 dark:bg-neutral-800/40 p-2">
                     {uncategorizedDocuments.map((doc) => {
                       const Icon = getFileIcon(doc.fileType);
+                      const isSelected = selectedDocuments.has(doc.id);
                       return (
                         <button
                           key={doc.id}
                           onClick={() => toggleDocument(doc.id)}
-                          className={`flex w-full items-center gap-3 rounded-xl p-3 transition-all ${
-                            selectedDocuments.has(doc.id)
-                              ? "bg-blue-50 ring-2 ring-blue-500 dark:bg-blue-500/10"
-                              : "bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700"
+                          className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 transition-all ${
+                            isSelected
+                              ? "bg-blue-50 ring-1 ring-blue-400 dark:bg-blue-500/10"
+                              : "hover:bg-white dark:hover:bg-neutral-800"
                           }`}
                         >
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-100 to-violet-100 dark:from-blue-500/20 dark:to-violet-500/20">
-                            <Icon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-100 to-violet-100 dark:from-blue-500/20 dark:to-violet-500/20 flex-shrink-0">
+                            <Icon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                           </div>
-                          <p className="flex-1 text-left font-medium text-neutral-900 dark:text-white truncate">
+                          <p className="flex-1 text-left text-sm font-medium text-neutral-900 dark:text-white truncate">
                             {doc.displayName}
                           </p>
                           <div
                             className={`h-5 w-5 rounded-full border-2 transition-colors flex-shrink-0 ${
-                              selectedDocuments.has(doc.id)
+                              isSelected
                                 ? "border-blue-500 bg-blue-500"
                                 : "border-neutral-300 dark:border-neutral-600"
                             }`}
                           >
-                            {selectedDocuments.has(doc.id) && (
+                            {isSelected && (
                               <Check className="h-full w-full text-white p-0.5" />
                             )}
                           </div>

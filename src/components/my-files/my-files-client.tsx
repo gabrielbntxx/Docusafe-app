@@ -14,7 +14,6 @@ import {
   X,
   Lock,
   ChevronLeft,
-  ChevronDown,
   ChevronRight,
   Music,
   Video,
@@ -181,10 +180,6 @@ export function MyFilesClient({
 
   // Move folder modal
   const [moveFolderTarget, setMoveFolderTarget] = useState<FolderType | null>(null);
-
-  // Tree view state
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
-  const [uncategorizedExpanded, setUncategorizedExpanded] = useState(false);
 
   // Mobile move menu
   const [movingDocumentId, setMovingDocumentId] = useState<string | null>(null);
@@ -799,195 +794,6 @@ export function MyFilesClient({
   // Mobile: show documents view
   const isMobileDocumentsView = showDocuments;
 
-  // --- Tree view helpers ---
-  const toggleExpand = (folderId: string) => {
-    setExpandedFolders(prev => {
-      const next = new Set(prev);
-      if (next.has(folderId)) next.delete(folderId); else next.add(folderId);
-      return next;
-    });
-  };
-
-  const selectFolderWithDescendants = (folderId: string, select: boolean) => {
-    const descendants = getDescendantFolderIds(folderId, localFolders);
-    const allIds = [folderId, ...descendants];
-    setSelectedFolders(prev => {
-      const next = new Set(prev);
-      allIds.forEach(id => select ? next.add(id) : next.delete(id));
-      return next;
-    });
-    const folderSet = new Set(allIds);
-    setSelectedDocuments(prev => {
-      const next = new Set(prev);
-      localDocuments.filter(d => d.folderId && folderSet.has(d.folderId))
-        .forEach(d => select ? next.add(d.id) : next.delete(d.id));
-      return next;
-    });
-  };
-
-  const renderDocRow = (doc: DocumentType, depth: number) => {
-    const Icon = getFileIcon(doc.fileType);
-    const isSelected = selectedDocuments.has(doc.id);
-    const isDragging = draggedDocument === doc.id;
-    const isMoving = movingDocumentId === doc.id;
-    return (
-      <div
-        key={doc.id}
-        draggable={!isSelectionMode && !isMobile}
-        onDragStart={(e) => !isMobile && handleDragStart(e, doc.id)}
-        onDragEnd={handleDragEnd}
-        onClick={() => isSelectionMode && toggleDocumentSelection(doc.id)}
-        style={{ paddingLeft: `${8 + depth * 20}px` }}
-        className={`group flex items-center gap-2 rounded-xl pr-2 py-1.5 transition-all ${
-          isDragging ? "opacity-50 ring-2 ring-violet-500"
-          : isSelected ? "bg-blue-50 ring-1 ring-blue-400 dark:bg-blue-500/10"
-          : "hover:bg-neutral-100 dark:hover:bg-white/5"
-        } ${isSelectionMode ? "cursor-pointer" : !isMobile ? "cursor-grab active:cursor-grabbing" : ""}`}
-      >
-        {!isSelectionMode && !isMobile && <div className="flex-shrink-0 text-neutral-300 dark:text-neutral-600"><GripVertical className="h-4 w-4" /></div>}
-        {isSelectionMode && (
-          <button onClick={(e) => { e.stopPropagation(); toggleDocumentSelection(doc.id); }} className="flex-shrink-0">
-            {isSelected ? <CheckSquare className="h-4 w-4 text-blue-500" /> : <Square className="h-4 w-4 text-neutral-400" />}
-          </button>
-        )}
-        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-blue-100 to-violet-100 dark:from-blue-500/20 dark:to-violet-500/20 flex-shrink-0">
-          <Icon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <button
-            onClick={(e) => { if (isSelectionMode) { e.stopPropagation(); toggleDocumentSelection(doc.id); } else { e.stopPropagation(); setPreviewDocument(doc); } }}
-            className="truncate text-sm font-medium text-neutral-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left w-full"
-          >{doc.displayName}</button>
-          <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
-            <span>{formatFileSize(doc.sizeBytes)}</span>
-            {isTeam && doc.addedBy && (
-              <span className="flex items-center gap-1" title={`Ajouté par ${doc.addedBy.name}`}>
-                <span className="inline-block h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: doc.addedBy.color }} />
-                <span className="hidden sm:inline truncate max-w-[60px]">{doc.addedBy.name.split(' ')[0]}</span>
-              </span>
-            )}
-          </div>
-        </div>
-        {!isSelectionMode && (
-          <div className="relative flex-shrink-0">
-            <button onClick={(e) => { e.stopPropagation(); setMovingDocumentId(isMoving ? null : doc.id); }} className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700">
-              <MoreVertical className="h-4 w-4" />
-            </button>
-            {isMoving && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setMovingDocumentId(null)} />
-                <div className="absolute right-0 bottom-full z-50 mb-2 w-48 max-h-64 overflow-y-auto rounded-xl border border-neutral-200 bg-white p-2 shadow-2xl dark:border-neutral-700 dark:bg-neutral-800">
-                  <button onClick={() => { setEmailDocId(doc.id); setEmailDocName(doc.displayName); setMovingDocumentId(null); }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-blue-50 dark:text-neutral-300 dark:hover:bg-blue-500/10">
-                    <Send className="h-4 w-4 text-blue-500 flex-shrink-0" /><span className="truncate">{t("sendByEmail")}</span>
-                  </button>
-                  <div className="my-1.5 border-t border-neutral-100 dark:border-neutral-700" />
-                  <div className="mb-2 px-3 py-1.5 text-xs font-medium uppercase tracking-wide text-neutral-400">{t("moveTo")}</div>
-                  <button onClick={() => { handleMoveDocument(doc.id, null); setMovingDocumentId(null); }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700">
-                    <FolderOpen className="h-4 w-4 text-neutral-400 flex-shrink-0" /><span className="truncate">{t("uncategorized")}</span>
-                  </button>
-                  {localFolders.filter(f => f.id !== doc.folderId).map((folder) => (
-                    <button key={folder.id} onClick={() => { if (folder.hasPin && !unlockedFolders.has(folder.id)) { setPendingFolder(folder); (window as any).pendingMoveOperation = { documentId: doc.id, targetFolderId: folder.id }; setMovingDocumentId(null); } else { handleMoveDocument(doc.id, folder.id); setMovingDocumentId(null); } }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700">
-                      <Folder className="h-4 w-4 flex-shrink-0" style={{ color: folder.color }} />
-                      <span className="flex-1 text-left truncate">{folder.name}</span>
-                      {folder.hasPin && <Lock className="h-3 w-3 text-neutral-400 flex-shrink-0" />}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const renderTree = (parentId: string | null, depth: number): React.ReactNode => {
-    const folders = getSubfolders(parentId);
-    if (folders.length === 0) return null;
-    return folders.map(folder => {
-      const isExpanded = expandedFolders.has(folder.id);
-      const docsInFolder = localDocuments.filter(d => d.folderId === folder.id);
-      const hasSubfolders = localFolders.some(f => f.parentId === folder.id);
-      const hasChildren = hasSubfolders || docsInFolder.length > 0;
-      const isFolderSelected = selectedFolders.has(folder.id);
-      return (
-        <div key={folder.id}>
-          <div
-            draggable={!isSelectionMode}
-            onDragStart={(e) => { if (!isSelectionMode) { e.stopPropagation(); handleFolderDragStart(e, folder.id); } }}
-            onDragEnd={handleDragEnd}
-            onDragOver={(e) => !isSelectionMode && handleDragOver(e, folder.id)}
-            onDragLeave={handleDragLeave}
-            onDrop={(e) => !isSelectionMode && handleDrop(e, folder.id)}
-            style={{ paddingLeft: `${8 + depth * 20}px` }}
-            className={`group flex items-center gap-1.5 rounded-xl pr-2 py-1.5 transition-all min-w-0 ${
-              dropTargetFolder === folder.id && (draggedDocument || draggedFolder) ? "bg-violet-100 ring-2 ring-violet-500 dark:bg-violet-500/20"
-              : isFolderSelected ? "bg-blue-50 ring-1 ring-blue-400 dark:bg-blue-500/10"
-              : "hover:bg-neutral-100 dark:hover:bg-white/5"
-            } ${isSelectionMode ? "cursor-pointer" : ""}`}
-          >
-            <button onClick={(e) => { e.stopPropagation(); if (hasChildren) toggleExpand(folder.id); }} className={`flex h-5 w-5 items-center justify-center flex-shrink-0 rounded text-neutral-400 ${hasChildren ? "hover:bg-neutral-200 dark:hover:bg-neutral-700" : ""}`}>
-              {hasChildren ? (isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />) : <span className="h-3 w-3 block" />}
-            </button>
-            {isSelectionMode && (
-              <button onClick={(e) => { e.stopPropagation(); selectFolderWithDescendants(folder.id, !isFolderSelected); }} className="flex-shrink-0">
-                {isFolderSelected ? <CheckSquare className="h-4 w-4 text-blue-500" /> : <Square className="h-4 w-4 text-neutral-400" />}
-              </button>
-            )}
-            <button onClick={(e) => { e.stopPropagation(); if (!isSelectionMode) toggleExpand(folder.id); }} className="flex h-6 w-6 items-center justify-center rounded-lg flex-shrink-0" style={{ backgroundColor: folder.color + "20" }}>
-              {isExpanded ? <FolderOpen className="h-3.5 w-3.5" style={{ color: folder.color }} /> : <Folder className="h-3.5 w-3.5" style={{ color: folder.color }} />}
-            </button>
-            <button onClick={(e) => { e.stopPropagation(); if (!isSelectionMode) toggleExpand(folder.id); }} className="flex-1 min-w-0 text-left">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className={`truncate text-sm font-medium ${isFolderSelected ? "text-blue-700 dark:text-blue-400" : "text-neutral-700 dark:text-neutral-300"}`}>{folder.name}</span>
-                {isTeam && folder.addedBy && <span className="flex-shrink-0 inline-block h-2 w-2 rounded-full" style={{ backgroundColor: folder.addedBy.color }} title={folder.addedBy.name} />}
-              </div>
-            </button>
-            {folder.hasPin && <Lock className="h-3.5 w-3.5 text-neutral-400 flex-shrink-0" />}
-            <button onClick={(e) => { e.stopPropagation(); toggleFavorite(folder.id); }} className={`flex h-7 w-7 items-center justify-center rounded-lg transition-all flex-shrink-0 ${favorites.has(folder.id) ? "text-yellow-500" : "text-neutral-300 lg:opacity-0 lg:group-hover:opacity-100 hover:text-yellow-500 dark:text-neutral-600"}`}>
-              <Star className={`h-3.5 w-3.5 ${favorites.has(folder.id) ? "fill-current" : ""}`} />
-            </button>
-            {!isSelectionMode && <span className="text-xs text-neutral-400 flex-shrink-0 min-w-[1ch] text-right">{folder.documentCount}</span>}
-            <div className="relative flex-shrink-0">
-              <button onClick={(e) => { e.stopPropagation(); setFolderMenuId(folderMenuId === folder.id ? null : folder.id); }} className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 lg:opacity-0 lg:group-hover:opacity-100 transition-all">
-                <MoreVertical className="h-3.5 w-3.5" />
-              </button>
-              {folderMenuId === folder.id && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setFolderMenuId(null)} />
-                  <div className="absolute right-0 top-full z-50 mt-1 w-52 rounded-xl border border-neutral-200 bg-white p-1.5 shadow-2xl dark:border-neutral-700 dark:bg-neutral-800">
-                    <button onClick={(e) => { e.stopPropagation(); setCreatingInParent(folder.id); setIsCreatingFolder(true); setFolderMenuId(null); }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700">
-                      <Plus className="h-4 w-4 text-violet-500" />Sous-dossier
-                    </button>
-                    <button onClick={(e) => { e.stopPropagation(); setRulesFolder(folder); setFolderMenuId(null); }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700">
-                      <Settings2 className="h-4 w-4 text-blue-500" />{t("folderRules")}
-                    </button>
-                    <button onClick={(e) => { e.stopPropagation(); startEditFolder(folder); setFolderMenuId(null); }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700">
-                      <Edit2 className="h-4 w-4 text-neutral-500" />{t("editFolder")}
-                    </button>
-                    <button onClick={(e) => { e.stopPropagation(); setMoveFolderTarget(folder); setFolderMenuId(null); }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700">
-                      <FolderInput className="h-4 w-4 text-orange-500" />Déplacer vers…
-                    </button>
-                    <div className="my-1 border-t border-neutral-100 dark:border-neutral-700" />
-                    <button onClick={(e) => { e.stopPropagation(); handleDeleteFolder(folder.id, folder.name); setFolderMenuId(null); }} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10">
-                      <Trash2 className="h-4 w-4" />{t("delete")}
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-          {isExpanded && (
-            <>
-              {renderTree(folder.id, depth + 1)}
-              {docsInFolder.map(doc => renderDocRow(doc, depth + 1))}
-            </>
-          )}
-        </div>
-      );
-    });
-  };
-
   return (
     <div className="mx-auto max-w-6xl space-y-2 lg:space-y-3">
       {/* Header */}
@@ -1150,137 +956,770 @@ export function MyFilesClient({
         </div>
       )}
 
-      {/* Main Content – Tree View */}
-      <div className="rounded-2xl bg-white p-3 lg:p-4 shadow-lg shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
-        {/* Toolbar row */}
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium uppercase tracking-wide text-neutral-400">Dossiers</span>
-          {(localFolders.length > 0 || localDocuments.length > 0) && (
-            <button
-              onClick={() => isSelectionMode ? cancelSelection() : setIsSelectionMode(true)}
-              className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition-all ${
-                isSelectionMode
-                  ? "bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400"
-                  : "text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 dark:hover:bg-white/5 dark:hover:text-neutral-200"
-              }`}
-            >
-              <CheckSquare className="h-3 w-3" />
-              {isSelectionMode ? "Annuler" : "Sélectionner"}
-            </button>
-          )}
-        </div>
-
-        {/* Selection toolbar */}
-        {isSelectionMode && (selectedDocuments.size > 0 || selectedFolders.size > 0) && (
-          <div className="mb-2 space-y-1.5 rounded-xl bg-blue-50 dark:bg-blue-500/10 p-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                {selectedDocuments.size + selectedFolders.size} sélectionné{selectedDocuments.size + selectedFolders.size > 1 ? "s" : ""}
-              </span>
-              <div className="flex items-center gap-2">
+      {/* Main Content */}
+      <div className="lg:grid lg:gap-6 lg:grid-cols-12">
+        {/* Folders Sidebar */}
+        <div className={`lg:col-span-4 ${isMobileDocumentsView ? 'hidden lg:block' : ''}`}>
+          <div className="rounded-2xl bg-white p-3 lg:p-4 shadow-lg shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
+            {/* Sidebar header with Sélectionner toggle */}
+            {rootFolders.length > 0 && (
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-medium uppercase tracking-wide text-neutral-400">Dossiers</span>
                 <button
-                  onClick={handleBulkDownload}
-                  disabled={isBulkDownloading}
-                  className="flex items-center gap-1.5 rounded-lg bg-blue-500 px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-blue-600 disabled:opacity-50"
+                  onClick={() => isSelectionMode ? cancelSelection() : setIsSelectionMode(true)}
+                  className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition-all ${
+                    isSelectionMode
+                      ? "bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400"
+                      : "text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 dark:hover:bg-white/5 dark:hover:text-neutral-200"
+                  }`}
                 >
-                  {isBulkDownloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-                  ZIP
-                </button>
-                <button
-                  onClick={handleBulkDelete}
-                  disabled={isBulkDeleting}
-                  className="flex items-center gap-1.5 rounded-lg bg-red-500 px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-red-600 disabled:opacity-50"
-                >
-                  {isBulkDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-                  Supprimer
+                  <CheckSquare className="h-3 w-3" />
+                  {isSelectionMode ? "Annuler" : "Sélectionner"}
                 </button>
               </div>
-            </div>
-            <button
-              onClick={() => {
-                const total = localDocuments.length + localFolders.length;
-                const totalSelected = selectedDocuments.size + selectedFolders.size;
-                if (totalSelected === total) {
-                  setSelectedDocuments(new Set());
-                  setSelectedFolders(new Set());
-                } else {
-                  setSelectedFolders(new Set(localFolders.map(f => f.id)));
-                  setSelectedDocuments(new Set(localDocuments.map(d => d.id)));
-                }
-              }}
-              className="flex items-center gap-2 text-xs font-medium text-blue-600 dark:text-blue-400"
-            >
-              <CheckCheck className="h-3.5 w-3.5" />
-              {selectedDocuments.size + selectedFolders.size === localDocuments.length + localFolders.length
-                ? "Tout désélectionner"
-                : "Tout sélectionner"}
-            </button>
-          </div>
-        )}
+            )}
 
-        {/* Empty state */}
-        {localFolders.length === 0 && localDocuments.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-700">
-              <Folder className="h-7 w-7 text-neutral-400 dark:text-neutral-500" />
-            </div>
-            <p className="text-sm font-medium text-neutral-900 dark:text-white">{t("noFoldersYet")}</p>
-            <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">{t("documentsWillAppear")}</p>
-          </div>
-        )}
+            {/* Sidebar selection toolbar */}
+            {isSelectionMode && selectedFolders.size > 0 && (
+              <div className="mb-3 rounded-xl bg-blue-50 dark:bg-blue-500/10 p-2.5 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
+                    {selectedFolders.size} sélectionné{selectedFolders.size > 1 ? "s" : ""}
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={handleBulkDownload}
+                      disabled={isBulkDownloading}
+                      className="flex items-center gap-1 rounded-lg bg-blue-500 px-2 py-1 text-xs font-medium text-white hover:bg-blue-600 disabled:opacity-50"
+                    >
+                      {isBulkDownloading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+                      ZIP
+                    </button>
+                    <button
+                      onClick={handleBulkDelete}
+                      disabled={isBulkDeleting}
+                      className="flex items-center gap-1 rounded-lg bg-red-500 px-2 py-1 text-xs font-medium text-white hover:bg-red-600 disabled:opacity-50"
+                    >
+                      {isBulkDeleting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                      Suppr.
+                    </button>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    if (selectedFolders.size === rootFolders.length) {
+                      setSelectedFolders(new Set());
+                    } else {
+                      setSelectedFolders(new Set(rootFolders.map(f => f.id)));
+                    }
+                  }}
+                  className="flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400"
+                >
+                  <CheckCheck className="h-3 w-3" />
+                  {selectedFolders.size === rootFolders.length ? "Tout désélectionner" : "Tout sélectionner"}
+                </button>
+              </div>
+            )}
 
-        {/* Folder tree */}
-        <div className="space-y-0.5">
-          {renderTree(null, 0)}
-        </div>
-
-        {/* Uncategorized documents */}
-        {localDocuments.filter(d => !d.folderId).length > 0 && (
-          <div className="mt-1">
+            {/* Uncategorized - drop zone */}
             <div
               onDragOver={(e) => !isSelectionMode && handleDragOver(e, null)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => !isSelectionMode && handleDrop(e, null)}
-              style={{ paddingLeft: "8px" }}
-              className={`group flex items-center gap-1.5 rounded-xl pr-2 py-1.5 transition-all ${
+              onClick={() => {
+                if (isSelectionMode) return;
+                setSelectedFolder(null);
+                setShowDocuments(true);
+                setFolderPath([]);
+              }}
+              className={`mb-3 flex w-full items-center gap-3 rounded-xl p-3 transition-all cursor-pointer ${
                 dropTargetFolder === null && draggedDocument
                   ? "bg-violet-100 ring-2 ring-violet-500 dark:bg-violet-500/20"
-                  : "hover:bg-neutral-100 dark:hover:bg-white/5"
+                  : selectedFolder === null && showDocuments
+                  ? "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
+                  : "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-white/5"
               }`}
             >
-              <button
-                onClick={() => setUncategorizedExpanded(v => !v)}
-                className="flex h-5 w-5 items-center justify-center flex-shrink-0 rounded text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700"
-              >
-                {uncategorizedExpanded
-                  ? <ChevronDown className="h-3 w-3" />
-                  : <ChevronRight className="h-3 w-3" />}
-              </button>
-              <button
-                onClick={() => setUncategorizedExpanded(v => !v)}
-                className="flex h-6 w-6 items-center justify-center rounded-lg bg-neutral-100 dark:bg-neutral-700 flex-shrink-0"
-              >
-                {uncategorizedExpanded
-                  ? <FolderOpen className="h-3.5 w-3.5 text-neutral-400 dark:text-neutral-500" />
-                  : <Folder className="h-3.5 w-3.5 text-neutral-400 dark:text-neutral-500" />}
-              </button>
-              <button
-                onClick={() => setUncategorizedExpanded(v => !v)}
-                className="flex-1 min-w-0 text-left"
-              >
-                <span className="text-sm font-medium text-neutral-500 dark:text-neutral-400">{t("uncategorized")}</span>
-              </button>
-              <span className="text-xs text-neutral-400 flex-shrink-0" style={{ marginRight: "28px" }}>
-                {localDocuments.filter(d => !d.folderId).length}
+              <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${
+                selectedFolder === null && showDocuments
+                  ? "bg-blue-100 dark:bg-blue-500/20"
+                  : "bg-neutral-100 dark:bg-neutral-700/50"
+              }`}>
+                <FolderOpen className="h-4 w-4" />
+              </div>
+              <span className="flex-1 text-left font-medium truncate">{t("uncategorized")}</span>
+              <span className="text-sm text-neutral-400 flex-shrink-0">
+                {localDocuments.filter((d) => !d.folderId).length}
               </span>
             </div>
-            {uncategorizedExpanded && (
-              <div className="space-y-0.5 mt-0.5">
-                {localDocuments.filter(d => !d.folderId).map(doc => renderDocRow(doc, 1))}
+
+            {/* Root Folders */}
+            <div className="space-y-2">
+              {rootFolders.map((folder) => {
+                const isRootSelected = selectedFolders.has(folder.id);
+                return (
+                <div
+                  key={folder.id}
+                  draggable={!isSelectionMode}
+                  onDragStart={(e) => { if (!isSelectionMode) { e.stopPropagation(); handleFolderDragStart(e, folder.id); } }}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={(e) => !isSelectionMode && handleDragOver(e, folder.id)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => !isSelectionMode && handleDrop(e, folder.id)}
+                  onClick={() => isSelectionMode && toggleFolderSelection(folder.id)}
+                  className={`group flex items-center gap-2 lg:gap-3 rounded-xl p-2 lg:p-3 transition-all ${
+                    dropTargetFolder === folder.id && (draggedDocument || draggedFolder)
+                      ? "bg-violet-100 ring-2 ring-violet-500 dark:bg-violet-500/20"
+                      : isRootSelected
+                      ? "bg-blue-50 ring-2 ring-blue-500 dark:bg-blue-500/10"
+                      : selectedFolder === folder.id
+                      ? "bg-violet-50 dark:bg-violet-500/10"
+                      : "hover:bg-neutral-100 dark:hover:bg-white/5"
+                  } ${isSelectionMode ? "cursor-pointer" : ""}`}
+                >
+                  {/* Checkbox */}
+                  {isSelectionMode && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleFolderSelection(folder.id); }}
+                      className="flex-shrink-0"
+                    >
+                      {isRootSelected ? (
+                        <CheckSquare className="h-5 w-5 text-blue-500" />
+                      ) : (
+                        <Square className="h-5 w-5 text-neutral-400" />
+                      )}
+                    </button>
+                  )}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); if (!isSelectionMode) openFolder(folder); }}
+                    className="flex h-7 w-7 lg:h-8 lg:w-8 items-center justify-center rounded-lg flex-shrink-0 hover:ring-2 hover:ring-violet-500/30"
+                    style={{ backgroundColor: folder.color + "20" }}
+                  >
+                    <Folder className="h-3.5 w-3.5 lg:h-4 lg:w-4" style={{ color: folder.color }} />
+                  </button>
+
+                  <button
+                    onClick={(e) => { e.stopPropagation(); if (!isSelectionMode) openFolder(folder); }}
+                    className="flex flex-1 items-center gap-2 text-left min-w-0"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <span className={`block truncate text-sm font-medium ${
+                        selectedFolder === folder.id
+                          ? "text-violet-700 dark:text-violet-400"
+                          : "text-neutral-700 dark:text-neutral-300"
+                      }`}>
+                        {folder.name}
+                      </span>
+                      <div className="flex items-center gap-2 text-xs text-neutral-400">
+                        {isTeam && folder.addedBy && (
+                          <span className="flex items-center gap-1" title={`Ajouté par ${folder.addedBy.name}`}>
+                            <span className="inline-block h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: folder.addedBy.color }} />
+                            <span className="hidden sm:inline truncate max-w-[80px]">{folder.addedBy.name.split(' ')[0]}</span>
+                          </span>
+                        )}
+                        {folder.hasPin && (
+                          <span className="flex items-center gap-1">
+                            <Lock className="h-3 w-3" />
+                            <span className="hidden sm:inline">{t("protected")}</span>
+                          </span>
+                        )}
+                        {(folder.childrenCount ?? 0) > 0 && (
+                          <span className="hidden sm:inline">{folder.childrenCount} sous-dossier{(folder.childrenCount ?? 0) > 1 ? 's' : ''}</span>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* Favorite star - always visible on mobile if favorited */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleFavorite(folder.id);
+                    }}
+                    className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all flex-shrink-0 ${
+                      favorites.has(folder.id)
+                        ? "text-yellow-500"
+                        : "text-neutral-300 lg:opacity-0 lg:group-hover:opacity-100 hover:text-yellow-500 dark:text-neutral-600"
+                    }`}
+                    title={favorites.has(folder.id) ? "Retirer des favoris" : "Ajouter aux favoris"}
+                  >
+                    <Star className={`h-4 w-4 ${favorites.has(folder.id) ? "fill-current" : ""}`} />
+                  </button>
+
+                  <span className="text-xs lg:text-sm text-neutral-400 flex-shrink-0">{folder.documentCount}</span>
+
+                  {/* Folder action menu */}
+                  <div className="relative flex-shrink-0">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFolderMenuId(folderMenuId === folder.id ? null : folder.id);
+                      }}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 lg:opacity-0 lg:group-hover:opacity-100 transition-all"
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </button>
+
+                    {folderMenuId === folder.id && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-40"
+                          onClick={() => setFolderMenuId(null)}
+                        />
+                        <div className="absolute right-0 top-full z-50 mt-1 w-52 rounded-xl border border-neutral-200 bg-white p-1.5 shadow-2xl dark:border-neutral-700 dark:bg-neutral-800">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCreatingInParent(folder.id);
+                              setIsCreatingFolder(true);
+                              setFolderMenuId(null);
+                            }}
+                            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                          >
+                            <Plus className="h-4 w-4 text-violet-500" />
+                            Sous-dossier
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setRulesFolder(folder);
+                              setFolderMenuId(null);
+                            }}
+                            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                          >
+                            <Settings2 className="h-4 w-4 text-blue-500" />
+                            {t("folderRules")}
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startEditFolder(folder);
+                              setFolderMenuId(null);
+                            }}
+                            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                          >
+                            <Edit2 className="h-4 w-4 text-neutral-500" />
+                            {t("editFolder")}
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMoveFolderTarget(folder);
+                              setFolderMenuId(null);
+                            }}
+                            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                          >
+                            <FolderInput className="h-4 w-4 text-orange-500" />
+                            Déplacer vers…
+                          </button>
+                          <div className="my-1 border-t border-neutral-100 dark:border-neutral-700" />
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteFolder(folder.id, folder.name);
+                              setFolderMenuId(null);
+                            }}
+                            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            {t("delete")}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+              })}
+            </div>
+
+            {rootFolders.length === 0 && (
+              <div className="mt-4 rounded-xl border-2 border-dashed border-neutral-200 p-6 text-center dark:border-neutral-700">
+                <Folder className="mx-auto h-8 w-8 text-neutral-300 dark:text-neutral-600" />
+                <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
+                  {t("noFoldersYet")}
+                </p>
               </div>
             )}
           </div>
-        )}
+        </div>
+
+        {/* Folder Contents (subfolders + documents) */}
+        <div className={`lg:col-span-8 ${!isMobileDocumentsView ? 'hidden lg:block' : ''} mt-2 lg:mt-0`}>
+          <div className="rounded-2xl bg-white p-3 lg:p-4 shadow-lg shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
+            {/* Breadcrumb */}
+            {folderPath.length > 0 && (
+              <div className="mb-2 flex items-center gap-1 text-sm overflow-x-auto pb-1">
+                <button
+                  onClick={() => navigateToLevel(-1)}
+                  className="flex items-center gap-1 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 flex-shrink-0"
+                >
+                  <Home className="h-4 w-4" />
+                  <span>Accueil</span>
+                </button>
+                {folderPath.map((folder, index) => (
+                  <div key={folder.id} className="flex items-center gap-1 flex-shrink-0">
+                    <ChevronRight className="h-4 w-4 text-neutral-400" />
+                    <button
+                      onClick={() => navigateToLevel(index)}
+                      className={`truncate max-w-[120px] ${
+                        index === folderPath.length - 1
+                          ? "font-medium text-violet-600 dark:text-violet-400"
+                          : "text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
+                      }`}
+                    >
+                      {folder.name}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Header — 2 rows on mobile to avoid overflow */}
+            <div className="mb-2 space-y-1.5">
+              {/* Row 1 : back + title + count */}
+              <div className="flex items-center gap-2">
+                {selectedFolder && (
+                  <button
+                    onClick={navigateBack}
+                    className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-700"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                )}
+                <h2 className="flex-1 min-w-0 truncate text-base font-semibold text-neutral-900 dark:text-white lg:text-lg">
+                  {currentFolderName || t("uncategorized")}
+                </h2>
+                <span className="flex-shrink-0 rounded-full bg-neutral-100 px-2.5 py-1 text-xs text-neutral-600 dark:bg-neutral-700 dark:text-neutral-400">
+                  {currentSubfolders.length > 0 && `${currentSubfolders.length} · `}
+                  {currentDocuments.length} doc{currentDocuments.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+              {/* Row 2 : action buttons (only when relevant) */}
+              {(selectedFolder || currentDocuments.length > 0) && (
+                <div className="flex items-center gap-2">
+                  {selectedFolder && (
+                    <button
+                      onClick={() => {
+                        setCreatingInParent(selectedFolder);
+                        setIsCreatingFolder(true);
+                      }}
+                      className="flex items-center gap-1.5 rounded-lg bg-violet-100 px-3 py-1.5 text-xs font-medium text-violet-600 hover:bg-violet-200 dark:bg-violet-500/20 dark:text-violet-400"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Sous-dossier
+                    </button>
+                  )}
+                  {(currentDocuments.length > 0 || currentSubfolders.length > 0) && (
+                    <button
+                      onClick={() => {
+                        if (isSelectionMode) {
+                          cancelSelection();
+                        } else {
+                          setIsSelectionMode(true);
+                        }
+                      }}
+                      className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+                        isSelectionMode
+                          ? "bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400"
+                          : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600"
+                      }`}
+                    >
+                      <CheckSquare className="h-3.5 w-3.5" />
+                      {isSelectionMode ? "Annuler" : "Sélectionner"}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Selection toolbar */}
+            {isSelectionMode && (selectedDocuments.size > 0 || selectedFolders.size > 0) && (
+              <div className="mb-2 space-y-1.5 rounded-xl bg-blue-50 dark:bg-blue-500/10 p-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                    {selectedDocuments.size + selectedFolders.size} sélectionné{selectedDocuments.size + selectedFolders.size > 1 ? "s" : ""}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleBulkDownload}
+                      disabled={isBulkDownloading}
+                      className="flex items-center gap-1.5 rounded-lg bg-blue-500 px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-blue-600 disabled:opacity-50"
+                    >
+                      {isBulkDownloading ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Download className="h-3.5 w-3.5" />
+                      )}
+                      ZIP
+                    </button>
+                    <button
+                      onClick={handleBulkDelete}
+                      disabled={isBulkDeleting}
+                      className="flex items-center gap-1.5 rounded-lg bg-red-500 px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-red-600 disabled:opacity-50"
+                    >
+                      {isBulkDeleting ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-3.5 w-3.5" />
+                      )}
+                      Supprimer
+                    </button>
+                  </div>
+                </div>
+                <button
+                  onClick={toggleSelectAll}
+                  className="flex items-center gap-2 text-xs font-medium text-blue-600 dark:text-blue-400"
+                >
+                  <CheckCheck className="h-3.5 w-3.5" />
+                  {selectedDocuments.size + selectedFolders.size === currentDocuments.length + currentSubfolders.length
+                    ? "Tout désélectionner"
+                    : "Tout sélectionner"}
+                </button>
+              </div>
+            )}
+
+            {/* Subfolders */}
+            {currentSubfolders.length > 0 && (
+              <div className="mb-4">
+                <h3 className="text-xs font-medium uppercase tracking-wide text-neutral-400 mb-2">Sous-dossiers</h3>
+                <div className="space-y-2">
+                  {currentSubfolders.map((subfolder) => {
+                    const isFolderSelected = selectedFolders.has(subfolder.id);
+                    return (
+                    <div
+                      key={subfolder.id}
+                      draggable={!isSelectionMode}
+                      onDragStart={(e) => { if (!isSelectionMode) { e.stopPropagation(); handleFolderDragStart(e, subfolder.id); } }}
+                      onDragEnd={handleDragEnd}
+                      onDragOver={(e) => !isSelectionMode && handleDragOver(e, subfolder.id)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => !isSelectionMode && handleDrop(e, subfolder.id)}
+                      onClick={() => isSelectionMode && toggleFolderSelection(subfolder.id)}
+                      className={`group flex items-center gap-2 lg:gap-3 rounded-xl p-2 lg:p-3 transition-all ${
+                        dropTargetFolder === subfolder.id && (draggedDocument || draggedFolder)
+                          ? "bg-violet-100 ring-2 ring-violet-500 dark:bg-violet-500/20"
+                          : isFolderSelected
+                          ? "bg-blue-50 ring-2 ring-blue-500 dark:bg-blue-500/10"
+                          : "bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700/50"
+                      } ${isSelectionMode ? "cursor-pointer" : ""}`}
+                    >
+                      {/* Checkbox */}
+                      {isSelectionMode && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFolderSelection(subfolder.id);
+                          }}
+                          className="flex-shrink-0"
+                        >
+                          {isFolderSelected ? (
+                            <CheckSquare className="h-5 w-5 text-blue-500" />
+                          ) : (
+                            <Square className="h-5 w-5 text-neutral-400" />
+                          )}
+                        </button>
+                      )}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); if (!isSelectionMode) openFolder(subfolder); }}
+                        className="flex h-9 w-9 lg:h-10 lg:w-10 items-center justify-center rounded-xl flex-shrink-0 hover:ring-2 hover:ring-violet-500/30"
+                        style={{ backgroundColor: subfolder.color + "20" }}
+                      >
+                        <Folder className="h-4 w-4 lg:h-5 lg:w-5" style={{ color: subfolder.color }} />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); if (!isSelectionMode) openFolder(subfolder); }}
+                        className="flex-1 min-w-0 text-left"
+                      >
+                        <span className="block truncate text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                          {subfolder.name}
+                        </span>
+                        <span className="text-xs text-neutral-400">
+                          {subfolder.documentCount} doc{subfolder.documentCount !== 1 ? 's' : ''}
+                          {(subfolder.childrenCount ?? 0) > 0 && ` · ${subfolder.childrenCount} sous-dossier${(subfolder.childrenCount ?? 0) > 1 ? 's' : ''}`}
+                        </span>
+                      </button>
+
+                      {/* Favorite star - always visible on mobile if favorited */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFavorite(subfolder.id);
+                        }}
+                        className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all flex-shrink-0 ${
+                          favorites.has(subfolder.id)
+                            ? "text-yellow-500"
+                            : "text-neutral-300 lg:opacity-0 lg:group-hover:opacity-100 hover:text-yellow-500 dark:text-neutral-600"
+                        }`}
+                        title={favorites.has(subfolder.id) ? "Retirer des favoris" : "Ajouter aux favoris"}
+                      >
+                        <Star className={`h-4 w-4 ${favorites.has(subfolder.id) ? "fill-current" : ""}`} />
+                      </button>
+
+                      {subfolder.hasPin && <Lock className="h-4 w-4 text-neutral-400 flex-shrink-0" />}
+
+                      {/* Subfolder action menu */}
+                      <div className="relative flex-shrink-0">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFolderMenuId(folderMenuId === subfolder.id ? null : subfolder.id);
+                          }}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 lg:opacity-0 lg:group-hover:opacity-100 transition-all"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </button>
+
+                        {folderMenuId === subfolder.id && (
+                          <>
+                            <div
+                              className="fixed inset-0 z-40"
+                              onClick={() => setFolderMenuId(null)}
+                            />
+                            <div className="absolute right-0 top-full z-50 mt-1 w-52 rounded-xl border border-neutral-200 bg-white p-1.5 shadow-2xl dark:border-neutral-700 dark:bg-neutral-800">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setCreatingInParent(subfolder.id);
+                                  setIsCreatingFolder(true);
+                                  setFolderMenuId(null);
+                                }}
+                                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                              >
+                                <Plus className="h-4 w-4 text-violet-500" />
+                                Sous-dossier
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setRulesFolder(subfolder);
+                                  setFolderMenuId(null);
+                                }}
+                                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                              >
+                                <Settings2 className="h-4 w-4 text-blue-500" />
+                                {t("folderRules")}
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  startEditFolder(subfolder);
+                                  setFolderMenuId(null);
+                                }}
+                                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                              >
+                                <Edit2 className="h-4 w-4 text-neutral-500" />
+                                {t("editFolder")}
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setMoveFolderTarget(subfolder);
+                                  setFolderMenuId(null);
+                                }}
+                                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                              >
+                                <FolderInput className="h-4 w-4 text-orange-500" />
+                                Déplacer vers…
+                              </button>
+                              <div className="my-1 border-t border-neutral-100 dark:border-neutral-700" />
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteFolder(subfolder.id, subfolder.name);
+                                  setFolderMenuId(null);
+                                }}
+                                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                {t("delete")}
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+                </div>
+              </div>
+            )}
+
+            {/* Documents */}
+            {currentDocuments.length === 0 && currentSubfolders.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-700">
+                  <Folder className="h-7 w-7 text-neutral-400 dark:text-neutral-500" />
+                </div>
+                <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                  {t("noDocumentsInFolder")}
+                </p>
+                <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                  {t("documentsWillAppear")}
+                </p>
+              </div>
+            ) : currentDocuments.length > 0 && (
+              <>
+                {currentSubfolders.length > 0 && (
+                  <h3 className="text-xs font-medium uppercase tracking-wide text-neutral-400 mb-2">Documents</h3>
+                )}
+                <div className="space-y-2">
+                  {currentDocuments.map((doc) => {
+                    const Icon = getFileIcon(doc.fileType);
+                    const isSelected = selectedDocuments.has(doc.id);
+                    const isDragging = draggedDocument === doc.id;
+                    const isMoving = movingDocumentId === doc.id;
+                    return (
+                      <div
+                        key={doc.id}
+                        draggable={!isSelectionMode && !isMobile}
+                        onDragStart={(e) => !isMobile && handleDragStart(e, doc.id)}
+                        onDragEnd={handleDragEnd}
+                        onClick={() => isSelectionMode && toggleDocumentSelection(doc.id)}
+                        className={`group flex items-center gap-2 lg:gap-3 rounded-xl p-2 lg:p-3 transition-all ${
+                          isDragging
+                            ? "opacity-50 ring-2 ring-violet-500"
+                            : isSelected
+                            ? "bg-blue-50 ring-2 ring-blue-500 dark:bg-blue-500/10"
+                            : "bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-800 dark:hover:bg-neutral-700/50"
+                        } ${isSelectionMode ? "cursor-pointer" : !isMobile ? "cursor-grab active:cursor-grabbing" : ""}`}
+                      >
+                        {/* Drag handle - desktop only */}
+                        {!isSelectionMode && !isMobile && (
+                          <div className="flex-shrink-0 text-neutral-300 dark:text-neutral-600">
+                            <GripVertical className="h-4 w-4" />
+                          </div>
+                        )}
+
+                        {/* Checkbox */}
+                        {isSelectionMode && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleDocumentSelection(doc.id);
+                            }}
+                            className="flex-shrink-0"
+                          >
+                            {isSelected ? (
+                              <CheckSquare className="h-5 w-5 text-blue-500" />
+                            ) : (
+                              <Square className="h-5 w-5 text-neutral-400" />
+                            )}
+                          </button>
+                        )}
+
+                        <div className="flex h-9 w-9 lg:h-10 lg:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-100 to-violet-100 dark:from-blue-500/20 dark:to-violet-500/20 flex-shrink-0">
+                          <Icon className="h-4 w-4 lg:h-5 lg:w-5 text-blue-600 dark:text-blue-400" />
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <button
+                            onClick={(e) => {
+                              if (isSelectionMode) {
+                                e.stopPropagation();
+                                toggleDocumentSelection(doc.id);
+                              } else {
+                                e.stopPropagation();
+                                setPreviewDocument(doc);
+                              }
+                            }}
+                            className="truncate text-sm font-medium text-neutral-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left w-full"
+                          >
+                            {doc.displayName}
+                          </button>
+                          <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+                            <span>{formatFileSize(doc.sizeBytes)}</span>
+                            {isTeam && doc.addedBy && (
+                              <span className="flex items-center gap-1" title={`Ajouté par ${doc.addedBy.name}`}>
+                                <span className="inline-block h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: doc.addedBy.color }} />
+                                <span className="hidden sm:inline truncate max-w-[60px]">{doc.addedBy.name.split(' ')[0]}</span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Move menu button - mobile only */}
+                        {!isSelectionMode && (
+                          <div className="relative flex-shrink-0">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setMovingDocumentId(isMoving ? null : doc.id);
+                              }}
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </button>
+
+                            {/* Document actions dropdown menu */}
+                            {isMoving && (
+                              <>
+                                <div
+                                  className="fixed inset-0 z-40"
+                                  onClick={() => setMovingDocumentId(null)}
+                                />
+                                <div className="absolute right-0 bottom-full z-50 mb-2 w-48 max-h-64 overflow-y-auto rounded-xl border border-neutral-200 bg-white p-2 shadow-2xl dark:border-neutral-700 dark:bg-neutral-800">
+                                  {/* Send by email */}
+                                  <button
+                                    onClick={() => {
+                                      setEmailDocId(doc.id);
+                                      setEmailDocName(doc.displayName);
+                                      setMovingDocumentId(null);
+                                    }}
+                                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-blue-50 dark:text-neutral-300 dark:hover:bg-blue-500/10"
+                                  >
+                                    <Send className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                                    <span className="truncate">{t("sendByEmail")}</span>
+                                  </button>
+
+                                  <div className="my-1.5 border-t border-neutral-100 dark:border-neutral-700" />
+
+                                  <div className="mb-2 px-3 py-1.5 text-xs font-medium uppercase tracking-wide text-neutral-400">
+                                    {t("moveTo")}
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      handleMoveDocument(doc.id, null);
+                                      setMovingDocumentId(null);
+                                    }}
+                                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                                  >
+                                    <FolderOpen className="h-4 w-4 text-neutral-400 flex-shrink-0" />
+                                    <span className="truncate">{t("uncategorized")}</span>
+                                  </button>
+                                  {localFolders.filter(f => f.id !== doc.folderId).map((folder) => (
+                                    <button
+                                      key={folder.id}
+                                      onClick={() => {
+                                        if (folder.hasPin && !unlockedFolders.has(folder.id)) {
+                                          setPendingFolder(folder);
+                                          (window as any).pendingMoveOperation = { documentId: doc.id, targetFolderId: folder.id };
+                                          setMovingDocumentId(null);
+                                        } else {
+                                          handleMoveDocument(doc.id, folder.id);
+                                          setMovingDocumentId(null);
+                                        }
+                                      }}
+                                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                                    >
+                                      <Folder className="h-4 w-4 flex-shrink-0" style={{ color: folder.color }} />
+                                      <span className="flex-1 text-left truncate">{folder.name}</span>
+                                      {folder.hasPin && <Lock className="h-3 w-3 text-neutral-400 flex-shrink-0" />}
+                                    </button>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* PIN Modal */}
@@ -1314,6 +1753,7 @@ export function MyFilesClient({
           name: f.name,
           color: f.color,
           documentCount: f.documentCount,
+          parentId: f.parentId,
         }))}
         documents={localDocuments.map((d) => ({
           id: d.id,
