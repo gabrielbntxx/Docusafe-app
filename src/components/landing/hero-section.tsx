@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronRight, Shield, Sparkles } from "lucide-react";
+import { ChevronRight, Sparkles } from "lucide-react";
 
 // Cloud puff helper — a single blurred circle
 function Puff({ w, h, blur, opacity, ml = 0 }: {
@@ -173,30 +173,31 @@ export function HeroSection() {
 
         {/* ── Dashboard screenshot ── */}
         <div className="mt-12 w-full max-w-4xl">
-          <div
-            className="overflow-hidden rounded-2xl shadow-[0_40px_100px_rgba(0,0,0,0.38)] ring-1 ring-white/20"
-            style={{ transform: "perspective(1400px) rotateX(2.5deg)" }}
-          >
-            {/* Browser chrome */}
-            <div className="flex items-center gap-2 bg-[#1a1a1a] px-4 py-3">
-              <div className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
-              <div className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
-              <div className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
-              <div className="ml-4 flex flex-1 items-center gap-2 rounded-md bg-[#2d2d2d] px-3 py-1.5">
-                <Shield className="h-3 w-3 text-emerald-400" />
-                <span className="text-[11px] text-gray-400">app.docusafe.online/dashboard</span>
+          {/* Lueur blanche discrète autour de l'écran */}
+          <div className="relative">
+            <div
+              className="pointer-events-none absolute inset-0 z-10 rounded-2xl"
+              style={{
+                boxShadow:
+                  "inset 0 0 40px 8px rgba(255,255,255,0.18), 0 0 80px 20px rgba(255,255,255,0.10)",
+              }}
+            />
+            <div
+              className="overflow-hidden rounded-2xl shadow-[0_48px_120px_rgba(0,0,0,0.42)]"
+              style={{ transform: "perspective(1400px) rotateX(2.5deg)" }}
+            >
+              {/* Screenshot plein cadre */}
+              <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
+                <Image
+                  src="/dashboard.png"
+                  alt="DocuSafe dashboard"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 896px"
+                  className="object-cover object-top"
+                  quality={100}
+                  priority
+                />
               </div>
-            </div>
-
-            {/* Real screenshot */}
-            <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
-              <Image
-                src="/dashboard.png"
-                alt="DocuSafe dashboard"
-                fill
-                className="object-cover object-top"
-                priority
-              />
             </div>
           </div>
 
