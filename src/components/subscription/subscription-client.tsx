@@ -396,28 +396,34 @@ export function SubscriptionClient({
 
       {/* ── Billing toggle ── */}
       <div className="flex flex-col items-center gap-3">
-        <div className="flex items-center gap-3">
-          <span className={`text-sm font-medium transition-colors ${!billingYearly ? "text-neutral-900 dark:text-white" : "text-neutral-400 dark:text-neutral-500"}`}>
-            Mensuel
-          </span>
+        <div className="inline-flex rounded-2xl bg-neutral-100 p-1 dark:bg-neutral-800">
           <button
-            onClick={() => setBillingYearly(!billingYearly)}
-            className={`relative h-7 w-13 rounded-full transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 ${billingYearly ? "bg-violet-500" : "bg-neutral-200 dark:bg-neutral-700"}`}
-            style={{ width: "52px" }}
-            aria-label="Basculer facturation annuelle"
+            onClick={() => setBillingYearly(false)}
+            className={`rounded-xl px-6 py-2.5 text-sm font-semibold transition-all duration-200 ${
+              !billingYearly
+                ? "bg-white text-neutral-900 shadow-sm dark:bg-neutral-700 dark:text-white"
+                : "text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-300"
+            }`}
           >
-            <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow-md transition-transform duration-300 ${billingYearly ? "translate-x-7" : "translate-x-1"}`} />
+            Mensuel
           </button>
-          <span className={`text-sm font-medium transition-colors ${billingYearly ? "text-neutral-900 dark:text-white" : "text-neutral-400 dark:text-neutral-500"}`}>
+          <button
+            onClick={() => setBillingYearly(true)}
+            className={`flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-semibold transition-all duration-200 ${
+              billingYearly
+                ? "bg-white text-neutral-900 shadow-sm dark:bg-neutral-700 dark:text-white"
+                : "text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-300"
+            }`}
+          >
             Annuel
-          </span>
-          <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all duration-300 ${billingYearly ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 scale-100 opacity-100" : "bg-neutral-100 text-neutral-400 dark:bg-neutral-700 dark:text-neutral-500 scale-95 opacity-70"}`}>
-            -10% · 1 mois offert
-          </span>
+            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">
+              -10%
+            </span>
+          </button>
         </div>
         {billingYearly && (
           <p className="text-xs text-neutral-500 dark:text-neutral-400">
-            Facturé en une fois — économisez jusqu&apos;à <span className="font-semibold text-emerald-600 dark:text-emerald-400">107€ par an</span> sur le plan Business
+            1 mois offert — facturé en une seule fois
           </p>
         )}
       </div>
@@ -432,6 +438,7 @@ export function SubscriptionClient({
             const isGradient = plan.color !== "emerald";
             const monthlyPrice = parseFloat(plan.price);
             const annualTotal = (monthlyPrice * 12 * 0.9).toFixed(2).replace(".", ",");
+            const monthlyEquiv = (monthlyPrice * 0.9).toFixed(2).replace(".", ",");
 
             return (
               <div
@@ -456,16 +463,24 @@ export function SubscriptionClient({
                   {/* Price */}
                   <div>
                     <h3 className={`text-xl font-bold ${isGradient ? "text-white" : "text-neutral-900 dark:text-white"}`}>{plan.name}</h3>
-                    <div className="mt-2 flex items-baseline gap-1.5">
-                      <span className={`text-4xl font-bold ${isGradient ? "text-white" : "text-neutral-900 dark:text-white"}`}>{plan.price}€</span>
-                      <span className={`text-sm ${c.text}`}>/mois</span>
-                    </div>
                     {billingYearly ? (
-                      <p className={`mt-1 text-xs font-semibold ${isGradient ? "text-white/80" : "text-emerald-600 dark:text-emerald-400"}`}>
-                        Soit {annualTotal}€/an — 1 mois offert
-                      </p>
+                      <>
+                        <div className="mt-2 flex items-baseline gap-1.5">
+                          <span className={`text-4xl font-bold ${isGradient ? "text-white" : "text-neutral-900 dark:text-white"}`}>{annualTotal}€</span>
+                          <span className={`text-sm ${c.text}`}>/an</span>
+                        </div>
+                        <p className={`mt-1 text-xs font-medium ${isGradient ? "text-white/70" : "text-emerald-600 dark:text-emerald-400"}`}>
+                          soit {monthlyEquiv}€/mois · 1 mois offert
+                        </p>
+                      </>
                     ) : (
-                      <p className={`mt-1 text-xs ${c.text}`}>{plan.tagline}</p>
+                      <>
+                        <div className="mt-2 flex items-baseline gap-1.5">
+                          <span className={`text-4xl font-bold ${isGradient ? "text-white" : "text-neutral-900 dark:text-white"}`}>{plan.price}€</span>
+                          <span className={`text-sm ${c.text}`}>/mois</span>
+                        </div>
+                        <p className={`mt-1 text-xs ${c.text}`}>{plan.tagline}</p>
+                      </>
                     )}
                   </div>
 
