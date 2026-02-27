@@ -348,7 +348,7 @@ export function SubscriptionClient({
           Choisissez votre plan
         </h1>
         <p className="mt-3 text-sm text-neutral-500 dark:text-neutral-400 sm:text-base max-w-xl mx-auto">
-          Toute la puissance d'une GED intelligente — stockage chiffré, IA, workflows d'approbation et génération de documents.
+          {"Toute la puissance d'une GED intelligente — stockage chiffré, IA, workflows d'approbation et génération de documents."}
         </p>
       </div>
 
@@ -668,7 +668,7 @@ export function SubscriptionClient({
           <div>
             <h4 className="text-sm font-medium text-emerald-800 dark:text-emerald-300">Plan Étudiant — 5€/mois</h4>
             <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-400">
-              Réservé aux 18-25 ans. Accès complet aux fonctionnalités essentielles avec 1 To de stockage, analyses IA illimitées et DocuBot. Vérification par email universitaire ou justificatif d'étudiant.
+              {"Réservé aux 18-25 ans. Accès complet aux fonctionnalités essentielles avec 1 To de stockage, analyses IA illimitées et DocuBot. Vérification par email universitaire ou justificatif d'étudiant."}
             </p>
           </div>
         </div>
