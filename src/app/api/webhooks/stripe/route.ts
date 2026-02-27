@@ -16,10 +16,16 @@ const stripe = process.env.STRIPE_SECRET_KEY
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "";
 
 // Map Stripe Price IDs to plan types (server-side source of truth)
+// Each plan has a monthly and an annual price ID — both must be listed
 const PRICE_TO_PLAN: Record<string, string> = {
+  // Monthly
   [process.env.STRIPE_PRICE_STUDENT || ""]: "STUDENT",
   [process.env.STRIPE_PRICE_PRO || ""]: "PRO",
   [process.env.STRIPE_PRICE_BUSINESS || ""]: "BUSINESS",
+  // Annual
+  [process.env.STRIPE_PRICE_STUDENT_ANNUAL || ""]: "STUDENT",
+  [process.env.STRIPE_PRICE_PRO_ANNUAL || ""]: "PRO",
+  [process.env.STRIPE_PRICE_BUSINESS_ANNUAL || ""]: "BUSINESS",
 };
 
 function maskEmail(email: string): string {
