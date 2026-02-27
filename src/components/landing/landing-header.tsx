@@ -28,9 +28,9 @@ export function LandingHeader() {
           : ""
       }`}
     >
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-8">
+      <div className="flex h-16 w-full items-center justify-between px-4 md:px-6">
 
-        {/* Logo */}
+        {/* Logo — collé en haut à gauche */}
         <Link href="/" className="flex items-center gap-2.5 flex-shrink-0">
           <div
             className={`flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl transition-all duration-300 ${
@@ -50,7 +50,7 @@ export function LandingHeader() {
           </span>
         </Link>
 
-        {/* Nav links */}
+        {/* Nav links — centre */}
         <nav className="hidden lg:flex items-center gap-0.5">
           {NAV_ITEMS.map((item) => (
             <Link
@@ -67,11 +67,11 @@ export function LandingHeader() {
           ))}
         </nav>
 
-        {/* CTAs */}
-        <div className="flex items-center gap-2">
+        {/* CTAs — collés en haut à droite, toujours visibles */}
+        <div className="flex items-center gap-2 flex-shrink-0">
           <Link
             href="/login"
-            className={`hidden sm:block px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 ${
+            className={`px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 ${
               scrolled
                 ? "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                 : "text-white/85 hover:text-white hover:bg-white/12"
@@ -87,8 +87,7 @@ export function LandingHeader() {
                 : "bg-white/20 text-white backdrop-blur-sm ring-1 ring-white/35 hover:bg-white/30 shadow-md"
             }`}
           >
-            <span className="hidden md:inline">Essayer DocuSafe maintenant</span>
-            <span className="md:hidden">Essayer</span>
+            Essayer maintenant
           </Link>
         </div>
 
