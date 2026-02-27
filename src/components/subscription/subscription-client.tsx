@@ -431,9 +431,7 @@ export function SubscriptionClient({
             const c = planColorMap[plan.color];
             const isGradient = plan.color !== "emerald";
             const monthlyPrice = parseFloat(plan.price);
-            const annualMonthlyPrice = Math.round(monthlyPrice * 0.9 * 10) / 10;
-            const annualTotal = Math.round(monthlyPrice * 0.9 * 12);
-            const displayedPrice = billingYearly ? annualMonthlyPrice.toString().replace(".", ",") : plan.price;
+            const annualTotal = (monthlyPrice * 12 * 0.9).toFixed(2).replace(".", ",");
 
             return (
               <div
@@ -459,17 +457,12 @@ export function SubscriptionClient({
                   <div>
                     <h3 className={`text-xl font-bold ${isGradient ? "text-white" : "text-neutral-900 dark:text-white"}`}>{plan.name}</h3>
                     <div className="mt-2 flex items-baseline gap-1.5">
-                      {billingYearly && (
-                        <span className={`text-lg font-medium line-through ${isGradient ? "text-white/40" : "text-neutral-300 dark:text-neutral-600"}`}>
-                          {plan.price}€
-                        </span>
-                      )}
-                      <span className={`text-4xl font-bold ${isGradient ? "text-white" : "text-neutral-900 dark:text-white"}`}>{displayedPrice}€</span>
+                      <span className={`text-4xl font-bold ${isGradient ? "text-white" : "text-neutral-900 dark:text-white"}`}>{plan.price}€</span>
                       <span className={`text-sm ${c.text}`}>/mois</span>
                     </div>
                     {billingYearly ? (
-                      <p className={`mt-1 text-xs font-medium ${isGradient ? "text-white/70" : "text-emerald-600 dark:text-emerald-400"}`}>
-                        Soit {annualTotal}€/an · 1 mois offert
+                      <p className={`mt-1 text-xs font-semibold ${isGradient ? "text-white/80" : "text-emerald-600 dark:text-emerald-400"}`}>
+                        Soit {annualTotal}€/an — 1 mois offert
                       </p>
                     ) : (
                       <p className={`mt-1 text-xs ${c.text}`}>{plan.tagline}</p>
