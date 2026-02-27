@@ -194,6 +194,7 @@ const PLANS = [
     badge: "Étudiant",
     color: "emerald",
     stripeLink: "https://buy.stripe.com/9B65kE5Uoba7b9V10NgYU0b",
+    annualStripeLink: "https://buy.stripe.com/4gM28sbeI91Z6TF5h3gYU0c",
     highlights: [
       "1 To de stockage sécurisé",
       "Analyses IA illimitées",
@@ -214,6 +215,7 @@ const PLANS = [
     badge: "Recommandé",
     color: "violet",
     stripeLink: "https://buy.stripe.com/7sYaEYdmQba7fqb8tfgYU0a",
+    annualStripeLink: "https://buy.stripe.com/fZu00k4QkcebcdZbFrgYU0d",
     highlights: [
       "2 To de stockage",
       "Tri automatique IA dans les dossiers",
@@ -235,6 +237,7 @@ const PLANS = [
     badge: "Entreprise",
     color: "amber",
     stripeLink: "https://buy.stripe.com/6oU5kEaaEa631zl4cZgYU09",
+    annualStripeLink: "https://buy.stripe.com/00w6oIciMemj7XJdNzgYU0e",
     highlights: [
       "4 To de stockage",
       "5 membres d'équipe (extensible)",
@@ -501,9 +504,9 @@ export function SubscriptionClient({
                     <button disabled className={`w-full rounded-xl py-3 text-sm font-semibold ${isGradient ? "bg-white/20 text-white" : "bg-neutral-100 text-neutral-400 dark:bg-neutral-700 dark:text-neutral-500"}`}>
                       Plan actuel
                     </button>
-                  ) : canUpgradeToPlan && plan.stripeLink ? (
+                  ) : canUpgradeToPlan && (billingYearly ? plan.annualStripeLink : plan.stripeLink) ? (
                     <a
-                      href={`${plan.stripeLink}?client_reference_id=${encodeURIComponent(userId)}&prefilled_email=${encodeURIComponent(userEmail)}`}
+                      href={`${billingYearly ? plan.annualStripeLink : plan.stripeLink}?client_reference_id=${encodeURIComponent(userId)}&prefilled_email=${encodeURIComponent(userEmail)}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className={`flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold transition-all active:scale-[0.98] ${c.btn}`}
