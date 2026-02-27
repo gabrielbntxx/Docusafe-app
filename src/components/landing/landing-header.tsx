@@ -5,8 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 
 const NAV_ITEMS = [
-  { label: "Solutions", href: "#" },
-  { label: "Ressources", href: "#" },
+  { label: "Produit", href: "#" },
+  { label: "IA", href: "#" },
   { label: "Entreprise", href: "#" },
   { label: "Tarifs", href: "/dashboard/subscription" },
 ];

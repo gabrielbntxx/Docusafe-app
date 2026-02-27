@@ -2,7 +2,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { LandingHeader } from "@/components/landing/landing-header";
 import { HeroSection } from "@/components/landing/hero-section";
-import { StatsBar } from "@/components/landing/stats-bar";
 import { FinalCta } from "@/components/landing/final-cta";
 
 export default function Home() {
@@ -14,9 +13,6 @@ export default function Home() {
 
       {/* ─── Hero ─── */}
       <HeroSection />
-
-      {/* ─── Stats bar ─── */}
-      <StatsBar />
 
       {/* ─── Final CTA ─── */}
       <FinalCta />
