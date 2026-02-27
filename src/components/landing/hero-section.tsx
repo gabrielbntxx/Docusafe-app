@@ -172,32 +172,31 @@ export function HeroSection() {
         </div>
 
         {/* ── Dashboard screenshot ── */}
-        <div className="mt-12 w-full max-w-4xl">
-          {/* Lueur blanche discrète autour de l'écran */}
+        <div className="mt-12 w-full max-w-5xl">
           <div className="relative">
+            {/* Lueur blanche discrète sur les bords */}
             <div
               className="pointer-events-none absolute inset-0 z-10 rounded-2xl"
               style={{
-                boxShadow:
-                  "inset 0 0 40px 8px rgba(255,255,255,0.18), 0 0 80px 20px rgba(255,255,255,0.10)",
+                boxShadow: "inset 0 0 32px 6px rgba(255,255,255,0.14), 0 0 60px 16px rgba(255,255,255,0.08)",
               }}
             />
+            {/* Image pleine résolution, aucun recadrage */}
             <div
-              className="overflow-hidden rounded-2xl shadow-[0_48px_120px_rgba(0,0,0,0.42)]"
-              style={{ transform: "perspective(1400px) rotateX(2.5deg)" }}
+              className="overflow-hidden rounded-2xl"
+              style={{
+                boxShadow: "0 32px 80px rgba(0,0,0,0.40), 0 8px 24px rgba(0,0,0,0.20)",
+              }}
             >
-              {/* Screenshot plein cadre */}
-              <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
-                <Image
-                  src="/dashboard.png"
-                  alt="DocuSafe dashboard"
-                  fill
-                  sizes="(max-width: 768px) 100vw, 896px"
-                  className="object-cover object-top"
-                  quality={100}
-                  priority
-                />
-              </div>
+              <Image
+                src="/dashboard.png"
+                alt="DocuSafe dashboard"
+                width={1903}
+                height={1043}
+                style={{ width: "100%", height: "auto", display: "block" }}
+                quality={100}
+                priority
+              />
             </div>
           </div>
 
