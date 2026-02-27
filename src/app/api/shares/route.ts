@@ -10,6 +10,18 @@ function generateShareToken(): string {
   return crypto.randomBytes(32).toString("hex");
 }
 
+// Recursively collect all descendant folder IDs
+async function collectDescendantFolderIds(folderId: string, userId: string): Promise<string[]> {
+  const children = await db.folder.findMany({
+    where: { parentId: folderId, userId },
+    select: { id: true },
+  });
+  if (children.length === 0) return [];
+  const childIds = children.map(c => c.id);
+  const deeper = await Promise.all(childIds.map(id => collectDescendantFolderIds(id, userId)));
+  return [...childIds, ...deeper.flat()];
+}
+
 // POST - Create a new share link
 export async function POST(req: Request) {
   try {
@@ -72,7 +84,30 @@ export async function POST(req: Request) {
       }
     }
 
-    // Verify ownership of documents
+    // Expand folderIds to include all descendant subfolders recursively
+    const allFolderIds = new Set<string>(folderIds || []);
+    if (folderIds && folderIds.length > 0) {
+      for (const folderId of folderIds) {
+        const descendants = await collectDescendantFolderIds(folderId, session.user.id);
+        descendants.forEach(id => allFolderIds.add(id));
+      }
+    }
+
+    // Auto-include all documents inside the expanded folder set
+    const allDocumentIds = new Set<string>(documentIds || []);
+    if (allFolderIds.size > 0) {
+      const docsInFolders = await db.document.findMany({
+        where: {
+          folderId: { in: Array.from(allFolderIds) },
+          userId: session.user.id,
+          deletedAt: null,
+        },
+        select: { id: true },
+      });
+      docsInFolders.forEach(d => allDocumentIds.add(d.id));
+    }
+
+    // Verify ownership of explicitly provided documents
     if (documentIds && documentIds.length > 0) {
       const documents = await db.document.findMany({
         where: {
@@ -108,12 +143,8 @@ export async function POST(req: Request) {
         expiresAt,
         items: {
           create: [
-            ...(folderIds || []).map((folderId: string) => ({
-              folderId,
-            })),
-            ...(documentIds || []).map((documentId: string) => ({
-              documentId,
-            })),
+            ...Array.from(allFolderIds).map((folderId: string) => ({ folderId })),
+            ...Array.from(allDocumentIds).map((documentId: string) => ({ documentId })),
           ],
         },
       },
