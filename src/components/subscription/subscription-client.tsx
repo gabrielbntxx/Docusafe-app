@@ -590,16 +590,17 @@ export function SubscriptionClient({
         {/* Sticky header */}
         <div className="rounded-2xl overflow-hidden bg-white shadow-xl shadow-black/5 dark:bg-neutral-800/50 dark:shadow-none">
           {/* Column headers */}
-          <div className="grid grid-cols-5 border-b border-neutral-100 dark:border-neutral-700/50 bg-neutral-50 dark:bg-neutral-800">
+          <div className="grid grid-cols-4 border-b border-neutral-100 dark:border-neutral-700/50 bg-neutral-50 dark:bg-neutral-800">
             <div className="p-3 sm:p-4 text-xs font-semibold uppercase tracking-wide text-neutral-400">Fonctionnalité</div>
-            {(["FREE", "STUDENT", "PRO", "BUSINESS"] as PlanType[]).map((p) => {
+            {(["STUDENT", "PRO", "BUSINESS"] as PlanType[]).map((p) => {
               const isCurrent = currentPlan === p;
               const labels: Record<PlanType, string> = { FREE: "Gratuit", STUDENT: "Étudiant", PRO: "Pro", BUSINESS: "Business" };
               const colors: Record<PlanType, string> = { FREE: "text-neutral-500", STUDENT: "text-emerald-500", PRO: "text-violet-500", BUSINESS: "text-amber-500" };
               return (
-                <div key={p} className={`p-3 sm:p-4 text-center ${isCurrent ? "bg-blue-50 dark:bg-blue-500/10" : ""}`}>
+                <div key={p} className={`p-3 sm:p-4 text-center ${isCurrent ? "bg-blue-50 dark:bg-blue-500/10" : p === "BUSINESS" ? "bg-amber-50/40 dark:bg-amber-500/5" : ""}`}>
                   <p className={`text-xs font-bold ${colors[p]}`}>{labels[p]}</p>
                   {isCurrent && <span className="mt-0.5 inline-block rounded-full bg-blue-500 px-2 py-0.5 text-[9px] font-semibold text-white">Actuel</span>}
+                  {p === "BUSINESS" && !isCurrent && <span className="mt-0.5 inline-block rounded-full bg-amber-500 px-2 py-0.5 text-[9px] font-semibold text-white">B2B</span>}
                 </div>
               );
             })}
@@ -613,18 +614,16 @@ export function SubscriptionClient({
                 {/* Category header */}
                 <button
                   onClick={() => setOpenCategory(isOpen ? null : group.category)}
-                  className="w-full grid grid-cols-5 items-center hover:bg-neutral-50 dark:hover:bg-neutral-700/20 transition-colors"
+                  className="w-full flex items-center justify-between px-3 sm:px-4 py-3 sm:py-4 hover:bg-neutral-50 dark:hover:bg-neutral-700/20 transition-colors cursor-pointer"
                 >
-                  <div className="col-span-5 flex items-center justify-between px-3 sm:px-4 py-3 sm:py-4">
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-neutral-100 dark:bg-neutral-700">
-                        <group.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-neutral-500 dark:text-neutral-400" />
-                      </div>
-                      <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">{group.category}</span>
-                      <span className="rounded-full bg-neutral-100 dark:bg-neutral-700 px-2 py-0.5 text-[10px] text-neutral-500 dark:text-neutral-400">{group.rows.length}</span>
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-neutral-100 dark:bg-neutral-700">
+                      <group.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-neutral-500 dark:text-neutral-400" />
                     </div>
-                    <ChevronDown className={`h-4 w-4 text-neutral-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                    <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">{group.category}</span>
+                    <span className="rounded-full bg-neutral-100 dark:bg-neutral-700 px-2 py-0.5 text-[10px] text-neutral-500 dark:text-neutral-400">{group.rows.length}</span>
                   </div>
+                  <ChevronDown className={`h-4 w-4 text-neutral-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
                 </button>
 
                 {/* Rows */}
@@ -633,17 +632,16 @@ export function SubscriptionClient({
                     {group.rows.map((row, i) => (
                       <div
                         key={i}
-                        className={`grid grid-cols-5 items-center border-t border-neutral-100 dark:border-neutral-700/30 ${row.highlight ? "bg-violet-50/40 dark:bg-violet-500/5" : ""}`}
+                        className={`grid grid-cols-4 items-center border-t border-neutral-100 dark:border-neutral-700/30 hover:bg-neutral-50/70 dark:hover:bg-neutral-700/10 transition-colors ${row.highlight ? "bg-amber-50/30 dark:bg-amber-500/5" : ""}`}
                       >
                         <div className="px-3 sm:px-4 py-2.5 sm:py-3 pl-12 sm:pl-14">
                           <span className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400">{row.label}</span>
-                          {row.highlight && <span className="ml-1.5 inline-flex items-center rounded-full bg-violet-100 dark:bg-violet-500/20 px-1.5 py-0.5 text-[9px] font-medium text-violet-600 dark:text-violet-400"><Star className="mr-0.5 h-2 w-2" />Clé</span>}
+                          {row.highlight && <span className="ml-1.5 inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-500/20 px-1.5 py-0.5 text-[9px] font-medium text-amber-600 dark:text-amber-400"><Star className="mr-0.5 h-2 w-2" />B2B</span>}
                         </div>
-                        {(["free", "student", "pro", "business"] as const).map((p) => {
+                        {(["student", "pro", "business"] as const).map((p) => {
                           const isCurrent = currentPlan === p.toUpperCase() as PlanType;
-                          const isGradient = p === "pro" || p === "business";
                           return (
-                            <div key={p} className={`px-2 py-2.5 sm:py-3 text-center ${isCurrent ? "bg-blue-50/60 dark:bg-blue-500/10" : isGradient && p === "pro" ? "bg-violet-50/30 dark:bg-violet-500/5" : isGradient && p === "business" ? "bg-amber-50/30 dark:bg-amber-500/5" : ""}`}>
+                            <div key={p} className={`px-2 py-2.5 sm:py-3 text-center ${isCurrent ? "bg-blue-50/60 dark:bg-blue-500/10" : p === "pro" ? "bg-violet-50/30 dark:bg-violet-500/5" : p === "business" ? "bg-amber-50/40 dark:bg-amber-500/8" : ""}`}>
                               {renderCell(row[p], false)}
                             </div>
                           );
