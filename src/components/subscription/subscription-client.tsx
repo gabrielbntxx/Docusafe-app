@@ -188,12 +188,12 @@ const PLANS = [
   {
     id: "STUDENT" as PlanType,
     name: "Étudiant",
-    price: "5",
+    price: "7",
     period: "/mois",
     tagline: "Pour les 18-25 ans",
     badge: "Étudiant",
     color: "emerald",
-    stripeLink: "https://buy.stripe.com/eVq9AUaaE2DB3HtbFrgYU00",
+    stripeLink: "https://buy.stripe.com/9B65kE5Uoba7b9V10NgYU0b",
     highlights: [
       "1 To de stockage sécurisé",
       "Analyses IA illimitées",
@@ -213,7 +213,7 @@ const PLANS = [
     tagline: "Pour les professionnels",
     badge: "Recommandé",
     color: "violet",
-    stripeLink: "https://buy.stripe.com/bJe28s5UoemjcdZ24RgYU06",
+    stripeLink: "https://buy.stripe.com/7sYaEYdmQba7fqb8tfgYU0a",
     highlights: [
       "2 To de stockage",
       "Tri automatique IA dans les dossiers",
@@ -234,7 +234,7 @@ const PLANS = [
     tagline: "Pour les entreprises",
     badge: "Entreprise",
     color: "amber",
-    stripeLink: "https://buy.stripe.com/4gMcN62Icfqn4LxcJvgYU07",
+    stripeLink: "https://buy.stripe.com/6oU5kEaaEa631zl4cZgYU09",
     highlights: [
       "4 To de stockage",
       "5 membres d'équipe (extensible)",
@@ -666,7 +666,7 @@ export function SubscriptionClient({
             <GraduationCap className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
           </div>
           <div>
-            <h4 className="text-sm font-medium text-emerald-800 dark:text-emerald-300">Plan Étudiant — 5€/mois</h4>
+            <h4 className="text-sm font-medium text-emerald-800 dark:text-emerald-300">Plan Étudiant — 7€/mois</h4>
             <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-400">
               {"Réservé aux 18-25 ans. Accès complet aux fonctionnalités essentielles avec 1 To de stockage, analyses IA illimitées et DocuBot. Vérification par email universitaire ou justificatif d'étudiant."}
             </p>
