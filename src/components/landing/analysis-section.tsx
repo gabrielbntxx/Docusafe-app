@@ -67,7 +67,45 @@ export function AnalysisSection() {
       <div className="mx-auto max-w-7xl">
         <div className="flex flex-col gap-12 lg:flex-row lg:items-center lg:gap-16 xl:gap-24">
 
-          {/* ══ LEFT — Animation (prend ~60% de l'espace) ══ */}
+          {/* ══ LEFT — Texte éditorial (~40%) ══ */}
+          <div className="w-full lg:flex-[4]">
+
+            <h2
+              className="text-4xl font-extrabold text-gray-900 md:text-5xl"
+              style={{ letterSpacing: "-0.03em", lineHeight: 1.08 }}
+            >
+              L&apos;IA qui lit vos<br />documents<br />pour vous
+            </h2>
+
+            <p className="mt-5 text-lg leading-relaxed text-gray-500">
+              Chaque document importé est analysé en quelques secondes — type, données clés, expiration, classement. Tout est extrait automatiquement.
+            </p>
+
+            {/* Feature list — vertical, pas de grille */}
+            <div className="mt-8 space-y-5">
+              {FEATURES.map((f, i) => (
+                <div key={i} className="flex items-start gap-4">
+                  <div className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-gray-100">
+                    <f.icon className="h-4 w-4 text-gray-700" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">{f.title}</p>
+                    <p className="mt-0.5 text-sm leading-relaxed text-gray-500">{f.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <a
+              href="/register"
+              className="mt-10 inline-flex items-center gap-2 text-sm font-semibold text-blue-600 transition-colors hover:text-blue-800"
+            >
+              Essayer l&apos;analyse IA <ArrowRight className="h-4 w-4" />
+            </a>
+
+          </div>
+
+          {/* ══ RIGHT — Animation (prend ~60% de l'espace) ══ */}
           <div className="w-full lg:flex-[6]">
             <div className="rounded-3xl bg-white p-6 shadow-xl ring-1 ring-gray-100 md:p-8">
 
@@ -214,44 +252,6 @@ export function AnalysisSection() {
               </div>
 
             </div>
-          </div>
-
-          {/* ══ RIGHT — Texte éditorial (~40%) ══ */}
-          <div className="w-full lg:flex-[4]">
-
-            <h2
-              className="text-4xl font-extrabold text-gray-900 md:text-5xl"
-              style={{ letterSpacing: "-0.03em", lineHeight: 1.08 }}
-            >
-              L&apos;IA qui lit vos<br />documents<br />pour vous
-            </h2>
-
-            <p className="mt-5 text-lg leading-relaxed text-gray-500">
-              Chaque document importé est analysé en quelques secondes — type, données clés, expiration, classement. Tout est extrait automatiquement.
-            </p>
-
-            {/* Feature list — vertical, pas de grille */}
-            <div className="mt-8 space-y-5">
-              {FEATURES.map((f, i) => (
-                <div key={i} className="flex items-start gap-4">
-                  <div className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-gray-100">
-                    <f.icon className="h-4 w-4 text-gray-700" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-900">{f.title}</p>
-                    <p className="mt-0.5 text-sm leading-relaxed text-gray-500">{f.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <a
-              href="/register"
-              className="mt-10 inline-flex items-center gap-2 text-sm font-semibold text-blue-600 transition-colors hover:text-blue-800"
-            >
-              Essayer l&apos;analyse IA <ArrowRight className="h-4 w-4" />
-            </a>
-
           </div>
 
         </div>
