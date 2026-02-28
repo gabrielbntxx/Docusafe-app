@@ -4,6 +4,7 @@ import { LandingHeader } from "@/components/landing/landing-header";
 import { HeroSection } from "@/components/landing/hero-section";
 import { AnalysisSection } from "@/components/landing/analysis-section";
 import { DocubotSection } from "@/components/landing/docubot-section";
+import { StorageSection } from "@/components/landing/storage-section";
 import { FinalCta } from "@/components/landing/final-cta";
 
 export default function Home() {
@@ -21,6 +22,9 @@ export default function Home() {
 
       {/* ─── DocuBot ─── */}
       <DocubotSection />
+
+      {/* ─── Storage & Sécurité ─── */}
+      <StorageSection />
 
       {/* ─── Final CTA ─── */}
       <FinalCta />
