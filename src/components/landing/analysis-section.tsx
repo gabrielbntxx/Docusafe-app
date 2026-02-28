@@ -74,7 +74,7 @@ export function AnalysisSection() {
   const isDone       = tick >= ITEMS.length + 2;
 
   return (
-    <section className="bg-gray-50 px-4 py-24 md:py-32">
+    <section className="bg-gray-50 px-4 pt-24 pb-8 md:pt-32 md:pb-10">
 
       <style>{`
         @keyframes scanDown {

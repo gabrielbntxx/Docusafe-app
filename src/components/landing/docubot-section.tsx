@@ -2,7 +2,7 @@ import { Bot, FileText, Search } from "lucide-react";
 
 export function DocubotSection() {
   return (
-    <section className="bg-gray-50 px-4 py-16 md:py-20">
+    <section className="bg-gray-50 px-4 pt-4 pb-16 md:pb-20">
       <div className="mx-auto max-w-5xl">
 
         {/* Rectangle */}
