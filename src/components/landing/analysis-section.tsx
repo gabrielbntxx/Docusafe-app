@@ -150,7 +150,7 @@ export function AnalysisSection() {
             </div>
 
             {/* ══ RIGHT — Animation ══ */}
-            <div className="p-8 md:p-10 lg:flex-[6]">
+            <div className="flex flex-col p-8 md:p-10 lg:flex-[6]">
 
               {/* Status bar */}
               <div className="mb-6 flex items-center justify-between">
@@ -178,10 +178,10 @@ export function AnalysisSection() {
               </div>
 
               {/* Main layout: document left | results right */}
-              <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:gap-6">
+              <div className="flex flex-1 flex-col gap-6 sm:flex-row sm:items-stretch sm:gap-6">
 
                 {/* Document card */}
-                <div className="relative w-full flex-shrink-0 overflow-hidden rounded-2xl bg-gray-50 p-5 ring-1 ring-gray-100 sm:w-52">
+                <div className="relative flex w-full flex-shrink-0 flex-col overflow-hidden rounded-2xl bg-gray-50 p-5 ring-1 ring-gray-100 sm:w-52">
 
                   {/* Scan line */}
                   {isScanning && (
@@ -220,11 +220,13 @@ export function AnalysisSection() {
                   <p className="text-sm font-semibold leading-snug text-gray-800">Contrat_bail_2024.pdf</p>
                   <p className="mt-0.5 text-[10px] text-gray-400">Importé il y a 3s</p>
 
-                  {/* Fake text lines */}
-                  <div className="mt-5 space-y-2">
-                    {[82, 68, 94, 58, 76, 44, 60].map((w, i) => (
-                      <div key={i} className="h-1.5 rounded-full bg-gray-200/60" style={{ width: `${w}%` }} />
-                    ))}
+                  {/* Fake text lines — flex-1 pour remplir l'espace */}
+                  <div className="mt-5 flex flex-1 flex-col justify-between">
+                    <div className="space-y-2">
+                      {[82, 68, 94, 58, 76, 44, 60, 88, 52, 72, 36, 64].map((w, i) => (
+                        <div key={i} className="h-1.5 rounded-full bg-gray-200/60" style={{ width: `${w}%` }} />
+                      ))}
+                    </div>
                   </div>
 
                   {/* Status badge */}
@@ -240,8 +242,8 @@ export function AnalysisSection() {
                 </div>
 
                 {/* Results */}
-                <div className="flex-1">
-                  <div className="grid grid-cols-1 gap-2 min-[480px]:grid-cols-2">
+                <div className="flex flex-1 flex-col">
+                  <div className="grid h-full grid-cols-1 gap-2 min-[480px]:grid-cols-2 content-start">
                     {ITEMS.map((item, i) => {
                       const c = COLORS[item.color];
                       const visible = i < visibleCount;
@@ -284,7 +286,7 @@ export function AnalysisSection() {
               </div>
 
               {/* Bottom — IA signature */}
-              <div className="mt-6 flex items-center justify-between border-t border-gray-100 pt-5">
+              <div className="mt-auto flex items-center justify-between border-t border-gray-100 pt-5">
                 <div className="flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-violet-600">
                     <Sparkles className="h-3.5 w-3.5 text-white" />
