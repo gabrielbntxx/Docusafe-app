@@ -28,10 +28,30 @@ const COLORS: Record<string, { bg: string; icon: string }> = {
 };
 
 const FEATURES = [
-  { icon: ScanLine,   title: "Détection instantanée",  desc: "Type, langue, format — reconnus en millisecondes dès l'import." },
-  { icon: Brain,      title: "Extraction des données", desc: "Dates, montants, parties prenantes — structurés sans aucune saisie." },
-  { icon: Clock,      title: "Alertes d'expiration",   desc: "Rappels automatiques à 60, 30 et 7 jours avant chaque échéance." },
-  { icon: FolderOpen, title: "Classement automatique", desc: "L'IA suggère le bon dossier et y dépose le document pour vous." },
+  {
+    icon: ScanLine,
+    title: "Détection instantanée",
+    desc: "Type, langue, format — reconnus en millisecondes dès l'import.",
+    bg: "bg-blue-50",   iconColor: "text-blue-600",
+  },
+  {
+    icon: Brain,
+    title: "Extraction des données",
+    desc: "Dates, montants, parties prenantes — structurés sans aucune saisie.",
+    bg: "bg-violet-50", iconColor: "text-violet-600",
+  },
+  {
+    icon: Clock,
+    title: "Alertes d'expiration",
+    desc: "Rappels automatiques à 60, 30 et 7 jours avant chaque échéance.",
+    bg: "bg-orange-50", iconColor: "text-orange-600",
+  },
+  {
+    icon: FolderOpen,
+    title: "Classement automatique",
+    desc: "L'IA suggère le bon dossier et y dépose le document pour vous.",
+    bg: "bg-emerald-50", iconColor: "text-emerald-600",
+  },
 ];
 
 // ─── Timing ───────────────────────────────────────────────────────────────────
@@ -41,6 +61,7 @@ const CYCLE   = 13; // 2 scan + 7 items + 4 done
 // ─── Component ────────────────────────────────────────────────────────────────
 export function AnalysisSection() {
   const [tick, setTick] = useState(0);
+  const [openFeature, setOpenFeature] = useState(0); // première ouverte par défaut
 
   useEffect(() => {
     const id = setInterval(() => setTick(t => (t + 1) % CYCLE), TICK_MS);
@@ -65,49 +86,71 @@ export function AnalysisSection() {
       `}</style>
 
       <div className="mx-auto max-w-7xl">
-        <div className="flex flex-col gap-12 lg:flex-row lg:items-center lg:gap-16 xl:gap-24">
 
-          {/* ══ LEFT — Texte éditorial (~40%) ══ */}
-          <div className="w-full lg:flex-[4]">
+        {/* ══ Grand rectangle unique ══ */}
+        <div className="rounded-3xl bg-white shadow-xl ring-1 ring-gray-100">
+          <div className="flex flex-col lg:flex-row lg:items-stretch">
 
-            <h2
-              className="text-4xl font-extrabold text-gray-900 md:text-5xl"
-              style={{ letterSpacing: "-0.03em", lineHeight: 1.08 }}
-            >
-              L&apos;IA qui lit vos<br />documents<br />pour vous
-            </h2>
+            {/* ══ LEFT — Texte éditorial ══ */}
+            <div className="flex flex-col justify-center p-8 md:p-10 lg:flex-[4] lg:border-r lg:border-gray-100">
 
-            <p className="mt-5 text-lg leading-relaxed text-gray-500">
-              Chaque document importé est analysé en quelques secondes — type, données clés, expiration, classement. Tout est extrait automatiquement.
-            </p>
+              <h2
+                className="text-4xl font-extrabold text-gray-900 md:text-5xl"
+                style={{ letterSpacing: "-0.03em", lineHeight: 1.08 }}
+              >
+                L&apos;IA qui lit vos<br />documents<br />pour vous
+              </h2>
 
-            {/* Feature list — vertical, pas de grille */}
-            <div className="mt-8 space-y-5">
-              {FEATURES.map((f, i) => (
-                <div key={i} className="flex items-start gap-4">
-                  <div className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-gray-100">
-                    <f.icon className="h-4 w-4 text-gray-700" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-900">{f.title}</p>
-                    <p className="mt-0.5 text-sm leading-relaxed text-gray-500">{f.desc}</p>
-                  </div>
-                </div>
-              ))}
+              <p className="mt-5 text-base leading-relaxed text-gray-500">
+                Chaque document importé est analysé en quelques secondes — type, données clés, expiration, classement. Tout est extrait automatiquement.
+              </p>
+
+              {/* Feature accordion */}
+              <div className="mt-8 space-y-1">
+                {FEATURES.map((f, i) => {
+                  const isOpen = openFeature === i;
+                  return (
+                    <div key={i} className={`rounded-2xl transition-colors ${isOpen ? "bg-gray-50" : "hover:bg-gray-50/60"}`}>
+                      <button
+                        onClick={() => setOpenFeature(isOpen ? -1 : i)}
+                        className="flex w-full items-center gap-3 px-4 py-3 text-left"
+                      >
+                        <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${f.bg}`}>
+                          <f.icon className={`h-4 w-4 ${f.iconColor}`} />
+                        </div>
+                        <span className={`font-semibold transition-colors ${isOpen ? "text-gray-900" : "text-gray-700"}`}>
+                          {f.title}
+                        </span>
+                      </button>
+                      {/* Description — visible uniquement si ouvert */}
+                      <div
+                        style={{
+                          maxHeight: isOpen ? 80 : 0,
+                          opacity: isOpen ? 1 : 0,
+                          overflow: "hidden",
+                          transition: "max-height 0.28s ease, opacity 0.22s ease",
+                        }}
+                      >
+                        <p className="px-4 pb-4 pl-16 text-sm leading-relaxed text-gray-500">
+                          {f.desc}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <a
+                href="/register"
+                className="mt-8 inline-flex items-center gap-2 px-4 text-sm font-semibold text-blue-600 transition-colors hover:text-blue-800"
+              >
+                Essayer l&apos;analyse IA <ArrowRight className="h-4 w-4" />
+              </a>
+
             </div>
 
-            <a
-              href="/register"
-              className="mt-10 inline-flex items-center gap-2 text-sm font-semibold text-blue-600 transition-colors hover:text-blue-800"
-            >
-              Essayer l&apos;analyse IA <ArrowRight className="h-4 w-4" />
-            </a>
-
-          </div>
-
-          {/* ══ RIGHT — Animation (prend ~60% de l'espace) ══ */}
-          <div className="w-full lg:flex-[6]">
-            <div className="rounded-3xl bg-white p-6 shadow-xl ring-1 ring-gray-100 md:p-8">
+            {/* ══ RIGHT — Animation ══ */}
+            <div className="p-8 md:p-10 lg:flex-[6]">
 
               {/* Status bar */}
               <div className="mb-6 flex items-center justify-between">
@@ -252,9 +295,10 @@ export function AnalysisSection() {
               </div>
 
             </div>
-          </div>
 
+          </div>
         </div>
+
       </div>
     </section>
   );
