@@ -25,10 +25,10 @@ function Puff({ w, h, blur, opacity, ml = 0 }: {
 }
 
 const STATS = [
-  { value: "10 000+", label: "documents analysés" },
-  { value: "100%",    label: "chiffré bout en bout" },
-  { value: "3 plans", label: "pour tous les profils" },
-  { value: "0",       label: "document perdu" },
+  "10 000+ documents analysés",
+  "Chiffrement bout en bout",
+  "3 plans",
+  "0 document perdu",
 ];
 
 export function HeroSection() {
@@ -201,14 +201,12 @@ export function HeroSection() {
           </div>
 
           {/* ── Stats inline — sous le screenshot ── */}
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
             {STATS.map((s, i) => (
-              <div key={i} className="flex items-center gap-4">
-                <span className="text-sm font-semibold text-white/90">
-                  {s.value} <span className="font-normal text-white/55">{s.label}</span>
-                </span>
+              <div key={i} className="flex items-center gap-5">
+                <span className="text-[15px] font-semibold text-white/90">{s}</span>
                 {i < STATS.length - 1 && (
-                  <span className="text-white/25 select-none">·</span>
+                  <span className="text-white/30 select-none">·</span>
                 )}
               </div>
             ))}
