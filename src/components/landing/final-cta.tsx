@@ -15,12 +15,12 @@ const FOLDERS = [
 
 export function FinalCta() {
   return (
-    <section className="px-4 py-20 md:py-28" style={{ background: "#0f172a" }}>
+    <section className="px-4 py-20 md:py-28" style={{ background: "#f1f5f9" }}>
       <div className="mx-auto max-w-5xl">
 
         {/* Titre */}
         <h2
-          className="mb-10 text-4xl font-extrabold text-white md:text-5xl lg:text-6xl"
+          className="mb-10 text-4xl font-extrabold text-gray-900 md:text-5xl lg:text-6xl"
           style={{ letterSpacing: "-0.03em", lineHeight: 1.06 }}
         >
           Essayez gratuitement.
@@ -31,38 +31,36 @@ export function FinalCta() {
           <div className="flex flex-col lg:flex-row lg:items-stretch">
 
             {/* ── LEFT — CTA ── */}
-            <div className="flex flex-col justify-between p-10 lg:flex-[4] lg:border-r lg:border-gray-100">
+            <div className="flex flex-col justify-start gap-5 p-10 lg:flex-[4] lg:border-r lg:border-gray-100">
 
-              {/* Logo */}
-              <div className="mb-10 flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
-                  <Image src="/logo.png" alt="DocuSafe" width={36} height={36} className="object-contain" />
-                </div>
-                <span className="text-base font-bold text-gray-900">DocuSafe</span>
+              {/* Logo seul, plus grand */}
+              <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-md">
+                <Image src="/logo.png" alt="DocuSafe" width={56} height={56} className="object-contain" />
               </div>
 
-              <div>
-                <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-gray-400">
-                  Premiers pas sur DocuSafe
-                </p>
-                <h3
-                  className="mb-4 text-2xl font-extrabold text-gray-900 md:text-3xl"
-                  style={{ letterSpacing: "-0.03em", lineHeight: 1.1 }}
-                >
-                  Votre espace<br />vous attend.
-                </h3>
-                <p className="mb-8 text-sm leading-relaxed text-gray-500">
-                  Créez votre compte gratuit et importez vos premiers documents en moins de 2 minutes.
-                </p>
+              <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">
+                Premiers pas sur DocuSafe
+              </p>
 
+              <h3
+                className="text-2xl font-extrabold text-gray-900 md:text-3xl"
+                style={{ letterSpacing: "-0.03em", lineHeight: 1.1 }}
+              >
+                Votre espace<br />vous attend.
+              </h3>
+
+              <p className="text-sm leading-relaxed text-gray-500">
+                Créez votre compte gratuit et importez vos premiers documents en moins de 2 minutes.
+              </p>
+
+              <div>
                 <Link
                   href="/register"
                   className="inline-flex items-center gap-2 rounded-full bg-gray-900 px-6 py-3.5 text-sm font-bold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:bg-gray-700"
                 >
                   Créer un compte <ChevronRight className="h-4 w-4" />
                 </Link>
-
-                <p className="mt-4 text-xs text-gray-400">
+                <p className="mt-3 text-xs text-gray-400">
                   Aucune carte bancaire · Gratuit pour commencer
                 </p>
               </div>
