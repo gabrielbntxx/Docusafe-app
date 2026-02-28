@@ -85,53 +85,52 @@ export function AnalysisSection() {
         .scan-line { animation: scanDown 1.35s linear infinite; }
       `}</style>
 
-      <div className="mx-auto max-w-7xl">
+      <div className="mx-auto max-w-5xl">
 
         {/* ══ Grand rectangle unique ══ */}
         <div className="rounded-3xl bg-white shadow-xl ring-1 ring-gray-100">
           <div className="flex flex-col lg:flex-row lg:items-stretch">
 
             {/* ══ LEFT — Texte éditorial ══ */}
-            <div className="flex flex-col justify-center p-8 md:p-10 lg:flex-[4] lg:border-r lg:border-gray-100">
+            <div className="flex flex-col justify-center p-7 lg:flex-[4] lg:border-r lg:border-gray-100">
 
               <h2
-                className="text-4xl font-extrabold text-gray-900 md:text-5xl"
-                style={{ letterSpacing: "-0.03em", lineHeight: 1.08 }}
+                className="text-2xl font-extrabold text-gray-900 md:text-3xl"
+                style={{ letterSpacing: "-0.03em", lineHeight: 1.1 }}
               >
                 L&apos;IA qui lit vos<br />documents<br />pour vous
               </h2>
 
-              <p className="mt-5 text-base leading-relaxed text-gray-500">
+              <p className="mt-4 text-sm leading-relaxed text-gray-500">
                 Chaque document importé est analysé en quelques secondes — type, données clés, expiration, classement. Tout est extrait automatiquement.
               </p>
 
               {/* Feature accordion */}
-              <div className="mt-8 space-y-1">
+              <div className="mt-6 space-y-0.5">
                 {FEATURES.map((f, i) => {
                   const isOpen = openFeature === i;
                   return (
-                    <div key={i} className={`rounded-2xl transition-colors ${isOpen ? "bg-gray-50" : "hover:bg-gray-50/60"}`}>
+                    <div key={i} className={`rounded-xl transition-colors ${isOpen ? "bg-gray-50" : "hover:bg-gray-50/60"}`}>
                       <button
                         onClick={() => setOpenFeature(isOpen ? -1 : i)}
-                        className="flex w-full items-center gap-3 px-4 py-3 text-left"
+                        className="flex w-full items-center gap-3 px-3 py-2.5 text-left"
                       >
-                        <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${f.bg}`}>
-                          <f.icon className={`h-4 w-4 ${f.iconColor}`} />
+                        <div className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg ${f.bg}`}>
+                          <f.icon className={`h-3.5 w-3.5 ${f.iconColor}`} />
                         </div>
-                        <span className={`font-semibold transition-colors ${isOpen ? "text-gray-900" : "text-gray-700"}`}>
+                        <span className={`text-sm font-semibold transition-colors ${isOpen ? "text-gray-900" : "text-gray-700"}`}>
                           {f.title}
                         </span>
                       </button>
-                      {/* Description — visible uniquement si ouvert */}
                       <div
                         style={{
-                          maxHeight: isOpen ? 80 : 0,
+                          maxHeight: isOpen ? 72 : 0,
                           opacity: isOpen ? 1 : 0,
                           overflow: "hidden",
                           transition: "max-height 0.28s ease, opacity 0.22s ease",
                         }}
                       >
-                        <p className="px-4 pb-4 pl-16 text-sm leading-relaxed text-gray-500">
+                        <p className="px-3 pb-3 pl-[2.875rem] text-xs leading-relaxed text-gray-500">
                           {f.desc}
                         </p>
                       </div>
@@ -142,7 +141,7 @@ export function AnalysisSection() {
 
               <a
                 href="/register"
-                className="mt-8 inline-flex items-center gap-2 px-4 text-sm font-semibold text-blue-600 transition-colors hover:text-blue-800"
+                className="mt-6 inline-flex items-center gap-2 px-3 text-sm font-semibold text-blue-600 transition-colors hover:text-blue-800"
               >
                 Essayer l&apos;analyse IA <ArrowRight className="h-4 w-4" />
               </a>
@@ -150,7 +149,7 @@ export function AnalysisSection() {
             </div>
 
             {/* ══ RIGHT — Animation ══ */}
-            <div className="flex flex-col p-8 md:p-10 lg:flex-[6]">
+            <div className="flex flex-col justify-center p-7 lg:flex-[6]">
 
               {/* Status bar */}
               <div className="mb-5 flex items-center justify-between">
@@ -177,11 +176,11 @@ export function AnalysisSection() {
                 </div>
               </div>
 
-              {/* Main layout: document left | results right — flex-1 pour remplir */}
-              <div className="flex flex-1 flex-col gap-5 sm:flex-row sm:items-stretch sm:gap-5">
+              {/* Main layout: document left | results right */}
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-5">
 
                 {/* Document card */}
-                <div className="relative flex w-full flex-shrink-0 flex-col overflow-hidden rounded-2xl bg-gray-50 p-5 ring-1 ring-gray-100 sm:w-48">
+                <div className="relative w-full flex-shrink-0 overflow-hidden rounded-2xl bg-gray-50 p-5 ring-1 ring-gray-100 sm:w-44">
 
                   {/* Scan line */}
                   {isScanning && (
@@ -220,15 +219,15 @@ export function AnalysisSection() {
                   <p className="text-sm font-semibold leading-snug text-gray-800">Contrat_bail_2024.pdf</p>
                   <p className="mt-0.5 text-[10px] text-gray-400">Importé il y a 3s</p>
 
-                  {/* Fake text lines — flex-1 pour remplir verticalement */}
-                  <div className="mt-5 flex flex-1 flex-col gap-2 overflow-hidden">
-                    {[82, 68, 94, 58, 76, 44, 60, 88, 52, 72, 36, 64, 80, 48, 70, 90, 38, 62, 84, 55].map((w, i) => (
-                      <div key={i} className="h-1.5 flex-shrink-0 rounded-full bg-gray-200/60" style={{ width: `${w}%` }} />
+                  {/* Fake text lines */}
+                  <div className="mt-5 space-y-2">
+                    {[82, 68, 94, 58, 76, 44, 60].map((w, i) => (
+                      <div key={i} className="h-1.5 rounded-full bg-gray-200/60" style={{ width: `${w}%` }} />
                     ))}
                   </div>
 
                   {/* Status badge */}
-                  <div className="mt-4 flex flex-shrink-0 items-center gap-1.5">
+                  <div className="mt-4 flex items-center gap-1.5">
                     {isScanning ? (
                       <><ScanLine className="h-3 w-3 animate-pulse text-blue-500" /><span className="text-[10px] font-semibold text-blue-600">Lecture…</span></>
                     ) : isDone ? (
@@ -239,12 +238,9 @@ export function AnalysisSection() {
                   </div>
                 </div>
 
-                {/* Results — grille qui remplit toute la hauteur */}
-                <div className="flex flex-1 flex-col">
-                  <div
-                    className="grid flex-1 grid-cols-2 gap-2"
-                    style={{ gridAutoRows: "1fr" }}
-                  >
+                {/* Results */}
+                <div className="flex-1">
+                  <div className="grid grid-cols-2 gap-2">
                     {ITEMS.map((item, i) => {
                       const c = COLORS[item.color];
                       const visible = i < visibleCount;
