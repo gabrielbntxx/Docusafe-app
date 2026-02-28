@@ -73,7 +73,7 @@ export function AnalysisSection() {
   const isDone       = tick >= ITEMS.length + 2;
 
   return (
-    <section className="bg-gray-50 px-4 py-24 md:py-32">
+    <section className="px-4 py-24 md:py-32" style={{ background: "#f7f4ef" }}>
 
       <style>{`
         @keyframes scanDown {
@@ -305,6 +305,14 @@ export function AnalysisSection() {
 
           </div>
         </div>
+
+        {/* Titre en dessous du rectangle */}
+        <h2
+          className="mt-14 text-4xl font-extrabold text-gray-900 md:text-5xl lg:text-6xl"
+          style={{ letterSpacing: "-0.03em", lineHeight: 1.06 }}
+        >
+          Un assistant à la demande.
+        </h2>
 
       </div>
     </section>
