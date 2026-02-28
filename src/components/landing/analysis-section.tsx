@@ -87,6 +87,14 @@ export function AnalysisSection() {
 
       <div className="mx-auto max-w-5xl">
 
+        {/* Titre au-dessus du rectangle */}
+        <h2
+          className="mb-10 text-4xl font-extrabold text-gray-900 md:text-5xl lg:text-6xl"
+          style={{ letterSpacing: "-0.03em", lineHeight: 1.06 }}
+        >
+          L&apos;IA à votre entière<br />disposition
+        </h2>
+
         {/* ══ Grand rectangle unique ══ */}
         <div className="rounded-3xl bg-white shadow-xl ring-1 ring-gray-100">
           <div className="flex flex-col lg:flex-row lg:items-stretch">

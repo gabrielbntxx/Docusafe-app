@@ -28,10 +28,10 @@ export function LandingHeader() {
           : ""
       }`}
     >
-      <div className="flex h-16 w-full items-center justify-between px-4 md:px-6">
+      <div className="grid h-16 w-full grid-cols-3 items-center px-4 md:px-6">
 
         {/* Logo — collé en haut à gauche */}
-        <Link href="/" className="flex items-center gap-2.5 flex-shrink-0">
+        <Link href="/" className="flex items-center gap-2.5 flex-shrink-0 justify-self-start">
           <div
             className={`flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl transition-all duration-300 ${
               scrolled
@@ -50,8 +50,8 @@ export function LandingHeader() {
           </span>
         </Link>
 
-        {/* Nav links — centre */}
-        <nav className="hidden lg:flex items-center gap-0.5">
+        {/* Nav links — parfaitement centré */}
+        <nav className="hidden lg:flex items-center gap-0.5 justify-self-center">
           {NAV_ITEMS.map((item) => (
             <Link
               key={item.label}
@@ -68,7 +68,7 @@ export function LandingHeader() {
         </nav>
 
         {/* CTAs — collés en haut à droite, toujours visibles */}
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-2 flex-shrink-0 justify-self-end">
           <Link
             href="/login"
             className={`px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 ${
