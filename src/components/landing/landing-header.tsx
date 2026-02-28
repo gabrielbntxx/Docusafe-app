@@ -8,7 +8,7 @@ import { Menu, X } from "lucide-react";
 const NAV_ITEMS = [
   { label: "Produit", href: "#" },
   { label: "IA", href: "#" },
-  { label: "Entreprise", href: "#" },
+  { label: "Entreprise", href: "/entreprise" },
   { label: "Tarifs", href: "/dashboard/subscription" },
 ];
 
