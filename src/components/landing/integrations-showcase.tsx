@@ -175,7 +175,7 @@ function SlackVisual() {
           <div>
             <p className="mb-0.5 text-[9px] font-bold text-gray-700">Sophie L. <span className="font-normal text-gray-400">10:14</span></p>
             <div className="rounded-xl rounded-tl-sm bg-white px-3 py-2 shadow-sm ring-1 ring-gray-100">
-              <p className="text-[10px] text-gray-700">J'ai partagé le contrat via DocuSafe 👇</p>
+              <p className="text-[10px] text-gray-700">J&apos;ai partagé le contrat via DocuSafe 👇</p>
             </div>
           </div>
         </div>
@@ -270,7 +270,7 @@ export function IntegrationsShowcase() {
                 className="mb-2 text-2xl font-extrabold text-gray-900 md:text-3xl"
                 style={{ letterSpacing: "-0.03em", lineHeight: 1.1 }}
               >
-                S'intègre à<br />vos outils existants
+                S&apos;intègre à<br />vos outils existants
               </h3>
               <p className="mb-8 text-sm leading-relaxed text-gray-500">
                 Connectez DocuSafe à votre écosystème en quelques minutes, sans configuration complexe.
