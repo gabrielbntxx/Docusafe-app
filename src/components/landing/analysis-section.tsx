@@ -5,6 +5,7 @@ import {
   FileText, Calendar, Banknote, AlertCircle,
   FolderOpen, Sparkles, Users, Check, Loader2,
   ScanLine, Brain, Clock, ArrowRight,
+  MessageCircle, Bell, Search,
 } from "lucide-react";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -306,9 +307,34 @@ export function AnalysisSection() {
           </div>
         </div>
 
+        {/* ── 4 cartes sélecteur ── */}
+        <div className="mt-16">
+          <p className="mb-6 text-sm font-semibold uppercase tracking-widest text-gray-400">
+            Découvrez ce que l&apos;IA de DocuSafe peut faire
+          </p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[
+              { icon: MessageCircle, label: "Questions naturelles",  bg: "bg-violet-50", iconColor: "text-violet-600", border: "border-violet-100" },
+              { icon: FileText,      label: "Résumé instantané",     bg: "bg-blue-50",   iconColor: "text-blue-600",   border: "border-blue-100"   },
+              { icon: Bell,          label: "Alertes proactives",    bg: "bg-orange-50", iconColor: "text-orange-600", border: "border-orange-100" },
+              { icon: Search,        label: "Recherche avancée",     bg: "bg-emerald-50",iconColor: "text-emerald-600",border: "border-emerald-100"},
+            ].map((c, i) => (
+              <div
+                key={i}
+                className={`flex flex-col items-start gap-3 rounded-2xl border bg-white p-4 shadow-sm ${c.border}`}
+              >
+                <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${c.bg}`}>
+                  <c.icon className={`h-4.5 w-4.5 ${c.iconColor}`} />
+                </div>
+                <span className="text-sm font-semibold text-gray-800">{c.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Titre en dessous du rectangle */}
         <h2
-          className="mt-14 text-4xl font-extrabold text-gray-900 md:text-5xl lg:text-6xl"
+          className="mt-10 text-4xl font-extrabold text-gray-900 md:text-5xl lg:text-6xl"
           style={{ letterSpacing: "-0.03em", lineHeight: 1.06 }}
         >
           Un assistant à la demande.
