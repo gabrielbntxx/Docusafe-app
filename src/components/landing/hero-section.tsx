@@ -3,27 +3,209 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronRight } from "lucide-react";
+import {
+  LayoutDashboard, FileText, Image as LucideImage, Folder, Search,
+  FileUp, ArrowLeftRight, Bot, CreditCard, Settings, LogOut,
+  Bell, Upload, HardDrive, Crown, Clock, Eye, Download,
+  Sparkles, ArrowUpRight,
+} from "lucide-react";
 
-// Cloud puff helper — a single blurred circle
+// ─── Puff helper ──────────────────────────────────────────────────────────────
 function Puff({ w, h, blur, opacity, ml = 0 }: {
   w: number; h: number; blur: number; opacity: number; ml?: number;
 }) {
   return (
     <div
       style={{
-        width: w,
-        height: h,
-        borderRadius: "50%",
-        background: "white",
-        filter: `blur(${blur}px)`,
-        opacity,
-        flexShrink: 0,
-        marginLeft: ml,
+        width: w, height: h, borderRadius: "50%", background: "white",
+        filter: `blur(${blur}px)`, opacity, flexShrink: 0, marginLeft: ml,
       }}
     />
   );
 }
 
+// ─── Dashboard Mockup ─────────────────────────────────────────────────────────
+const NAV_ITEMS = [
+  { icon: LayoutDashboard, label: "Dashboard",      active: true  },
+  { icon: FileText,        label: "Mes documents",  active: false },
+  { icon: LucideImage,     label: "Mes photos",     active: false },
+  { icon: Folder,          label: "Mes dossiers",   active: false },
+  { icon: Search,          label: "Recherche",      active: false },
+  { icon: FileUp,          label: "Demandes",       active: false },
+  { icon: ArrowLeftRight,  label: "Triage",         active: false },
+  { icon: Bot,             label: "DocuBot",        active: false },
+];
+
+const BOTTOM_NAV = [
+  { icon: CreditCard, label: "Abonnement"  },
+  { icon: Settings,   label: "Paramètres"  },
+  { icon: LogOut,     label: "Déconnexion" },
+];
+
+const STAT_CARDS = [
+  { label: "Documents", value: "23",     color: "from-blue-500 to-blue-600",     tint: "text-blue-100",    icon: FileText  },
+  { label: "Dossiers",  value: "8",      color: "from-violet-500 to-purple-600", tint: "text-violet-100",  icon: Folder    },
+  { label: "Stockage",  value: "2.4 Go", color: "from-emerald-500 to-teal-600",  tint: "text-emerald-100", icon: HardDrive },
+  { label: "Plan",      value: "FREE",   color: "from-amber-500 to-orange-600",  tint: "text-amber-100",   icon: Crown     },
+];
+
+const RECENT_DOCS = [
+  { name: "Contrat de bail 2024.pdf",   size: "2.1 Mo", time: "il y a 2h" },
+  { name: "Facture EDF Mars.pdf",       size: "845 Ko", time: "il y a 5h" },
+  { name: "Rapport médical annuel.pdf", size: "3.2 Mo", time: "il y a 1j" },
+  { name: "Assurance habitation.pdf",   size: "1.1 Mo", time: "il y a 2j" },
+];
+
+function DashboardMockup() {
+  return (
+    <div className="flex h-full w-full bg-neutral-100/60 text-[10px] leading-none select-none">
+
+      {/* ── Sidebar ── */}
+      <aside className="flex w-[17%] flex-shrink-0 flex-col border-r border-black/5 bg-white/80">
+
+        {/* Logo */}
+        <div className="flex h-11 shrink-0 items-center gap-1.5 border-b border-black/5 px-3">
+          <div className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-gray-100 bg-white shadow-sm">
+            <Image src="/logo.png" alt="" width={24} height={24} className="object-contain" />
+          </div>
+          <span className="text-[11px] font-semibold text-gray-900">DocuSafe</span>
+        </div>
+
+        {/* Upload button */}
+        <div className="px-2 pt-2">
+          <div className="flex items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 py-1.5 shadow-sm">
+            <Upload className="h-2.5 w-2.5 text-white" />
+            <span className="text-[9px] font-semibold text-white">Ajouter un document</span>
+          </div>
+        </div>
+
+        {/* Nav */}
+        <div className="flex-1 overflow-hidden px-1.5 py-2">
+          <p className="mb-1 px-1.5 text-[7px] font-semibold uppercase tracking-widest text-neutral-400">Menu</p>
+          {NAV_ITEMS.map(({ icon: Icon, label, active }) => (
+            <div
+              key={label}
+              className={`mb-px flex items-center gap-1.5 rounded-lg px-1.5 py-[4px] ${
+                active ? "bg-blue-50 text-blue-600" : "text-neutral-600"
+              }`}
+            >
+              <Icon className={`h-3 w-3 shrink-0 ${active ? "text-blue-500" : ""}`} />
+              <span className={`truncate ${active ? "font-semibold" : ""}`}>{label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Bottom */}
+        <div className="shrink-0 border-t border-black/5 px-1.5 py-1.5">
+          {BOTTOM_NAV.map(({ icon: Icon, label }) => (
+            <div key={label} className="flex items-center gap-1.5 rounded-lg px-1.5 py-[4px] text-neutral-600">
+              <Icon className="h-3 w-3 shrink-0" />
+              <span className="truncate">{label}</span>
+            </div>
+          ))}
+        </div>
+      </aside>
+
+      {/* ── Main ── */}
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+
+        {/* Header */}
+        <div className="flex h-11 shrink-0 items-center justify-between border-b border-black/5 bg-white/70 px-4">
+          <div>
+            <p className="text-[11px] font-semibold text-gray-900">Bonjour 👋</p>
+            <p className="mt-0.5 text-[9px] text-neutral-400">Gérez facilement vos documents</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-neutral-100">
+              <Bell className="h-3 w-3 text-neutral-600" />
+            </div>
+            <div className="flex items-center gap-1.5 rounded-xl bg-neutral-100/80 px-2 py-1">
+              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-violet-500 text-[7px] font-bold text-white">
+                U
+              </div>
+              <span className="text-neutral-700">Utilisateur</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 space-y-2 overflow-hidden p-2.5">
+
+          {/* Stat cards */}
+          <div className="grid grid-cols-4 gap-2">
+            {STAT_CARDS.map(({ label, value, color, tint, icon: Icon }) => (
+              <div
+                key={label}
+                className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${color} p-3 shadow-md`}
+              >
+                <div className="pointer-events-none absolute -right-3 -top-3 h-12 w-12 rounded-full bg-white/10" />
+                <div className="mb-1.5 flex h-6 w-6 items-center justify-center rounded-xl bg-white/20">
+                  <Icon className="h-3.5 w-3.5 text-white" />
+                </div>
+                <p className="text-[17px] font-bold leading-none text-white">{value}</p>
+                <p className={`mt-0.5 text-[8px] ${tint}`}>{label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* DocuBot banner */}
+          <div className="flex items-center gap-2.5 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 p-2.5 shadow-md shadow-blue-500/20">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/20">
+              <Bot className="h-4 w-4 text-white" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-semibold text-white">DocuBot</span>
+                <span className="flex items-center gap-0.5 rounded-full bg-white/20 px-1.5 py-0.5 text-[7px] font-semibold text-white">
+                  <Sparkles className="h-2 w-2" /> IA
+                </span>
+              </div>
+              <p className="text-[9px] text-blue-100">Ton assistant intelligent pour vos documents</p>
+            </div>
+            <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-white/70" />
+          </div>
+
+          {/* Recent documents */}
+          <div className="rounded-2xl bg-white p-2.5 shadow-sm">
+            <div className="mb-2 flex items-center gap-1.5">
+              <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-100">
+                <Clock className="h-3 w-3 text-blue-600" />
+              </div>
+              <span className="text-[11px] font-semibold text-gray-900">Documents récents</span>
+              <span className="ml-auto flex items-center gap-0.5 text-[9px] text-blue-500">
+                Voir tout <ArrowUpRight className="h-2.5 w-2.5" />
+              </span>
+            </div>
+            <div className="space-y-1">
+              {RECENT_DOCS.map((doc) => (
+                <div key={doc.name} className="flex items-center gap-2 rounded-xl bg-neutral-50 px-2.5 py-1.5">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600">
+                    <FileText className="h-3 w-3 text-white" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[10px] font-medium text-gray-900">{doc.name}</p>
+                    <p className="text-[8px] text-neutral-400">{doc.size} · {doc.time}</p>
+                  </div>
+                  <div className="flex gap-1">
+                    <div className="flex h-5 w-5 items-center justify-center rounded-lg bg-blue-100">
+                      <Eye className="h-2.5 w-2.5 text-blue-600" />
+                    </div>
+                    <div className="flex h-5 w-5 items-center justify-center rounded-lg bg-neutral-100">
+                      <Download className="h-2.5 w-2.5 text-neutral-600" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Stats strip ──────────────────────────────────────────────────────────────
 const STATS = [
   "10 000+ documents analysés",
   "Chiffrement bout en bout",
@@ -31,11 +213,12 @@ const STATS = [
   "0 document perdu",
 ];
 
+// ─── Hero Section ─────────────────────────────────────────────────────────────
 export function HeroSection() {
   return (
     <section className="relative flex min-h-screen flex-col items-center overflow-hidden px-4 pb-0 pt-16 text-center">
 
-      {/* ── Sky gradient ── */}
+      {/* Sky gradient */}
       <div
         className="absolute inset-0"
         style={{
@@ -44,31 +227,24 @@ export function HeroSection() {
         }}
       />
 
-      {/* ── Sun glow ── */}
+      {/* Sun glow */}
       <div
         className="pointer-events-none absolute"
         style={{
-          top: -120,
-          left: "50%",
-          transform: "translateX(-50%)",
-          width: 800,
-          height: 560,
-          background:
-            "radial-gradient(ellipse at center top, rgba(255,245,160,0.38) 0%, rgba(255,210,80,0.14) 38%, transparent 68%)",
+          top: -120, left: "50%", transform: "translateX(-50%)",
+          width: 800, height: 560,
+          background: "radial-gradient(ellipse at center top, rgba(255,245,160,0.38) 0%, rgba(255,210,80,0.14) 38%, transparent 68%)",
           borderRadius: "50%",
         }}
       />
 
-      {/* ── Sky pulse (breathing light) ── */}
+      {/* Sky pulse */}
       <div
         className="hero-sky-pulse pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse at 50% 25%, rgba(255,255,255,0.18) 0%, transparent 58%)",
-        }}
+        style={{ background: "radial-gradient(ellipse at 50% 25%, rgba(255,255,255,0.18) 0%, transparent 58%)" }}
       />
 
-      {/* ══ CLOUD A — large, left→right, floats slow ══ */}
+      {/* Cloud A */}
       <div className="hero-cloud-a pointer-events-none absolute left-0" style={{ top: "7%" }}>
         <div className="scale-[0.52] origin-left md:scale-100">
           <div className="hero-float-slow" style={{ display: "flex", alignItems: "flex-end" }}>
@@ -81,7 +257,7 @@ export function HeroSection() {
         </div>
       </div>
 
-      {/* ══ CLOUD B — small, left→right slower, floats fast ══ */}
+      {/* Cloud B */}
       <div className="hero-cloud-b pointer-events-none absolute left-0" style={{ top: "45%" }}>
         <div className="scale-[0.52] origin-left md:scale-100">
           <div className="hero-float-fast" style={{ display: "flex", alignItems: "flex-end" }}>
@@ -92,7 +268,7 @@ export function HeroSection() {
         </div>
       </div>
 
-      {/* ══ CLOUD C — medium, right→left, floats med ══ */}
+      {/* Cloud C */}
       <div className="hero-cloud-c pointer-events-none absolute right-0" style={{ top: "19%" }}>
         <div className="scale-[0.52] origin-right md:scale-100">
           <div className="hero-float-med" style={{ display: "flex", alignItems: "flex-end" }}>
@@ -104,7 +280,7 @@ export function HeroSection() {
         </div>
       </div>
 
-      {/* ══ CLOUD D — tiny, right→left very slow, background depth ══ */}
+      {/* Cloud D */}
       <div className="hero-cloud-d pointer-events-none absolute right-0" style={{ top: "55%" }}>
         <div className="scale-[0.52] origin-right md:scale-100">
           <div style={{ display: "flex", alignItems: "flex-end" }}>
@@ -115,10 +291,10 @@ export function HeroSection() {
         </div>
       </div>
 
-      {/* ── Content ── */}
-      <div className="relative z-10 flex flex-col items-center w-full max-w-5xl mx-auto">
+      {/* Content */}
+      <div className="relative z-10 flex w-full max-w-5xl flex-col items-center mx-auto">
 
-        {/* Title — taille modérée, lisible */}
+        {/* Title */}
         <h1
           className="hero-anim-title mb-4 max-w-2xl text-[2rem] text-white sm:text-[2.5rem] md:text-[3rem] lg:text-[3.6rem]"
           style={{
@@ -165,36 +341,27 @@ export function HeroSection() {
           </Link>
         </div>
 
-        {/* ── Dashboard screenshot ── */}
+        {/* ── Dashboard mockup ── */}
         <div className="mt-12 w-full max-w-5xl">
           <div className="relative">
-            {/* Lueur blanche discrète sur les bords */}
+            {/* Lueur blanche sur les bords */}
             <div
               className="pointer-events-none absolute inset-0 z-10 rounded-2xl"
-              style={{
-                boxShadow: "inset 0 0 32px 6px rgba(255,255,255,0.14), 0 0 60px 16px rgba(255,255,255,0.08)",
-              }}
+              style={{ boxShadow: "inset 0 0 32px 6px rgba(255,255,255,0.14), 0 0 60px 16px rgba(255,255,255,0.08)" }}
             />
-            {/* Image pleine résolution, aucun recadrage */}
+            {/* Mockup container — même ratio que le screenshot original 1903×1043 */}
             <div
               className="overflow-hidden rounded-2xl"
               style={{
+                aspectRatio: "1903/1043",
                 boxShadow: "0 32px 80px rgba(0,0,0,0.40), 0 8px 24px rgba(0,0,0,0.20)",
               }}
             >
-              <Image
-                src="/dashboard.png"
-                alt="DocuSafe dashboard"
-                width={1903}
-                height={1043}
-                style={{ width: "100%", height: "auto", display: "block" }}
-                quality={100}
-                priority
-              />
+              <DashboardMockup />
             </div>
           </div>
 
-          {/* ── Stats inline — sous le screenshot ── */}
+          {/* Stats */}
           <div className="relative z-20 mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 pb-10">
             {STATS.map((s, i) => (
               <div key={i} className="flex items-center gap-5">
@@ -212,10 +379,10 @@ export function HeroSection() {
 
       </div>
 
-      {/* ── Horizon fog ── */}
+      {/* Horizon fog */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-white/80 to-transparent" />
 
-      {/* ── Rolling hills ── */}
+      {/* Rolling hills */}
       <svg
         className="pointer-events-none absolute bottom-0 left-0 w-full"
         viewBox="0 0 1440 200"
