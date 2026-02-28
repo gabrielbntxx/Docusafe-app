@@ -7,7 +7,7 @@ import {
   LayoutDashboard, FileText, Image as LucideImage, Folder, Search,
   FileUp, ArrowLeftRight, Bot, CreditCard, Settings, LogOut,
   Bell, Upload, HardDrive, Crown, Clock, Eye, Download,
-  Sparkles, ArrowUpRight,
+  Sparkles, ArrowUpRight, FilePlus2, GitBranch, Lock,
 } from "lucide-react";
 
 // ─── Puff helper ──────────────────────────────────────────────────────────────
@@ -26,14 +26,20 @@ function Puff({ w, h, blur, opacity, ml = 0 }: {
 
 // ─── Dashboard Mockup ─────────────────────────────────────────────────────────
 const NAV_ITEMS = [
-  { icon: LayoutDashboard, label: "Dashboard",      active: true  },
-  { icon: FileText,        label: "Mes documents",  active: false },
-  { icon: LucideImage,     label: "Mes photos",     active: false },
-  { icon: Folder,          label: "Mes dossiers",   active: false },
-  { icon: Search,          label: "Recherche",      active: false },
-  { icon: FileUp,          label: "Demandes",       active: false },
-  { icon: ArrowLeftRight,  label: "Triage",         active: false },
-  { icon: Bot,             label: "DocuBot",        active: false },
+  { icon: LayoutDashboard, label: "Dashboard",       active: true  },
+  { icon: FileText,        label: "Mes documents",   active: false },
+  { icon: LucideImage,     label: "Mes photos",      active: false },
+  { icon: Folder,          label: "Mes dossiers",    active: false },
+  { icon: Search,          label: "Recherche",       active: false },
+  { icon: FileUp,          label: "Demandes",        active: false },
+  { icon: ArrowLeftRight,  label: "Triage",          active: false },
+  { icon: Bot,             label: "DocuBot",         active: false },
+  { icon: FilePlus2,       label: "Créer documents", active: false },
+  { icon: GitBranch,       label: "Workflow",        active: false },
+];
+
+const PRIVATE_NAV = [
+  { icon: Lock, label: "Mon espace privé" },
 ];
 
 const BOTTOM_NAV = [
@@ -46,7 +52,7 @@ const STAT_CARDS = [
   { label: "Documents", value: "23",     color: "from-blue-500 to-blue-600",     tint: "text-blue-100",    icon: FileText  },
   { label: "Dossiers",  value: "8",      color: "from-violet-500 to-purple-600", tint: "text-violet-100",  icon: Folder    },
   { label: "Stockage",  value: "2.4 Go", color: "from-emerald-500 to-teal-600",  tint: "text-emerald-100", icon: HardDrive },
-  { label: "Plan",      value: "FREE",   color: "from-amber-500 to-orange-600",  tint: "text-amber-100",   icon: Crown     },
+  { label: "Plan",      value: "BUSINESS", color: "from-amber-500 to-orange-600",  tint: "text-amber-100",   icon: Crown     },
 ];
 
 const RECENT_DOCS = [
@@ -58,7 +64,7 @@ const RECENT_DOCS = [
 
 function DashboardMockup() {
   return (
-    <div className="flex h-full w-full bg-neutral-100/60 text-[10px] leading-none select-none">
+    <div className="flex h-full w-full bg-neutral-100/60 text-[10px] leading-none select-none text-left">
 
       {/* ── Sidebar ── */}
       <aside className="flex w-[17%] flex-shrink-0 flex-col border-r border-black/5 bg-white/80">
@@ -85,7 +91,7 @@ function DashboardMockup() {
           {NAV_ITEMS.map(({ icon: Icon, label, active }) => (
             <div
               key={label}
-              className={`mb-px flex items-center gap-1.5 rounded-lg px-1.5 py-[4px] ${
+              className={`mb-px flex items-center gap-1.5 rounded-lg px-1.5 py-1.5 ${
                 active ? "bg-blue-50 text-blue-600" : "text-neutral-600"
               }`}
             >
@@ -93,12 +99,19 @@ function DashboardMockup() {
               <span className={`truncate ${active ? "font-semibold" : ""}`}>{label}</span>
             </div>
           ))}
+          <p className="mb-1 mt-2 px-1.5 text-[7px] font-semibold uppercase tracking-widest text-neutral-400">Espace privé</p>
+          {PRIVATE_NAV.map(({ icon: Icon, label }) => (
+            <div key={label} className="mb-px flex items-center gap-1.5 rounded-lg px-1.5 py-1.5 text-neutral-600">
+              <Icon className="h-3 w-3 shrink-0" />
+              <span className="truncate">{label}</span>
+            </div>
+          ))}
         </div>
 
         {/* Bottom */}
         <div className="shrink-0 border-t border-black/5 px-1.5 py-1.5">
           {BOTTOM_NAV.map(({ icon: Icon, label }) => (
-            <div key={label} className="flex items-center gap-1.5 rounded-lg px-1.5 py-[4px] text-neutral-600">
+            <div key={label} className="flex items-center gap-1.5 rounded-lg px-1.5 py-1.5 text-neutral-600">
               <Icon className="h-3 w-3 shrink-0" />
               <span className="truncate">{label}</span>
             </div>
@@ -138,18 +151,18 @@ function DashboardMockup() {
                 key={label}
                 className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${color} p-3 shadow-md`}
               >
-                <div className="pointer-events-none absolute -right-3 -top-3 h-12 w-12 rounded-full bg-white/10" />
-                <div className="mb-1.5 flex h-6 w-6 items-center justify-center rounded-xl bg-white/20">
+                <div className="pointer-events-none absolute -right-2 -top-2 h-10 w-10 rounded-full bg-white/10" />
+                <div className="mb-2 flex h-7 w-7 items-center justify-center rounded-xl bg-white/20">
                   <Icon className="h-3.5 w-3.5 text-white" />
                 </div>
-                <p className="text-[17px] font-bold leading-none text-white">{value}</p>
-                <p className={`mt-0.5 text-[8px] ${tint}`}>{label}</p>
+                <p className="truncate text-[13px] font-bold leading-none text-white">{value}</p>
+                <p className={`mt-1 text-[7.5px] ${tint}`}>{label}</p>
               </div>
             ))}
           </div>
 
           {/* DocuBot banner */}
-          <div className="flex items-center gap-2.5 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 p-2.5 shadow-md shadow-blue-500/20">
+          <div className="flex items-start gap-2.5 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 p-2.5 shadow-md shadow-blue-500/20">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/20">
               <Bot className="h-4 w-4 text-white" />
             </div>
