@@ -126,7 +126,7 @@ export function HeroSection() {
 
         {/* Title — taille modérée, lisible */}
         <h1
-          className="hero-anim-title mb-4 max-w-2xl text-[2.4rem] text-white sm:text-[3rem] md:text-[3.8rem] lg:text-[4.4rem]"
+          className="hero-anim-title mb-4 max-w-2xl text-[2rem] text-white sm:text-[2.5rem] md:text-[3rem] lg:text-[3.6rem]"
           style={{
             fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif',
             fontWeight: 800,
@@ -137,7 +137,7 @@ export function HeroSection() {
         >
           Vos documents.<br />
           <span style={{ opacity: 0.88 }}>Triés et retrouvés</span><br />
-          en secondes.
+          en quelques secondes.
         </h1>
 
         {/* Subtitle */}
