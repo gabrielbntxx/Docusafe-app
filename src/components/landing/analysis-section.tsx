@@ -73,7 +73,7 @@ export function AnalysisSection() {
   const isDone       = tick >= ITEMS.length + 2;
 
   return (
-    <section className="px-4 py-24 md:py-32" style={{ background: "#f7f4ef" }}>
+    <section className="bg-gray-50 px-4 py-24 md:py-32">
 
       <style>{`
         @keyframes scanDown {
@@ -106,7 +106,7 @@ export function AnalysisSection() {
                 className="text-2xl font-extrabold text-gray-900 md:text-3xl"
                 style={{ letterSpacing: "-0.03em", lineHeight: 1.1 }}
               >
-                L&apos;IA qui lit vos<br />documents<br />pour vous
+                DocuSafe lit vos<br />documents<br />pour vous
               </h2>
 
               <p className="mt-4 text-sm leading-relaxed text-gray-500">
@@ -157,7 +157,7 @@ export function AnalysisSection() {
             </div>
 
             {/* ══ RIGHT — Animation ══ */}
-            <div className="flex flex-col justify-center p-7 lg:flex-[6]">
+            <div className="flex flex-col justify-center rounded-b-3xl p-7 lg:flex-[6] lg:rounded-b-none lg:rounded-r-3xl" style={{ background: "#f7f4ef" }}>
 
               {/* Status bar */}
               <div className="mb-5 flex items-center justify-between">
