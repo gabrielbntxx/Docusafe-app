@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { Instagram, Twitter, Linkedin, Facebook, Youtube } from "lucide-react";
 import { LandingHeader } from "@/components/landing/landing-header";
 import { HeroSection } from "@/components/landing/hero-section";
 import { AnalysisSection } from "@/components/landing/analysis-section";
@@ -66,6 +67,26 @@ export default function Home() {
               >
                 Tarifs
               </Link>
+            </div>
+
+            {/* Réseaux sociaux */}
+            <div className="flex items-center gap-3">
+              {[
+                { icon: Instagram, href: "#", label: "Instagram" },
+                { icon: Twitter,   href: "#", label: "X"         },
+                { icon: Linkedin,  href: "#", label: "LinkedIn"  },
+                { icon: Facebook,  href: "#", label: "Facebook"  },
+                { icon: Youtube,   href: "#", label: "YouTube"   },
+              ].map(({ icon: Icon, href, label }) => (
+                <a
+                  key={label}
+                  href={href}
+                  aria-label={label}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500 transition-colors hover:bg-gray-200 hover:text-gray-900"
+                >
+                  <Icon className="h-4 w-4" />
+                </a>
+              ))}
             </div>
 
             <p className="text-sm text-gray-400">© 2025 DocuSafe. Tous droits réservés.</p>
