@@ -104,42 +104,42 @@ export function DocubotSection() {
             </div>
 
             {/* Visual — flux email → IA → classé */}
-            <div className="px-7 pb-7">
-              <div className="flex items-center gap-2 rounded-2xl p-5" style={{ background: "#eff6ff" }}>
+            <div className="px-5 pb-5 sm:px-7 sm:pb-7">
+              <div className="flex items-center gap-1.5 rounded-2xl p-3 sm:gap-2 sm:p-5" style={{ background: "#eff6ff" }}>
 
                 {/* Email reçu */}
-                <div className="flex flex-1 flex-col items-center gap-2 rounded-xl bg-white p-3 shadow-sm ring-1 ring-blue-100">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100">
-                    <Mail className="h-4 w-4 text-blue-600" />
+                <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5 rounded-xl bg-white p-2 sm:gap-2 sm:p-3 shadow-sm ring-1 ring-blue-100">
+                  <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 sm:h-9 sm:w-9">
+                    <Mail className="h-3.5 w-3.5 text-blue-600 sm:h-4 sm:w-4" />
                   </div>
-                  <p className="text-[10px] font-semibold text-gray-500">Email reçu</p>
-                  <div className="flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5">
-                    <FileText className="h-2.5 w-2.5 text-blue-500" />
-                    <span className="text-[9px] font-semibold text-blue-600">facture.pdf</span>
+                  <p className="text-center text-[9px] font-semibold text-gray-500 sm:text-[10px]">Email reçu</p>
+                  <div className="flex max-w-full items-center gap-1 overflow-hidden rounded-full bg-blue-50 px-1.5 py-0.5 sm:px-2">
+                    <FileText className="h-2 w-2 flex-shrink-0 text-blue-500 sm:h-2.5 sm:w-2.5" />
+                    <span className="truncate text-[8px] font-semibold text-blue-600 sm:text-[9px]">facture.pdf</span>
                   </div>
                 </div>
 
-                <ArrowRight className="h-4 w-4 flex-shrink-0 text-gray-300" />
+                <ArrowRight className="h-3 w-3 flex-shrink-0 text-gray-300 sm:h-4 sm:w-4" />
 
                 {/* Analyse IA */}
-                <div className="flex flex-col items-center gap-2 rounded-xl bg-white p-3 shadow-sm ring-1 ring-violet-100">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-violet-600">
-                    <Sparkles className="h-4 w-4 text-white" />
+                <div className="flex flex-shrink-0 flex-col items-center gap-1.5 rounded-xl bg-white p-2 sm:gap-2 sm:p-3 shadow-sm ring-1 ring-violet-100">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-violet-600 sm:h-9 sm:w-9">
+                    <Sparkles className="h-3.5 w-3.5 text-white sm:h-4 sm:w-4" />
                   </div>
-                  <p className="text-[10px] font-semibold text-gray-500">Analyse IA</p>
+                  <p className="text-[9px] font-semibold text-gray-500 sm:text-[10px]">Analyse IA</p>
                 </div>
 
-                <ArrowRight className="h-4 w-4 flex-shrink-0 text-gray-300" />
+                <ArrowRight className="h-3 w-3 flex-shrink-0 text-gray-300 sm:h-4 sm:w-4" />
 
                 {/* Classé */}
-                <div className="flex flex-1 flex-col items-center gap-2 rounded-xl bg-white p-3 shadow-sm ring-1 ring-emerald-100">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100">
-                    <FolderOpen className="h-4 w-4 text-emerald-600" />
+                <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5 rounded-xl bg-white p-2 sm:gap-2 sm:p-3 shadow-sm ring-1 ring-emerald-100">
+                  <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-emerald-100 sm:h-9 sm:w-9">
+                    <FolderOpen className="h-3.5 w-3.5 text-emerald-600 sm:h-4 sm:w-4" />
                   </div>
-                  <p className="text-[10px] font-semibold text-gray-500">Classé auto.</p>
-                  <div className="flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5">
-                    <Check className="h-2.5 w-2.5 text-emerald-500" />
-                    <span className="text-[9px] font-semibold text-emerald-600">Finances</span>
+                  <p className="text-center text-[9px] font-semibold text-gray-500 sm:text-[10px]">Classé auto.</p>
+                  <div className="flex items-center gap-1 rounded-full bg-emerald-50 px-1.5 py-0.5 sm:px-2">
+                    <Check className="h-2 w-2 flex-shrink-0 text-emerald-500 sm:h-2.5 sm:w-2.5" />
+                    <span className="text-[8px] font-semibold text-emerald-600 sm:text-[9px]">Finances</span>
                   </div>
                 </div>
 

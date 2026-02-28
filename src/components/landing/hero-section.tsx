@@ -354,8 +354,8 @@ export function HeroSection() {
           </Link>
         </div>
 
-        {/* ── Dashboard mockup ── */}
-        <div className="mt-12 w-full max-w-5xl">
+        {/* ── Dashboard mockup — masqué sur mobile ── */}
+        <div className="mt-12 w-full max-w-5xl hidden md:block">
           <div className="relative">
             {/* Lueur blanche sur les bords */}
             <div
