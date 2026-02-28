@@ -150,10 +150,10 @@ export function AnalysisSection() {
             </div>
 
             {/* ══ RIGHT — Animation ══ */}
-            <div className="flex flex-col justify-center p-8 md:p-10 lg:flex-[6]">
+            <div className="flex flex-col p-8 md:p-10 lg:flex-[6]">
 
               {/* Status bar */}
-              <div className="mb-6 flex items-center justify-between">
+              <div className="mb-5 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <div className="h-2 w-2 rounded-full bg-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2)]" />
                   <span className="text-xs font-semibold uppercase tracking-widest text-gray-400">
@@ -177,11 +177,11 @@ export function AnalysisSection() {
                 </div>
               </div>
 
-              {/* Main layout: document left | results right */}
-              <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:gap-6">
+              {/* Main layout: document left | results right — flex-1 pour remplir */}
+              <div className="flex flex-1 flex-col gap-5 sm:flex-row sm:items-stretch sm:gap-5">
 
                 {/* Document card */}
-                <div className="relative w-full flex-shrink-0 overflow-hidden rounded-2xl bg-gray-50 p-5 ring-1 ring-gray-100 sm:w-52">
+                <div className="relative flex w-full flex-shrink-0 flex-col overflow-hidden rounded-2xl bg-gray-50 p-5 ring-1 ring-gray-100 sm:w-48">
 
                   {/* Scan line */}
                   {isScanning && (
@@ -220,15 +220,15 @@ export function AnalysisSection() {
                   <p className="text-sm font-semibold leading-snug text-gray-800">Contrat_bail_2024.pdf</p>
                   <p className="mt-0.5 text-[10px] text-gray-400">Importé il y a 3s</p>
 
-                  {/* Fake text lines */}
-                  <div className="mt-5 space-y-2">
-                    {[82, 68, 94, 58, 76, 44, 60].map((w, i) => (
-                      <div key={i} className="h-1.5 rounded-full bg-gray-200/60" style={{ width: `${w}%` }} />
+                  {/* Fake text lines — flex-1 pour remplir verticalement */}
+                  <div className="mt-5 flex flex-1 flex-col gap-2 overflow-hidden">
+                    {[82, 68, 94, 58, 76, 44, 60, 88, 52, 72, 36, 64, 80, 48, 70, 90, 38, 62, 84, 55].map((w, i) => (
+                      <div key={i} className="h-1.5 flex-shrink-0 rounded-full bg-gray-200/60" style={{ width: `${w}%` }} />
                     ))}
                   </div>
 
                   {/* Status badge */}
-                  <div className="mt-4 flex items-center gap-1.5">
+                  <div className="mt-4 flex flex-shrink-0 items-center gap-1.5">
                     {isScanning ? (
                       <><ScanLine className="h-3 w-3 animate-pulse text-blue-500" /><span className="text-[10px] font-semibold text-blue-600">Lecture…</span></>
                     ) : isDone ? (
@@ -239,9 +239,12 @@ export function AnalysisSection() {
                   </div>
                 </div>
 
-                {/* Results */}
-                <div className="flex-1">
-                  <div className="grid grid-cols-1 gap-2 min-[480px]:grid-cols-2">
+                {/* Results — grille qui remplit toute la hauteur */}
+                <div className="flex flex-1 flex-col">
+                  <div
+                    className="grid flex-1 grid-cols-2 gap-2"
+                    style={{ gridAutoRows: "1fr" }}
+                  >
                     {ITEMS.map((item, i) => {
                       const c = COLORS[item.color];
                       const visible = i < visibleCount;
@@ -253,7 +256,7 @@ export function AnalysisSection() {
                             transform: visible ? "translateY(0) scale(1)" : "translateY(8px) scale(0.98)",
                             transition: "opacity 0.32s ease, transform 0.32s ease",
                           }}
-                          className={`flex items-center gap-3 rounded-xl border p-3 ${
+                          className={`flex items-center gap-3 rounded-xl border px-3 py-2 ${
                             visible
                               ? item.alert
                                 ? "border-orange-200 bg-orange-50/40 shadow-sm"
@@ -284,7 +287,7 @@ export function AnalysisSection() {
               </div>
 
               {/* Bottom — IA signature */}
-              <div className="mt-6 flex items-center justify-between border-t border-gray-100 pt-5">
+              <div className="mt-5 flex items-center justify-between border-t border-gray-100 pt-5">
                 <div className="flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-violet-600">
                     <Sparkles className="h-3.5 w-3.5 text-white" />
