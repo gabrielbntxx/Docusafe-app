@@ -201,7 +201,7 @@ export function HeroSection() {
           </div>
 
           {/* ── Stats inline — sous le screenshot ── */}
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+          <div className="relative z-20 mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 pb-10">
             {STATS.map((s, i) => (
               <div key={i} className="flex items-center gap-5">
                 <span className="text-[15px] font-semibold text-white/90">{s}</span>
