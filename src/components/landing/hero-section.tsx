@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronRight, Sparkles } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 // Cloud puff helper — a single blurred circle
 function Puff({ w, h, blur, opacity, ml = 0 }: {
@@ -33,7 +33,7 @@ const STATS = [
 
 export function HeroSection() {
   return (
-    <section className="relative flex min-h-screen flex-col items-center overflow-hidden px-4 pb-0 pt-24 text-center">
+    <section className="relative flex min-h-screen flex-col items-center overflow-hidden px-4 pb-0 pt-16 text-center">
 
       {/* ── Sky gradient ── */}
       <div
@@ -118,12 +118,6 @@ export function HeroSection() {
       {/* ── Content ── */}
       <div className="relative z-10 flex flex-col items-center w-full max-w-5xl mx-auto">
 
-        {/* Badge */}
-        <div className="hero-anim-title mb-5 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-xs font-semibold text-white backdrop-blur-sm ring-1 ring-white/25">
-          <Sparkles className="h-3.5 w-3.5" />
-          Propulsé par l&apos;intelligence artificielle
-        </div>
-
         {/* Title — taille modérée, lisible */}
         <h1
           className="hero-anim-title mb-4 max-w-2xl text-[2rem] text-white sm:text-[2.5rem] md:text-[3rem] lg:text-[3.6rem]"
@@ -204,9 +198,12 @@ export function HeroSection() {
           <div className="relative z-20 mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 pb-10">
             {STATS.map((s, i) => (
               <div key={i} className="flex items-center gap-5">
-                <span className="text-[15px] font-semibold text-white/90">{s}</span>
+                <span
+                  className="text-[15px] font-semibold"
+                  style={{ color: "rgba(255,255,255,0.95)", textShadow: "0 1px 6px rgba(0,0,0,0.30)" }}
+                >{s}</span>
                 {i < STATS.length - 1 && (
-                  <span className="text-white/30 select-none">·</span>
+                  <span className="select-none text-white/40">·</span>
                 )}
               </div>
             ))}
