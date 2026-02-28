@@ -5,6 +5,7 @@ import { HeroSection } from "@/components/landing/hero-section";
 import { AnalysisSection } from "@/components/landing/analysis-section";
 import { DocubotSection } from "@/components/landing/docubot-section";
 import { StorageSection } from "@/components/landing/storage-section";
+import { TestimonialsSection } from "@/components/landing/testimonials-section";
 import { FinalCta } from "@/components/landing/final-cta";
 
 export default function Home() {
@@ -25,6 +26,9 @@ export default function Home() {
 
       {/* ─── Storage & Sécurité ─── */}
       <StorageSection />
+
+      {/* ─── Témoignages ─── */}
+      <TestimonialsSection />
 
       {/* ─── Final CTA ─── */}
       <FinalCta />
