@@ -297,7 +297,7 @@ export function MessagingDropdown() {
                     <div className="flex flex-col items-center justify-center py-10">
                       <Users className="h-10 w-10 text-neutral-300 dark:text-neutral-600" />
                       <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-400">
-                        Aucun message pour l'instant
+                        Aucun message pour l&apos;instant
                       </p>
                     </div>
                   ) : (
