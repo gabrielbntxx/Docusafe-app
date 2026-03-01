@@ -67,7 +67,7 @@ function RequestVisual() {
           <span className="text-[11px] text-gray-600">marie.dupont@example.com</span>
         </div>
         <p className="text-[11px] leading-relaxed text-gray-500">
-          "Merci de déposer votre justificatif d'identité pour finaliser le dossier."
+          &ldquo;Merci de déposer votre justificatif d&apos;identité pour finaliser le dossier.&rdquo;
         </p>
       </div>
 
@@ -179,7 +179,7 @@ export default function PartagePage() {
             </h1>
             <p className="mt-5 max-w-lg text-base leading-relaxed text-gray-500">
               Envoyez un document en un lien, demandez des fichiers à vos contacts externes,
-              et gardez le contrôle total sur qui voit quoi — et jusqu'à quand.
+              et gardez le contrôle total sur qui voit quoi — et jusqu&apos;à quand.
             </p>
           </div>
         </div>
@@ -233,7 +233,7 @@ export default function PartagePage() {
                   Demande de documents
                 </h2>
                 <p className="mb-6 text-sm leading-relaxed text-gray-500">
-                  Envoyez une demande à n'importe quelle adresse email. Votre contact dépose
+                  Envoyez une demande à n&apos;importe quelle adresse email. Votre contact dépose
                   ses fichiers via un portail simple — sans compte DocuSafe nécessaire.
                 </p>
                 <RequestVisual />
@@ -275,7 +275,7 @@ export default function PartagePage() {
                 </h2>
                 <p className="text-sm leading-relaxed text-gray-400">
                   Certains dossiers méritent une protection supplémentaire. Verrouillez-les
-                  avec un code PIN à 4 chiffres — même si quelqu'un accède à votre compte,
+                  avec un code PIN à 4 chiffres — même si quelqu&apos;un accède à votre compte,
                   vos documents sensibles restent hors de portée.
                 </p>
                 <div className="mt-6 flex flex-wrap gap-2">
