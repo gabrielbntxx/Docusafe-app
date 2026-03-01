@@ -1,4 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Alertes & Expiration",
+  description:
+    "Ne laissez plus jamais un document expirer. DocuSafe vous envoie des alertes email et push à J−90, J−30 et J−7. Suivez aussi l'activité de votre équipe en temps réel.",
+  openGraph: {
+    title: "Alertes & Expiration — DocuSafe",
+    description: "Alertes d'expiration à J−90, J−30 et J−7. Suivi d'équipe en temps réel.",
+    url: "https://docusafe.fr/alertes",
+  },
+};
 import {
   Bell, Mail, Clock, Check, ChevronRight,
   FileText, AlertTriangle, Users, Eye,

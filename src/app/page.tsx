@@ -1,4 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "DocuSafe — Coffre-fort documentaire intelligent",
+  description:
+    "Gérez, sécurisez et retrouvez tous vos documents importants en quelques secondes. IA de classification, chiffrement de bout en bout, alertes d'expiration. Essai gratuit 1 mois sans carte bancaire.",
+  openGraph: {
+    title: "DocuSafe — Coffre-fort documentaire intelligent",
+    description: "Vos documents classés, sécurisés et accessibles partout. Essai gratuit 1 mois.",
+    url: "https://docusafe.fr",
+  },
+};
 import Image from "next/image";
 import { Instagram, Twitter, Linkedin, Facebook, Youtube } from "lucide-react";
 import { LandingHeader } from "@/components/landing/landing-header";

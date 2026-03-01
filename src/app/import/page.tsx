@@ -1,4 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Import & Email",
+  description:
+    "Importez vos documents depuis Google Drive, OneDrive ou par email. Votre adresse DocuSafe unique capture automatiquement toutes vos pièces jointes sans action manuelle.",
+  openGraph: {
+    title: "Import & Email — DocuSafe",
+    description: "Transférez un email, connectez votre Drive : vos documents arrivent d'eux-mêmes.",
+    url: "https://docusafe.fr/import",
+  },
+};
 import {
   Mail, ArrowRight, Paperclip, HardDrive, Cloud,
   Zap, Check, FolderOpen, AtSign, RefreshCw, History,

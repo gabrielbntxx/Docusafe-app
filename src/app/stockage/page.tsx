@@ -1,4 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Stockage & Dossiers",
+  description:
+    "Jusqu'à 4 To de stockage sécurisé, dossiers et sous-dossiers illimités, tri automatique par IA. Organisez enfin tous vos documents sans effort.",
+  openGraph: {
+    title: "Stockage & Dossiers — DocuSafe",
+    description: "Jusqu'à 4 To, sous-dossiers illimités et tri automatique par IA.",
+    url: "https://docusafe.fr/stockage",
+  },
+};
 import {
   HardDrive, FileText, Image, CalendarDays,
   Folder, FolderOpen, Zap, Lock, Download, Search,

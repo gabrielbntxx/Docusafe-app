@@ -1,4 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Sécurité & Confidentialité",
+  description:
+    "Chiffrement AES-256 de bout en bout, accès protégé par PIN, gouvernance IA transparente et infrastructure fiable. Découvrez comment DocuSafe protège chaque document.",
+  openGraph: {
+    title: "Sécurité & Confidentialité — DocuSafe",
+    description: "Vos documents chiffrés, vos accès contrôlés. Découvrez les garanties de sécurité DocuSafe.",
+    url: "https://docusafe.fr/securite",
+  },
+};
 import {
   Shield, Server, Settings, ShieldCheck,
   Lock, Database, FileText, Layers, ScrollText, Globe,

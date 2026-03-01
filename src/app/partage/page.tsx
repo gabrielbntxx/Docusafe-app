@@ -1,4 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Partage & Collaboration",
+  description:
+    "Partagez des documents par lien sécurisé, demandez des fichiers à vos contacts, collaborez en équipe. Contrôlez qui voit quoi, et jusqu'à quand.",
+  openGraph: {
+    title: "Partage & Collaboration — DocuSafe",
+    description: "Liens sécurisés, demandes de fichiers, collaboration en équipe. Contrôle total.",
+    url: "https://docusafe.fr/partage",
+  },
+};
 import Image from "next/image";
 import {
   Link2, Mail, Lock, Clock, UserCheck, Send,

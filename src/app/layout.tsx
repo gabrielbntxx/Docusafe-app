@@ -10,11 +10,44 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "DocuSafe - Your smart digital safe",
-  description: "All your supporting documents in the right place, at the right time, automatically.",
+  title: {
+    default: "DocuSafe — Votre coffre-fort documentaire intelligent",
+    template: "%s | DocuSafe",
+  },
+  description:
+    "Stockez, classez et retrouvez tous vos documents importants en quelques secondes. Chiffrement de bout en bout, IA de classification, alertes d'expiration. Essai gratuit 1 mois.",
+  keywords: [
+    "coffre-fort numérique", "gestion documentaire", "stockage documents",
+    "classement automatique", "IA documents", "partage sécurisé",
+    "alerte expiration document", "DocuSafe",
+  ],
+  authors: [{ name: "DocuSafe" }],
+  creator: "DocuSafe",
+  metadataBase: new URL("https://docusafe.fr"),
+  openGraph: {
+    type: "website",
+    locale: "fr_FR",
+    url: "https://docusafe.fr",
+    siteName: "DocuSafe",
+    title: "DocuSafe — Votre coffre-fort documentaire intelligent",
+    description:
+      "Stockez, classez et retrouvez tous vos documents importants en quelques secondes. IA, chiffrement, alertes. Essai gratuit 1 mois.",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "DocuSafe" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "DocuSafe — Votre coffre-fort documentaire intelligent",
+    description: "Classez, sécurisez et retrouvez tous vos documents en quelques secondes.",
+    images: ["/og-image.png"],
+  },
   icons: {
     icon: "/logo.png",
     apple: "/logo.png",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true },
   },
 };
 
