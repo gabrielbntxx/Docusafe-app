@@ -13,36 +13,48 @@ const PRODUIT_ITEMS = [
     label: "Sécurité",
     desc: "Chiffrement, PIN & accès contrôlé",
     href: "/securite",
+    bg: "bg-blue-100",
+    fg: "text-blue-600",
   },
   {
     icon: Sparkles,
     label: "Intelligence Artificielle",
     desc: "Classification auto, analyses & DocuBot",
     href: "/#ia",
+    bg: "bg-violet-50",
+    fg: "text-violet-500",
   },
   {
     icon: HardDrive,
     label: "Stockage & Dossiers",
     desc: "Jusqu'à 4 To, sous-dossiers & triage",
     href: "/stockage",
+    bg: "bg-orange-50",
+    fg: "text-orange-500",
   },
   {
     icon: Mail,
     label: "Import & Email",
     desc: "Google Drive, OneDrive & email unique",
     href: "/import",
+    bg: "bg-sky-50",
+    fg: "text-sky-500",
   },
   {
     icon: Share2,
     label: "Partage & Collaboration",
     desc: "Partage sécurisé, liens & demandes",
     href: "/partage",
+    bg: "bg-emerald-50",
+    fg: "text-emerald-500",
   },
   {
     icon: Bell,
     label: "Alertes & Expiration",
     desc: "Notifications & suivi des échéances",
     href: "/#alertes",
+    bg: "bg-amber-50",
+    fg: "text-amber-500",
   },
 ];
 
@@ -157,8 +169,8 @@ export function LandingHeader({ solid: forceSolid = false }: { solid?: boolean }
                             onClick={() => setProduitOpen(false)}
                             className="flex items-start gap-3 rounded-xl bg-white px-4 py-3 transition-colors hover:bg-gray-50"
                           >
-                            <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100">
-                              <feat.icon className="h-4 w-4 text-gray-700" />
+                            <div className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${feat.bg}`}>
+                              <feat.icon className={`h-4 w-4 ${feat.fg}`} />
                             </div>
                             <div>
                               <p className="text-sm font-semibold text-gray-900">{feat.label}</p>
