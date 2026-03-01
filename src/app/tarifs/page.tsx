@@ -12,7 +12,7 @@ const PLANS = [
     id: "STUDENT",
     name: "Étudiant",
     monthlyPrice: 7,
-    annualPrice: 5,
+    annualPrice: 76,
     tagline: "Pour les 18–25 ans",
     desc: "L'essentiel pour ne plus perdre aucun document d'études. Stockage massif, analyses IA incluses et une boîte email pour importer automatiquement vos fichiers.",
     stripeMonthly: "https://buy.stripe.com/9B65kE5Uoba7b9V10NgYU0b",
@@ -33,7 +33,7 @@ const PLANS = [
     id: "PRO",
     name: "Pro",
     monthlyPrice: 19,
-    annualPrice: 14,
+    annualPrice: 205,
     tagline: "Pour les professionnels",
     desc: "Tout ce qu'il faut pour travailler sans friction. L'IA classe automatiquement, vous partagez en toute sécurité et DocuBot répond à toutes vos questions.",
     stripeMonthly: "https://buy.stripe.com/7sYaEYdmQba7fqb8tfgYU0a",
@@ -55,7 +55,7 @@ const PLANS = [
     id: "BUSINESS",
     name: "Business",
     monthlyPrice: 89,
-    annualPrice: 69,
+    annualPrice: 961,
     tagline: "Pour les équipes & entreprises",
     desc: "Le niveau entreprise. Toute votre équipe dans un espace centralisé avec des workflows, des rôles précis et une IA adaptée à votre secteur d'activité.",
     stripeMonthly: "https://buy.stripe.com/6oU5kEaaEa631zl4cZgYU09",
@@ -129,7 +129,7 @@ export default function TarifsPage() {
               </button>
               <span className={`text-sm font-semibold ${annual ? "text-gray-900" : "text-gray-400"}`}>
                 Annuel
-                <span className="ml-1.5 inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600">−25%</span>
+                <span className="ml-1.5 inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-600">−10%</span>
               </span>
             </div>
           </div>
@@ -192,11 +192,13 @@ export default function TarifsPage() {
                       <span className={`text-5xl font-extrabold ${isDark ? "text-white" : "text-gray-900"}`} style={{ letterSpacing: "-0.04em" }}>
                         {price}€
                       </span>
-                      <span className={`mb-2 text-sm ${isDark ? "text-gray-500" : "text-gray-400"}`}>/mois</span>
+                      <span className={`mb-2 text-sm ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+                        {annual ? "/an" : "/mois"}
+                      </span>
                     </div>
                     {annual && (
                       <p className={`mt-1 text-xs ${isDark ? "text-gray-500" : "text-gray-400"}`}>
-                        Facturé {price * 12}€/an
+                        soit {Math.round(price / 12 * 10) / 10}€/mois · −10% vs mensuel
                       </p>
                     )}
                   </div>
