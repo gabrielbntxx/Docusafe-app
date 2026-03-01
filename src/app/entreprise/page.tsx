@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { LandingHeader } from "@/components/landing/landing-header";
 import { IntegrationsShowcase } from "@/components/landing/integrations-showcase";
+import { WhyShowcase } from "@/components/landing/why-showcase";
 
 // ─── Puff helper ──────────────────────────────────────────────────────────────
 function Puff({ w, h, blur, opacity, ml = 0 }: {
@@ -228,35 +229,8 @@ export default function EntreprisePage() {
         </svg>
       </section>
 
-      {/* ── 4 "Pourquoi" cards ── */}
-      <section className="bg-white px-4 py-20">
-        <div className="mx-auto max-w-5xl">
-          <div className="mb-12 text-center">
-            <p className="mb-3 text-xs font-bold uppercase tracking-widest text-orange-500">Pourquoi DocuSafe</p>
-            <h2
-              className="text-3xl font-extrabold text-gray-900 md:text-4xl"
-              style={{ letterSpacing: "-0.03em", lineHeight: 1.1 }}
-            >
-              Essentiel pour votre organisation.
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {WHY_CARDS.map(({ icon: Icon, color, iconColor, title, desc }) => (
-              <div
-                key={title}
-                className="flex flex-col rounded-3xl bg-gray-50 p-6 ring-1 ring-gray-100 transition-all hover:-translate-y-0.5 hover:shadow-md"
-              >
-                <div className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl ${color}`}>
-                  <Icon className={`h-5 w-5 ${iconColor}`} />
-                </div>
-                <h3 className="mb-2 text-sm font-bold text-gray-900">{title}</h3>
-                <p className="text-sm leading-relaxed text-gray-500">{desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* ── 4 visual cards + rectangle interactif ── */}
+      <WhyShowcase />
 
       {/* ── Integrations interactive showcase ── */}
       <IntegrationsShowcase />
