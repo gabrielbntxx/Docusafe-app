@@ -77,6 +77,7 @@ function FolderMockup() {
         <FolderRow icon="open" name="Contrats" depth={1} />
         <FileRow name="Contrat_prestataire_2024.pdf" depth={2} />
         <FileRow name="Avenant_mars_2025.pdf" depth={2} />
+        <FileRow name="CGV_version_finale.pdf" depth={2} />
 
         {/* Factures */}
         <FolderRow icon="open" name="Factures" depth={1} />
@@ -84,14 +85,21 @@ function FolderMockup() {
         <FolderRow icon="open"   name="2025" depth={2} />
         <FileRow name="Facture_001_janvier.pdf" depth={3} />
         <FileRow name="Facture_002_fevrier.pdf" depth={3} />
+        <FileRow name="Facture_003_mars.pdf" depth={3} />
 
         {/* RH */}
         <FolderRow icon="open" name="Documents RH" depth={1} locked />
         <FileRow name="Fiche_de_paie_fev_2025.pdf" depth={2} />
         <FileRow name="Contrat_de_travail.pdf" depth={2} />
+        <FileRow name="Attestation_employeur.pdf" depth={2} />
 
         {/* Projets */}
-        <FolderRow icon="closed" name="Projets" depth={1} />
+        <FolderRow icon="open" name="Projets" depth={1} />
+        <FolderRow icon="closed" name="Projet Alpha" depth={2} />
+        <FolderRow icon="closed" name="Projet Beta" depth={2} />
+
+        {/* Archives */}
+        <FolderRow icon="closed" name="Archives" depth={1} />
       </ul>
     </div>
   );
@@ -219,12 +227,12 @@ export default function StockagePage() {
       </section>
 
       {/* ── Un stockage qui s'adapte ── */}
-      <section className="border-y border-gray-100 bg-gray-50 px-4 py-20">
+      <section className="border-y border-blue-100 bg-blue-50/40 px-4 py-20">
         <div className="mx-auto max-w-5xl">
           <div className="flex flex-col gap-10 lg:flex-row lg:items-center lg:gap-20">
             <div className="lg:flex-1">
-              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-200">
-                <HardDrive className="h-6 w-6 text-gray-700" />
+              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100">
+                <HardDrive className="h-6 w-6 text-blue-600" />
               </div>
               <h2 className="mb-3 text-2xl font-extrabold text-gray-900" style={{ letterSpacing: "-0.02em" }}>
                 Et encore plus,<br />si vous en avez besoin.
@@ -240,16 +248,16 @@ export default function StockagePage() {
               </p>
             </div>
 
-            {/* Visual — storage growth */}
+            {/* Visual — storage breakdown */}
             <div className="lg:flex-1">
-              <div className="rounded-2xl bg-white p-6 ring-1 ring-gray-100 shadow-sm">
-                <p className="mb-4 text-xs font-bold uppercase tracking-widest text-gray-400">Espace utilisé</p>
+              <div className="rounded-2xl bg-white p-6 ring-1 ring-blue-100 shadow-sm">
+                <p className="mb-4 text-xs font-bold uppercase tracking-widest text-blue-400">Espace utilisé</p>
                 {[
-                  { label: "Contrats & juridique",  pct: 22, color: "bg-gray-800" },
-                  { label: "Factures & comptabilité", pct: 38, color: "bg-gray-600" },
-                  { label: "Documents RH",            pct: 14, color: "bg-gray-400" },
+                  { label: "Factures & comptabilité", pct: 38, color: "bg-blue-500" },
+                  { label: "Contrats & juridique",    pct: 22, color: "bg-blue-300" },
                   { label: "Photos & médias",         pct: 18, color: "bg-gray-300" },
-                  { label: "Autres",                  pct: 8,  color: "bg-gray-200" },
+                  { label: "Documents RH",            pct: 14, color: "bg-gray-200" },
+                  { label: "Autres",                  pct: 8,  color: "bg-gray-100" },
                 ].map((row) => (
                   <div key={row.label} className="mb-3">
                     <div className="mb-1 flex items-center justify-between">
@@ -261,9 +269,9 @@ export default function StockagePage() {
                     </div>
                   </div>
                 ))}
-                <div className="mt-5 flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3">
+                <div className="mt-5 flex items-center justify-between rounded-xl bg-blue-50 px-4 py-3">
                   <span className="text-xs text-gray-500">Espace libre restant</span>
-                  <span className="text-sm font-bold text-gray-900">1,82 To</span>
+                  <span className="text-sm font-bold text-blue-600">1,82 To</span>
                 </div>
               </div>
             </div>
@@ -286,7 +294,7 @@ export default function StockagePage() {
             </div>
           </div>
 
-          <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
+          <div className="grid gap-8 lg:grid-cols-[3fr_2fr] lg:items-start">
             {/* Folder mockup */}
             <FolderMockup />
 
