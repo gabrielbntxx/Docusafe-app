@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react"; // useRef used by Counter
 import Link from "next/link";
 import {
   Sparkles, ChevronRight, FileText, FolderOpen,
@@ -22,7 +22,6 @@ const MESSAGES = [
 function DocuBotChat() {
   const [visible, setVisible] = useState(0);
   const [typing, setTyping]   = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (visible >= MESSAGES.length) return;
@@ -35,10 +34,6 @@ function DocuBotChat() {
     }, wait);
     return () => clearTimeout(t);
   }, [visible]);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [visible, typing]);
 
   return (
     <div className="flex flex-col rounded-2xl bg-gray-950 ring-1 ring-white/10 overflow-hidden">
@@ -91,7 +86,6 @@ function DocuBotChat() {
             </div>
           </div>
         )}
-        <div ref={bottomRef} />
       </div>
 
       {/* Input */}
