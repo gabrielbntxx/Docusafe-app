@@ -334,6 +334,16 @@ export function WhyShowcase() {
           <Visual />
         </div>
 
+        {/* Title below rectangle */}
+        <div className="mt-16">
+          <h2
+            className="text-4xl font-extrabold text-gray-900 md:text-5xl lg:text-[3.5rem]"
+            style={{ letterSpacing: "-0.04em", lineHeight: 1.05 }}
+          >
+            Vos Documents tout-en-un<br />à portée de main.
+          </h2>
+        </div>
+
       </div>
     </section>
   );
