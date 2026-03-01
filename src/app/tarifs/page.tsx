@@ -157,7 +157,7 @@ export default function TarifsPage() {
                       : "bg-white shadow-md ring-1 ring-gray-100"
                   }`}
                 >
-                  {/* Badge */}
+                  {/* Badge top */}
                   {isFeatured && (
                     <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
                       <span className="inline-flex items-center gap-1 rounded-full bg-blue-600 px-3 py-1 text-[10px] font-bold text-white shadow">
@@ -172,6 +172,14 @@ export default function TarifsPage() {
                       </span>
                     </div>
                   )}
+
+                  {/* Free trial banner */}
+                  <div className={`mb-5 flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold ${
+                    isDark ? "bg-white/10 text-white" : "bg-green-50 text-green-700"
+                  }`}>
+                    <span>🎁</span>
+                    1 mois gratuit · sans carte bancaire
+                  </div>
 
                   {/* Header */}
                   <div className="mb-6">
@@ -239,7 +247,7 @@ export default function TarifsPage() {
             })}
           </div>
 
-          <p className="mt-6 text-center text-xs text-gray-400">Sans carte bancaire pour démarrer · Résiliation à tout moment · Données hébergées en Europe</p>
+          <p className="mt-6 text-center text-xs text-gray-400">1 mois gratuit sur tous les plans · Sans carte bancaire · Résiliation à tout moment · Données hébergées en Europe</p>
         </div>
       </section>
 
