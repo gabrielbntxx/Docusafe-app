@@ -15,8 +15,8 @@ const PLANS = [
     annualPrice: 76,
     tagline: "Pour les 18–25 ans",
     desc: "L'essentiel pour ne plus perdre aucun document d'études. Stockage massif, analyses IA incluses et une boîte email pour importer automatiquement vos fichiers.",
-    stripeMonthly: "https://buy.stripe.com/9B65kE5Uoba7b9V10NgYU0b",
-    stripeAnnual:  "https://buy.stripe.com/4gM28sbeI91Z6TF5h3gYU0c",
+    stripeMonthly: "/register",
+    stripeAnnual:  "/register",
     highlights: [
       "1 To de stockage sécurisé",
       "Analyses IA illimitées",
@@ -36,8 +36,8 @@ const PLANS = [
     annualPrice: 205,
     tagline: "Pour les professionnels",
     desc: "Tout ce qu'il faut pour travailler sans friction. L'IA classe automatiquement, vous partagez en toute sécurité et DocuBot répond à toutes vos questions.",
-    stripeMonthly: "https://buy.stripe.com/7sYaEYdmQba7fqb8tfgYU0a",
-    stripeAnnual:  "https://buy.stripe.com/fZu00k4QkcebcdZbFrgYU0d",
+    stripeMonthly: "/register",
+    stripeAnnual:  "/register",
     highlights: [
       "2 To de stockage",
       "Tri automatique IA dans les dossiers",
@@ -58,8 +58,8 @@ const PLANS = [
     annualPrice: 961,
     tagline: "Pour les équipes & entreprises",
     desc: "Le niveau entreprise. Toute votre équipe dans un espace centralisé avec des workflows, des rôles précis et une IA adaptée à votre secteur d'activité.",
-    stripeMonthly: "https://buy.stripe.com/6oU5kEaaEa631zl4cZgYU09",
-    stripeAnnual:  "https://buy.stripe.com/00w6oIciMemj7XJdNzgYU0e",
+    stripeMonthly: "/register",
+    stripeAnnual:  "/register",
     highlights: [
       "4 To de stockage équipe",
       "5 membres inclus (extensible)",
