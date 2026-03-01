@@ -168,8 +168,8 @@ function HandshakeIllustration() {
       <Image
         src="/handshake.jpeg"
         alt="Serrage de main"
-        width={400}
-        height={400}
+        width={900}
+        height={900}
         className="w-full object-contain"
         style={{
           filter: "grayscale(100%) contrast(6) brightness(1.8)",
@@ -204,7 +204,7 @@ export default function PartagePage() {
                 et gardez le contrôle total sur qui voit quoi — et jusqu&apos;à quand.
               </p>
             </div>
-            <div className="hidden lg:block w-[200px] flex-shrink-0 opacity-90">
+            <div className="hidden lg:block w-[300px] flex-shrink-0 opacity-90">
               <HandshakeIllustration />
             </div>
           </div>
