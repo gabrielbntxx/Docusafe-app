@@ -97,7 +97,7 @@ export default function TarifsPage() {
 
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
-      <LandingHeader />
+      <LandingHeader solid />
 
       {/* ── Hero title ── */}
       <section className="bg-white px-4 pt-32 pb-16">
@@ -178,7 +178,7 @@ export default function TarifsPage() {
                     isDark ? "bg-white/10 text-white" : "bg-green-50 text-green-700"
                   }`}>
                     <span>🎁</span>
-                    1 mois gratuit · sans carte bancaire
+                    1 mois gratuit
                   </div>
 
                   {/* Header */}

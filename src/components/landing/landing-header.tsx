@@ -12,7 +12,7 @@ const NAV_ITEMS = [
   { label: "Tarifs", href: "/tarifs" },
 ];
 
-export function LandingHeader() {
+export function LandingHeader({ solid: forceSolid = false }: { solid?: boolean } = {}) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -28,7 +28,7 @@ export function LandingHeader() {
     return () => { document.body.style.overflow = ""; };
   }, [menuOpen]);
 
-  const solidBg = scrolled || menuOpen;
+  const solidBg = forceSolid || scrolled || menuOpen;
 
   return (
     <>
