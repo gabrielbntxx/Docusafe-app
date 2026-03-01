@@ -159,6 +159,38 @@ const SMALL_FEATURES = [
   { icon: Mail,       title: "Notifications de partage", desc: "Recevez une alerte dès qu'un destinataire ouvre votre document partagé ou dépose un fichier demandé." },
 ];
 
+// ─── Handshake illustration ────────────────────────────────────────────────────
+
+function HandshakeIllustration() {
+  return (
+    <svg viewBox="0 0 200 230" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
+      {/* Left forearm — bold, tapering */}
+      <path d="M 12 222 C 38 188 66 158 88 128" stroke="#0f172a" strokeWidth="17" strokeLinecap="round" />
+      {/* Right forearm — bold, tapering */}
+      <path d="M 188 222 C 162 188 134 158 112 128" stroke="#0f172a" strokeWidth="17" strokeLinecap="round" />
+
+      {/* Left wrist → hand body */}
+      <path d="M 86 130 C 90 120 95 112 100 108" stroke="#0f172a" strokeWidth="10" strokeLinecap="round" />
+      {/* Right wrist → hand body */}
+      <path d="M 114 130 C 110 120 105 112 100 108" stroke="#0f172a" strokeWidth="10" strokeLinecap="round" />
+
+      {/* Left thumb — arcs up from wrist */}
+      <path d="M 87 128 C 74 112 70 94 76 76" stroke="#0f172a" strokeWidth="7" strokeLinecap="round" />
+      {/* Right thumb — arcs up from wrist */}
+      <path d="M 113 128 C 126 112 130 94 124 76" stroke="#0f172a" strokeWidth="7" strokeLinecap="round" />
+
+      {/* 4 fingers rising from knuckles */}
+      <path d="M  90 104 C  88  90  88  76  90  64" stroke="#0f172a" strokeWidth="4.5" strokeLinecap="round" />
+      <path d="M  97 101 C  96  87  96  73  98  61" stroke="#0f172a" strokeWidth="4.5" strokeLinecap="round" />
+      <path d="M 103 101 C 104  87 104  73 102  61" stroke="#0f172a" strokeWidth="4.5" strokeLinecap="round" />
+      <path d="M 110 104 C 112  90 112  76 110  64" stroke="#0f172a" strokeWidth="4.5" strokeLinecap="round" />
+
+      {/* Small knuckle accent line */}
+      <path d="M 88 106 C 94 102 106 102 112 106" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default function PartagePage() {
@@ -170,17 +202,22 @@ export default function PartagePage() {
       <section className="border-b border-gray-100 px-4 pb-16 pt-32">
         <div className="mx-auto max-w-5xl">
           <p className="mb-4 text-xs font-bold uppercase tracking-widest text-gray-400">Partage & Collaboration</p>
-          <div className="lg:max-w-2xl">
-            <h1
-              className="text-4xl font-extrabold text-gray-900 md:text-5xl lg:text-6xl"
-              style={{ letterSpacing: "-0.04em", lineHeight: 1.03 }}
-            >
-              Partagez.<br />Collaborez.<br />En toute sécurité.
-            </h1>
-            <p className="mt-5 max-w-lg text-base leading-relaxed text-gray-500">
-              Envoyez un document en un lien, demandez des fichiers à vos contacts externes,
-              et gardez le contrôle total sur qui voit quoi — et jusqu&apos;à quand.
-            </p>
+          <div className="flex items-center justify-between gap-8">
+            <div className="lg:max-w-2xl">
+              <h1
+                className="text-4xl font-extrabold text-gray-900 md:text-5xl lg:text-6xl"
+                style={{ letterSpacing: "-0.04em", lineHeight: 1.03 }}
+              >
+                Partagez.<br />Collaborez.<br />En toute sécurité.
+              </h1>
+              <p className="mt-5 max-w-lg text-base leading-relaxed text-gray-500">
+                Envoyez un document en un lien, demandez des fichiers à vos contacts externes,
+                et gardez le contrôle total sur qui voit quoi — et jusqu&apos;à quand.
+              </p>
+            </div>
+            <div className="hidden lg:block w-[200px] flex-shrink-0 opacity-90">
+              <HandshakeIllustration />
+            </div>
           </div>
         </div>
       </section>
