@@ -288,7 +288,7 @@ export function WhyShowcase() {
   const Visual = VISUALS[active];
 
   return (
-    <section className="bg-white px-4 py-20">
+    <section className="bg-white px-4 pt-20 pb-4">
       <div className="mx-auto max-w-5xl">
 
         <div className="mb-10 text-center">
