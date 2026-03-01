@@ -31,7 +31,7 @@ export async function PATCH(req: Request) {
       );
     }
 
-    const { language, theme, notifications } = await req.json();
+    const { language, theme, notifications, activityMessages } = await req.json();
 
     const updatedUser = await db.user.update({
       where: { id: session.user.id },
@@ -39,6 +39,7 @@ export async function PATCH(req: Request) {
         ...(language && { language }),
         ...(theme && { theme }),
         ...(notifications !== undefined && { notificationsEnabled: notifications ? 1 : 0 }),
+        ...(activityMessages !== undefined && { activityMessagesEnabled: activityMessages ? 1 : 0 }),
       },
     });
 

@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { createNotification } from "@/lib/notifications";
 import { getEffectiveUserId, canUpload, getMemberFolderAccess } from "@/lib/team";
+import { sendActivityMessage } from "@/lib/team-activity";
 import { hasActiveSubscription } from "@/lib/storage";
 
 // GET - List all folders for the current user
@@ -194,6 +195,11 @@ export async function POST(req: Request) {
       "folder_created",
       folder.name
     );
+
+    // Message d'activité dans le canal équipe (Business uniquement)
+    if (currentUser.planType === "BUSINESS" || currentUser.teamOwnerId) {
+      await sendActivityMessage(effectiveUserId, session.user.id, "folder_created", folder.name);
+    }
 
     return NextResponse.json(serializedFolder, { status: 201 });
   } catch (error) {

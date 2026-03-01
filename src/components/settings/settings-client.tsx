@@ -20,6 +20,7 @@ import {
   Copy,
   HelpCircle,
   MessageCircle,
+  MessageSquare,
   ChevronRight,
   Play,
   GraduationCap,
@@ -38,6 +39,7 @@ type UserSettings = {
   language: string;
   theme: string;
   notifications: boolean;
+  activityMessages: boolean;
 };
 
 const LANGUAGES = [
@@ -63,6 +65,7 @@ export function SettingsClient({
   const [language, setLanguage] = useState(user.language);
   const [theme, setTheme] = useState(user.theme);
   const [notifications, setNotifications] = useState(user.notifications);
+  const [activityMessages, setActivityMessages] = useState(user.activityMessages);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">(
     "idle"
   );
@@ -118,7 +121,7 @@ export function SettingsClient({
 
   // Auto-save a single setting
   const saveSettingImmediately = async (
-    settingName: "language" | "theme" | "notifications",
+    settingName: "language" | "theme" | "notifications" | "activityMessages",
     value: string | boolean
   ) => {
     setSaveStatus("saving");
@@ -169,6 +172,12 @@ export function SettingsClient({
     const newValue = !notifications;
     setNotifications(newValue);
     saveSettingImmediately("notifications", newValue);
+  };
+
+  const handleActivityMessagesChange = () => {
+    const newValue = !activityMessages;
+    setActivityMessages(newValue);
+    saveSettingImmediately("activityMessages", newValue);
   };
 
   return (
@@ -386,7 +395,7 @@ export function SettingsClient({
             )}
           </div>
 
-          <div className="p-3 sm:p-4">
+          <div className="p-3 sm:p-4 space-y-2">
             <div className="flex items-center justify-between rounded-xl bg-neutral-50 p-4 dark:bg-neutral-700/30">
               <div className="flex items-center gap-4">
                 <div
@@ -428,6 +437,51 @@ export function SettingsClient({
                 />
               </button>
             </div>
+
+            {/* Activity messages toggle — Business plan only */}
+            {planType === "BUSINESS" && (
+              <div className="flex items-center justify-between rounded-xl bg-neutral-50 p-4 dark:bg-neutral-700/30">
+                <div className="flex items-center gap-4">
+                  <div
+                    className={`flex h-12 w-12 items-center justify-center rounded-xl ${
+                      activityMessages
+                        ? "bg-violet-100 dark:bg-violet-500/20"
+                        : "bg-neutral-200 dark:bg-neutral-600"
+                    }`}
+                  >
+                    <MessageSquare
+                      className={`h-6 w-6 ${
+                        activityMessages
+                          ? "text-violet-600 dark:text-violet-400"
+                          : "text-neutral-500 dark:text-neutral-400"
+                      }`}
+                    />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-neutral-900 dark:text-white">
+                      Messages d&apos;activité équipe
+                    </p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                      M&apos;informer dans le canal équipe quand un collaborateur upload ou crée un dossier
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleActivityMessagesChange}
+                  className={`relative h-7 w-12 flex-shrink-0 ml-3 rounded-full transition-colors ${
+                    activityMessages
+                      ? "bg-violet-500"
+                      : "bg-neutral-300 dark:bg-neutral-600"
+                  }`}
+                >
+                  <div
+                    className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow-md transition-transform ${
+                      activityMessages ? "translate-x-[22px]" : "translate-x-0.5"
+                    }`}
+                  />
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

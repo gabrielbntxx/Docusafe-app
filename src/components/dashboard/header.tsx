@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useSubscription } from "@/components/providers/subscription-provider";
 import { NotificationsDropdown } from "./notifications-dropdown";
+import { MessagingDropdown } from "./messaging-dropdown";
 import { TeamQuickPanel } from "./team-quick-panel";
 import Link from "next/link";
 import { ChevronRight, Users } from "lucide-react";
@@ -15,6 +16,7 @@ export function Header() {
   const { planType } = useSubscription();
   const isOwner = !session?.user?.teamOwnerId;
   const showTeamButton = planType === "BUSINESS" && isOwner;
+  const showMessaging = planType === "BUSINESS";
   const [isTeamPanelOpen, setIsTeamPanelOpen] = useState(false);
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   // Greeting computed client-side only to avoid hydration mismatch (server/client timezone diff)
@@ -71,6 +73,7 @@ export function Header() {
                 <Users className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
               </button>
             )}
+            {showMessaging && <MessagingDropdown />}
             <NotificationsDropdown />
 
             <Link

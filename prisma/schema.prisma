@@ -56,6 +56,9 @@ model User {
   // Email Import
   importEmailId        String?   @unique // Unique ID for import email (e.g., abc123 for user-abc123@import.docusafe.app)
 
+  // Messaging (Business plan)
+  activityMessagesEnabled Int @default(1) // 1 = recevoir les msgs auto d'activité dans le canal équipe
+
   // Team (Business plan)
   teamOwnerId  String?   // If set, this user is a member of this owner's team
   teamRole     String?   // "owner" | "admin" | "editeur" | "lecteur" (null = solo user)
@@ -75,6 +78,8 @@ model User {
   teamInvitations    TeamInvitation[]
   workflowTemplates  WorkflowTemplate[]
   workflowRuns       WorkflowRun[]
+  sentMessages       Message[] @relation("SentMessages")
+  receivedMessages   Message[] @relation("ReceivedMessages")
 
   @@index([email])
   @@index([stripeCustomerId])
@@ -458,4 +463,27 @@ model WorkflowRun {
   @@index([templateId])
   @@index([userId])
   @@index([status])
+}
+
+// ============================================
+// MESSAGING (Business plan)
+// ============================================
+
+model Message {
+  id          String   @id @default(cuid())
+  teamOwnerId String   // userId du propriétaire de l'équipe
+  senderId    String
+  receiverId  String?  // null = canal équipe ; userId = DM privé
+  content     String
+  type        String   @default("text") // "text" | "activity"
+  metadata    String?  // JSON ex: {"action":"upload","name":"Contrat.pdf"}
+  readBy      String   @default("[]") // JSON array des userIds ayant lu
+  createdAt   DateTime @default(now())
+
+  sender   User  @relation("SentMessages",     fields: [senderId],   references: [id], onDelete: Cascade)
+  receiver User? @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([teamOwnerId])
+  @@index([senderId])
+  @@index([receiverId])
 }

@@ -20,6 +20,7 @@ export default async function SettingsPage() {
       language: true,
       theme: true,
       notificationsEnabled: true,
+      activityMessagesEnabled: true,
       planType: true,
       teamOwnerId: true,
       teamRole: true,
@@ -40,6 +41,7 @@ export default async function SettingsPage() {
         language: user.language,
         theme: user.theme,
         notifications: user.notificationsEnabled === 1,
+        activityMessages: user.activityMessagesEnabled === 1,
       }}
       planType={user.planType}
       isTeamOwner={!user.teamOwnerId && user.planType === "BUSINESS"}

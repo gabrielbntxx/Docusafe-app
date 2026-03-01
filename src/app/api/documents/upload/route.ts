@@ -25,6 +25,7 @@ import {
 } from "@/lib/encryption";
 import { applyFolderRules } from "@/lib/folder-rules";
 import { getEffectiveUserId, canUpload } from "@/lib/team";
+import { sendActivityMessage } from "@/lib/team-activity";
 import { revalidatePath } from "next/cache";
 
 // Allow up to 120 seconds per upload (large files + encryption + R2 PUT)
@@ -273,6 +274,11 @@ export async function POST(req: Request) {
       "document_uploaded",
       finalFileName
     );
+
+    // Message d'activité dans le canal équipe (Business uniquement)
+    if (currentUser.planType === "BUSINESS" || currentUser.teamOwnerId) {
+      await sendActivityMessage(effectiveUserId, session.user.id, "upload", finalFileName);
+    }
 
     revalidatePath("/dashboard", "layout");
 
