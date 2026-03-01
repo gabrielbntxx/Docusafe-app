@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Upload, Sparkles, Search, FileText, FolderOpen,
   Check, RefreshCw, ArrowRight, Clock,
@@ -151,17 +151,35 @@ const STEPS = [
 
 export function EaseShowcase() {
   const [active, setActive] = useState(0);
+  const sectionRef = useRef<HTMLElement>(null);
 
-  // Auto-cycle every 3 s
+  // Start auto-cycle only when section is visible in the viewport
   useEffect(() => {
-    const t = setInterval(() => setActive((p) => (p + 1) % STEPS.length), 3000);
-    return () => clearInterval(t);
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          interval = setInterval(() => setActive((p) => (p + 1) % STEPS.length), 3000);
+        } else {
+          if (interval) clearInterval(interval);
+        }
+      },
+      { threshold: 0.4 }
+    );
+
+    if (sectionRef.current) observer.observe(sectionRef.current);
+
+    return () => {
+      observer.disconnect();
+      if (interval) clearInterval(interval);
+    };
   }, []);
 
   const { Visual } = STEPS[active];
 
   return (
-    <section className="bg-white px-4 pt-16 pb-24">
+    <section ref={sectionRef} className="bg-white px-4 pt-16 pb-24">
       <div className="mx-auto max-w-5xl">
         <div className="flex flex-col gap-10 lg:flex-row lg:items-center lg:gap-16">
 
