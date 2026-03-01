@@ -9,7 +9,7 @@ const NAV_ITEMS = [
   { label: "Produit", href: "#" },
   { label: "IA", href: "#" },
   { label: "Entreprise", href: "/entreprise" },
-  { label: "Tarifs", href: "/dashboard/subscription" },
+  { label: "Tarifs", href: "/tarifs" },
 ];
 
 export function LandingHeader() {
@@ -37,10 +37,10 @@ export function LandingHeader() {
           solidBg ? "bg-white/95 backdrop-blur-xl shadow-sm border-b border-gray-100/80" : ""
         }`}
       >
-        <div className="flex h-16 w-full items-center justify-between px-4 md:px-6">
+        <div className="flex h-16 w-full items-center px-4 md:px-6">
 
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 flex-shrink-0">
+          {/* Logo — left */}
+          <Link href="/" className="flex flex-1 items-center gap-2.5 flex-shrink-0">
             <div
               className={`flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl transition-all duration-300 ${
                 solidBg ? "bg-gray-100 ring-1 ring-gray-200" : "bg-white/20 backdrop-blur-sm shadow-md ring-1 ring-white/30"
@@ -57,8 +57,8 @@ export function LandingHeader() {
             </span>
           </Link>
 
-          {/* Nav — desktop only */}
-          <nav className="hidden lg:flex items-center gap-0.5">
+          {/* Nav — desktop only, truly centered */}
+          <nav className="hidden lg:flex items-center gap-0.5 flex-shrink-0">
             {NAV_ITEMS.map((item) => (
               <Link
                 key={item.label}
@@ -75,7 +75,7 @@ export function LandingHeader() {
           </nav>
 
           {/* Right side */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-1 justify-end items-center gap-2">
 
             {/* Desktop CTAs */}
             <div className="hidden lg:flex items-center gap-2">
