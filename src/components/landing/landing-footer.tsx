@@ -10,6 +10,7 @@ const LINKS = [
       { label: "Intelligence Artificielle", href: "/#ia" },
       { label: "Import & Email",      href: "/import" },
       { label: "Partage & Collaboration", href: "/partage" },
+      { label: "Alertes & Expiration",    href: "/alertes" },
     ],
   },
   {

@@ -52,7 +52,7 @@ const PRODUIT_ITEMS = [
     icon: Bell,
     label: "Alertes & Expiration",
     desc: "Notifications & suivi des échéances",
-    href: "/#alertes",
+    href: "/alertes",
     bg: "bg-amber-50",
     fg: "text-amber-500",
   },
