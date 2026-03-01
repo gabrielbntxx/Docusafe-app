@@ -172,7 +172,7 @@ function HandshakeIllustration() {
         height={400}
         className="w-full object-contain"
         style={{
-          filter: "grayscale(100%) contrast(1.4) brightness(0.92)",
+          filter: "grayscale(100%) contrast(6) brightness(1.8)",
           mixBlendMode: "multiply",
         }}
       />
