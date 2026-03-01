@@ -7,6 +7,7 @@ import {
 import { LandingHeader } from "@/components/landing/landing-header";
 import { IntegrationsShowcase } from "@/components/landing/integrations-showcase";
 import { WhyShowcase } from "@/components/landing/why-showcase";
+import { EaseShowcase } from "@/components/landing/ease-showcase";
 
 
 // ─── 4 "Why enterprise" cards ─────────────────────────────────────────────────
@@ -280,6 +281,9 @@ export default function EntreprisePage() {
           </div>
         </div>
       </section>
+
+      {/* ── Ease of use ── */}
+      <EaseShowcase />
 
       {/* ── Final CTA ── */}
       <section className="bg-white py-24 px-4">
