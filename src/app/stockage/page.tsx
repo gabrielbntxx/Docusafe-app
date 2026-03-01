@@ -62,7 +62,7 @@ const FOLDER_FEATURES = [
 
 function FolderMockup() {
   return (
-    <div className="rounded-2xl bg-gray-50 ring-1 ring-gray-100 p-6 font-mono text-sm select-none">
+    <div className="h-full rounded-2xl bg-gray-50 ring-1 ring-gray-100 p-6 font-mono text-sm select-none">
       {/* Header */}
       <div className="mb-4 flex items-center gap-2">
         <div className="h-3 w-3 rounded-full bg-gray-200" />
@@ -114,11 +114,11 @@ function FolderRow({ name, depth, icon, locked }: { name: string; depth: number;
         className={`h-3 w-3 flex-shrink-0 text-gray-300 transition-transform ${icon === "open" ? "rotate-90" : ""}`}
       />
       {icon === "open"
-        ? <FolderOpen className="h-3.5 w-3.5 flex-shrink-0 text-gray-600" />
+        ? <FolderOpen className="h-3.5 w-3.5 flex-shrink-0 text-blue-500" />
         : <Folder     className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
       }
       <span className={`${icon === "open" ? "font-semibold text-gray-800" : "text-gray-500"}`}>{name}</span>
-      {locked && <Lock className="h-3 w-3 text-gray-400 ml-0.5" />}
+      {locked && <Lock className="h-3 w-3 text-blue-400 ml-0.5" />}
     </li>
   );
 }
@@ -285,27 +285,27 @@ export default function StockagePage() {
       <section className="px-4 py-20">
         <div className="mx-auto max-w-5xl">
           <div className="mb-10 flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100">
-              <Folder className="h-6 w-6 text-gray-700" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100">
+              <Folder className="h-6 w-6 text-blue-600" />
             </div>
             <div>
               <h2 className="text-2xl font-extrabold text-gray-900" style={{ letterSpacing: "-0.02em" }}>
                 Documents & Dossiers
               </h2>
-              <p className="text-sm text-gray-400">Une organisation claire, accessible en quelques secondes.</p>
+              <p className="text-sm text-blue-500 font-medium">Une organisation claire, accessible en quelques secondes.</p>
             </div>
           </div>
 
-          <div className="grid gap-8 lg:grid-cols-[3fr_2fr] lg:items-start">
+          <div className="grid gap-8 lg:grid-cols-[3fr_2fr] lg:items-stretch">
             {/* Folder mockup */}
             <FolderMockup />
 
             {/* Feature cards */}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 content-start">
               {FOLDER_FEATURES.map((feat) => (
                 <div key={feat.title} className="rounded-2xl bg-gray-50 p-5 ring-1 ring-gray-100">
-                  <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg bg-white ring-1 ring-gray-200 shadow-sm">
-                    <feat.icon className="h-4 w-4 text-gray-600" strokeWidth={1.8} />
+                  <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 ring-1 ring-blue-100">
+                    <feat.icon className="h-4 w-4 text-blue-600" strokeWidth={1.8} />
                   </div>
                   <p className="mb-1 text-sm font-bold text-gray-900">{feat.title}</p>
                   <p className="text-xs leading-relaxed text-gray-500">{feat.desc}</p>
