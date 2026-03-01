@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   Link2, Mail, Lock, Clock, UserCheck, Send,
   Check, Copy, Eye, EyeOff, ChevronRight, ArrowRight,
@@ -163,31 +164,19 @@ const SMALL_FEATURES = [
 
 function HandshakeIllustration() {
   return (
-    <svg viewBox="0 0 200 230" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
-      {/* Left forearm — bold, tapering */}
-      <path d="M 12 222 C 38 188 66 158 88 128" stroke="#0f172a" strokeWidth="17" strokeLinecap="round" />
-      {/* Right forearm — bold, tapering */}
-      <path d="M 188 222 C 162 188 134 158 112 128" stroke="#0f172a" strokeWidth="17" strokeLinecap="round" />
-
-      {/* Left wrist → hand body */}
-      <path d="M 86 130 C 90 120 95 112 100 108" stroke="#0f172a" strokeWidth="10" strokeLinecap="round" />
-      {/* Right wrist → hand body */}
-      <path d="M 114 130 C 110 120 105 112 100 108" stroke="#0f172a" strokeWidth="10" strokeLinecap="round" />
-
-      {/* Left thumb — arcs up from wrist */}
-      <path d="M 87 128 C 74 112 70 94 76 76" stroke="#0f172a" strokeWidth="7" strokeLinecap="round" />
-      {/* Right thumb — arcs up from wrist */}
-      <path d="M 113 128 C 126 112 130 94 124 76" stroke="#0f172a" strokeWidth="7" strokeLinecap="round" />
-
-      {/* 4 fingers rising from knuckles */}
-      <path d="M  90 104 C  88  90  88  76  90  64" stroke="#0f172a" strokeWidth="4.5" strokeLinecap="round" />
-      <path d="M  97 101 C  96  87  96  73  98  61" stroke="#0f172a" strokeWidth="4.5" strokeLinecap="round" />
-      <path d="M 103 101 C 104  87 104  73 102  61" stroke="#0f172a" strokeWidth="4.5" strokeLinecap="round" />
-      <path d="M 110 104 C 112  90 112  76 110  64" stroke="#0f172a" strokeWidth="4.5" strokeLinecap="round" />
-
-      {/* Small knuckle accent line */}
-      <path d="M 88 106 C 94 102 106 102 112 106" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" />
-    </svg>
+    <div className="relative w-full">
+      <Image
+        src="/handshake.jpeg"
+        alt="Serrage de main"
+        width={400}
+        height={400}
+        className="w-full object-contain"
+        style={{
+          filter: "grayscale(100%) contrast(1.4) brightness(0.92)",
+          mixBlendMode: "multiply",
+        }}
+      />
+    </div>
   );
 }
 
