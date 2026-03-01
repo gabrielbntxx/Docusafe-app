@@ -20,7 +20,7 @@ const PRODUIT_ITEMS = [
     icon: Sparkles,
     label: "Intelligence Artificielle",
     desc: "Classification auto, analyses & DocuBot",
-    href: "/#ia",
+    href: "/ia",
     bg: "bg-violet-50",
     fg: "text-violet-500",
   },

@@ -7,7 +7,7 @@ const LINKS = [
     items: [
       { label: "Stockage & Dossiers", href: "/stockage" },
       { label: "Sécurité",            href: "/securite" },
-      { label: "Intelligence Artificielle", href: "/#ia" },
+      { label: "Intelligence Artificielle", href: "/ia" },
       { label: "Import & Email",      href: "/import" },
       { label: "Partage & Collaboration", href: "/partage" },
       { label: "Alertes & Expiration",    href: "/alertes" },
