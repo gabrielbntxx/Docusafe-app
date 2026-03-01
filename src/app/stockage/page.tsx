@@ -1,9 +1,11 @@
+import Link from "next/link";
 import {
   HardDrive, FileText, Image, CalendarDays,
   Folder, FolderOpen, Zap, Lock, Download, Search,
   ChevronRight, Plus,
 } from "lucide-react";
 import { LandingHeader } from "@/components/landing/landing-header";
+import { LandingFooter } from "@/components/landing/landing-footer";
 
 // ─── Storage plans ─────────────────────────────────────────────────────────────
 
@@ -313,6 +315,27 @@ export default function StockagePage() {
           </div>
         </div>
       </section>
+
+      {/* ── CTA final ── */}
+      <section className="border-t border-gray-100 px-4 py-24 text-center">
+        <div className="mx-auto max-w-2xl">
+          <h2
+            className="mb-8 text-4xl font-extrabold text-gray-900 md:text-5xl"
+            style={{ letterSpacing: "-0.04em", lineHeight: 1.08 }}
+          >
+            Stocker votre prochain document dans DocuSafe.<br />
+            <span className="text-gray-400">Testez dès maintenant.</span>
+          </h2>
+          <Link
+            href="/register"
+            className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-8 py-4 text-sm font-bold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:bg-blue-500"
+          >
+            Essayer maintenant
+          </Link>
+        </div>
+      </section>
+
+      <LandingFooter />
     </div>
   );
 }
