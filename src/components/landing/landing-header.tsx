@@ -24,7 +24,7 @@ const PRODUIT_ITEMS = [
     icon: HardDrive,
     label: "Stockage & Dossiers",
     desc: "Jusqu'à 4 To, sous-dossiers & triage",
-    href: "/#stockage",
+    href: "/stockage",
   },
   {
     icon: Mail,
