@@ -60,7 +60,6 @@ const PRODUIT_ITEMS = [
 
 const NAV_ITEMS = [
   { label: "Produit", href: "#", hasDropdown: true },
-  { label: "IA", href: "#", hasDropdown: false },
   { label: "Entreprise", href: "/entreprise", hasDropdown: false },
   { label: "Tarifs", href: "/tarifs", hasDropdown: false },
 ];
