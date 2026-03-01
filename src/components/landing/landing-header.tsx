@@ -12,7 +12,7 @@ const PRODUIT_ITEMS = [
     icon: Shield,
     label: "Sécurité",
     desc: "Chiffrement, PIN & accès contrôlé",
-    href: "/#securite",
+    href: "/securite",
   },
   {
     icon: Sparkles,
