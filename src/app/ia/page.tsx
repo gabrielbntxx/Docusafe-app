@@ -49,8 +49,8 @@ function DocuBotChat() {
             <Sparkles className="h-3 w-3 text-violet-400" />
           </div>
           <span className="text-xs font-semibold text-white/60">DocuBot</span>
-          <span className="flex h-1.5 w-1.5 rounded-full bg-green-400">
-            <span className="animate-ping absolute inline-flex h-1.5 w-1.5 rounded-full bg-green-400 opacity-75" />
+          <span className="relative flex h-1.5 w-1.5 rounded-full bg-green-400">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
           </span>
         </div>
       </div>
