@@ -36,7 +36,7 @@ const PRODUIT_ITEMS = [
     icon: Share2,
     label: "Partage & Collaboration",
     desc: "Partage sécurisé, liens & demandes",
-    href: "/#partage",
+    href: "/partage",
   },
   {
     icon: Bell,
