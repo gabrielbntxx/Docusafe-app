@@ -8,7 +8,6 @@ import { DocubotSection } from "@/components/landing/docubot-section";
 import { StorageSection } from "@/components/landing/storage-section";
 import { TestimonialsSection } from "@/components/landing/testimonials-section";
 import { FinalCta } from "@/components/landing/final-cta";
-import { EaseShowcase } from "@/components/landing/ease-showcase";
 
 export default function Home() {
   return (
@@ -19,9 +18,6 @@ export default function Home() {
 
       {/* ─── Hero ─── */}
       <HeroSection />
-
-      {/* ─── Prise en main (démarre quand visible) ─── */}
-      <EaseShowcase />
 
       {/* ─── IA Analysis ─── */}
       <AnalysisSection />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   FileText, Calendar, Banknote, AlertCircle,
   FolderOpen, Sparkles, Users, Check, Loader2,
@@ -62,11 +62,30 @@ const CYCLE   = 13; // 2 scan + 7 items + 4 done
 // ─── Component ────────────────────────────────────────────────────────────────
 export function AnalysisSection() {
   const [tick, setTick] = useState(0);
-  const [openFeature, setOpenFeature] = useState(0); // première ouverte par défaut
+  const [openFeature, setOpenFeature] = useState(0);
+  const sectionRef = useRef<HTMLElement>(null);
 
+  // Démarre l'animation seulement quand la section est visible
   useEffect(() => {
-    const id = setInterval(() => setTick(t => (t + 1) % CYCLE), TICK_MS);
-    return () => clearInterval(id);
+    let id: ReturnType<typeof setInterval> | null = null;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          id = setInterval(() => setTick(t => (t + 1) % CYCLE), TICK_MS);
+        } else {
+          if (id) clearInterval(id);
+        }
+      },
+      { threshold: 0.25 }
+    );
+
+    if (sectionRef.current) observer.observe(sectionRef.current);
+
+    return () => {
+      observer.disconnect();
+      if (id) clearInterval(id);
+    };
   }, []);
 
   const isScanning   = tick <= 1;
@@ -74,7 +93,7 @@ export function AnalysisSection() {
   const isDone       = tick >= ITEMS.length + 2;
 
   return (
-    <section className="bg-gray-50 px-4 pt-24 pb-8 md:pt-32 md:pb-10">
+    <section ref={sectionRef} className="bg-gray-50 px-4 pt-24 pb-8 md:pt-32 md:pb-10">
 
       <style>{`
         @keyframes scanDown {
