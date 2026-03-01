@@ -30,7 +30,7 @@ const PRODUIT_ITEMS = [
     icon: Mail,
     label: "Import & Email",
     desc: "Google Drive, OneDrive & email unique",
-    href: "/#import",
+    href: "/import",
   },
   {
     icon: Share2,

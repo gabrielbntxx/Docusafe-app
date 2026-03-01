@@ -8,8 +8,8 @@ const LINKS = [
       { label: "Stockage & Dossiers", href: "/stockage" },
       { label: "Sécurité",            href: "/securite" },
       { label: "Intelligence Artificielle", href: "/#ia" },
-      { label: "Import & Email",      href: "/#import" },
-      { label: "Partage & Collaboration", href: "/#partage" },
+      { label: "Import & Email",      href: "/import" },
+      { label: "Partage & Collaboration", href: "/partage" },
     ],
   },
   {
