@@ -87,111 +87,115 @@ const FEATURES = [
   },
 ];
 
+// ─── Puff — nuage blanc/gris ──────────────────────────────────────────────────
+function Puff({ w, h, blur, opacity, ml = 0 }: {
+  w: number; h: number; blur: number; opacity: number; ml?: number;
+}) {
+  return (
+    <div
+      style={{
+        width: w, height: h, borderRadius: "50%",
+        background: "white",
+        filter: `blur(${blur}px)`, opacity, flexShrink: 0, marginLeft: ml,
+      }}
+    />
+  );
+}
+
 // ─── Page ──────────────────────────────────────────────────────────────────────
 export default function EntreprisePage() {
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
       <LandingHeader />
 
-      {/* ── Hero — sombre institutionnel ── */}
+      {/* ── Hero — ciel gris blanc ── */}
       <section className="relative flex min-h-[90vh] flex-col items-center justify-center overflow-hidden px-4 pb-0 pt-24 text-center">
 
-        {/* Dark background */}
-        <div className="absolute inset-0" style={{ background: "#0a0a0a" }} />
-
-        {/* Dot grid */}
-        <svg
-          className="pointer-events-none absolute inset-0 h-full w-full"
-          aria-hidden="true"
-          style={{ opacity: 0.22 }}
-        >
-          <defs>
-            <pattern id="hero-dots" x="0" y="0" width="28" height="28" patternUnits="userSpaceOnUse">
-              <circle cx="1" cy="1" r="1" fill="#666" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#hero-dots)" />
-        </svg>
-
-        {/* Concentric rings */}
+        {/* Sky gradient — anthracite haut → gris moyen → blanc bas */}
         <div
-          className="pointer-events-none absolute"
+          className="absolute inset-0"
           style={{
-            top: "50%", left: "50%", transform: "translate(-50%, -56%)",
-            width: 600, height: 600, borderRadius: "50%",
-            border: "1px solid rgba(255,255,255,0.07)",
-          }}
-        />
-        <div
-          className="pointer-events-none absolute"
-          style={{
-            top: "50%", left: "50%", transform: "translate(-50%, -56%)",
-            width: 900, height: 900, borderRadius: "50%",
-            border: "1px solid rgba(255,255,255,0.04)",
-          }}
-        />
-        <div
-          className="pointer-events-none absolute"
-          style={{
-            top: "50%", left: "50%", transform: "translate(-50%, -56%)",
-            width: 1200, height: 1200, borderRadius: "50%",
-            border: "1px solid rgba(255,255,255,0.025)",
+            background:
+              "linear-gradient(180deg, #9ba5af 0%, #b8c2cb 18%, #cdd4da 38%, #dde2e7 58%, #eceff2 76%, #f7f8f9 90%, #ffffff 100%)",
           }}
         />
 
-        {/* Subtle radial glow behind title */}
+        {/* Lueur douce derrière le titre */}
         <div
           className="pointer-events-none absolute"
           style={{
-            top: "8%", left: "50%", transform: "translateX(-50%)",
+            top: "6%", left: "50%", transform: "translateX(-50%)",
             width: 900, height: 500,
-            background: "radial-gradient(ellipse at center, rgba(255,255,255,0.055) 0%, transparent 65%)",
+            background: "radial-gradient(ellipse at center, rgba(255,255,255,0.55) 0%, transparent 65%)",
             borderRadius: "50%",
           }}
         />
 
-        {/* Thin accent lines — top corners */}
-        <svg
-          className="pointer-events-none absolute top-0 left-0 w-64 h-64"
-          aria-hidden="true"
-          style={{ opacity: 0.12 }}
-        >
-          <line x1="0" y1="0" x2="200" y2="200" stroke="white" strokeWidth="0.5" />
-          <line x1="0" y1="40" x2="160" y2="200" stroke="white" strokeWidth="0.5" />
-        </svg>
-        <svg
-          className="pointer-events-none absolute top-0 right-0 w-64 h-64"
-          aria-hidden="true"
-          style={{ opacity: 0.12 }}
-        >
-          <line x1="256" y1="0" x2="56" y2="200" stroke="white" strokeWidth="0.5" />
-          <line x1="256" y1="40" x2="96" y2="200" stroke="white" strokeWidth="0.5" />
-        </svg>
+        {/* Nuage gauche */}
+        <div className="hero-cloud-a pointer-events-none absolute left-0" style={{ top: "14%" }}>
+          <div className="scale-[0.52] origin-left md:scale-100">
+            <div className="hero-float-slow" style={{ display: "flex", alignItems: "flex-end" }}>
+              <Puff w={148} h={98}  blur={20} opacity={0.72} />
+              <Puff w={230} h={152} blur={16} opacity={0.82} ml={-80} />
+              <Puff w={162} h={110} blur={18} opacity={0.76} ml={-90} />
+            </div>
+          </div>
+        </div>
+
+        {/* Nuage gauche bas */}
+        <div className="pointer-events-none absolute left-0" style={{ top: "44%" }}>
+          <div className="scale-[0.40] origin-left md:scale-75">
+            <div className="hero-float-med" style={{ display: "flex", alignItems: "flex-end" }}>
+              <Puff w={120} h={78}  blur={18} opacity={0.55} />
+              <Puff w={180} h={120} blur={14} opacity={0.62} ml={-60} />
+            </div>
+          </div>
+        </div>
+
+        {/* Nuage droit */}
+        <div className="hero-cloud-c pointer-events-none absolute right-0" style={{ top: "18%" }}>
+          <div className="scale-[0.52] origin-right md:scale-100">
+            <div className="hero-float-med" style={{ display: "flex", alignItems: "flex-end" }}>
+              <Puff w={112} h={74}  blur={18} opacity={0.65} />
+              <Puff w={192} h={130} blur={14} opacity={0.78} ml={-60} />
+              <Puff w={132} h={88}  blur={16} opacity={0.70} ml={-72} />
+            </div>
+          </div>
+        </div>
+
+        {/* Nuage droit bas */}
+        <div className="pointer-events-none absolute right-0" style={{ top: "50%" }}>
+          <div className="scale-[0.38] origin-right md:scale-[0.65]">
+            <div className="hero-float-slow" style={{ display: "flex", alignItems: "flex-end" }}>
+              <Puff w={100} h={64}  blur={16} opacity={0.50} />
+              <Puff w={160} h={108} blur={12} opacity={0.58} ml={-50} />
+            </div>
+          </div>
+        </div>
 
         {/* Content */}
         <div className="relative z-10 mx-auto flex w-full max-w-4xl flex-col items-center">
 
           {/* Label pill */}
-          <div className="hero-anim-title mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 backdrop-blur-sm">
-            <Building2 className="h-4 w-4 text-white/70" />
-            <span className="text-sm font-semibold tracking-widest uppercase text-white/70">
+          <div className="hero-anim-title mb-6 inline-flex items-center gap-2 rounded-full border border-gray-400/40 bg-white/55 px-4 py-2 backdrop-blur-sm">
+            <Building2 className="h-4 w-4 text-gray-500" />
+            <span className="text-sm font-semibold tracking-widest uppercase text-gray-500">
               DocuSafe pour les entreprises
             </span>
           </div>
 
           {/* Main title */}
           <h1
-            className="hero-anim-sub mb-6 max-w-3xl text-[2.2rem] text-white sm:text-[2.8rem] md:text-[3.6rem] lg:text-[4.2rem]"
+            className="hero-anim-sub mb-6 max-w-3xl text-[2.2rem] text-gray-900 sm:text-[2.8rem] md:text-[3.6rem] lg:text-[4.2rem]"
             style={{
               fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif',
               fontWeight: 800,
               letterSpacing: "-0.038em",
               lineHeight: 1.06,
-              textShadow: "0 2px 32px rgba(0,0,0,0.22)",
             }}
           >
             Les documents<br />
-            <span style={{ opacity: 0.90 }}>et les connaissances</span><br />
+            <span style={{ color: "rgba(30,30,30,0.65)" }}>et les connaissances</span><br />
             connectés.
           </h1>
 
@@ -201,18 +205,18 @@ export default function EntreprisePage() {
             style={{
               fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif',
               fontWeight: 400,
-              color: "rgba(255,255,255,0.55)",
+              color: "rgba(30,30,30,0.52)",
               lineHeight: 1.7,
             }}
           >
             Un seul espace pour gérer vos documents sécurisés, avec l&apos;IA qui permet aux équipes d&apos;entreprise de mieux collaborer et de créer plus rapidement ensemble.
           </p>
 
-          {/* CTA — single button */}
+          {/* CTA */}
           <div style={{ animation: "hero-fade-up 0.85s cubic-bezier(0.22,1,0.36,1) 0.58s both" }}>
             <Link
               href="/register"
-              className="group inline-flex items-center gap-2 rounded-full bg-white px-8 py-4 text-[15px] font-semibold text-gray-900 shadow-[0_4px_28px_rgba(0,0,0,0.24)] transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_36px_rgba(0,0,0,0.28)]"
+              className="group inline-flex items-center gap-2 rounded-full bg-gray-900 px-8 py-4 text-[15px] font-semibold text-white shadow-[0_4px_28px_rgba(0,0,0,0.18)] transition-all hover:-translate-y-0.5 hover:bg-gray-700 hover:shadow-[0_8px_36px_rgba(0,0,0,0.22)]"
             >
               Demander Business
               <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
@@ -221,16 +225,16 @@ export default function EntreprisePage() {
 
         </div>
 
-        {/* Transition wave dark → white */}
+        {/* Vagues de transition ciel → blanc */}
         <svg
           className="pointer-events-none absolute bottom-0 left-0 w-full"
           viewBox="0 0 1440 160"
           preserveAspectRatio="none"
           aria-hidden="true"
         >
-          <path d="M0,100 C260,68 520,136 780,104 C1040,72 1220,128 1440,108 L1440,160 L0,160 Z" fill="white" fillOpacity="0.06" />
-          <path d="M0,118 C380,90 760,142 1140,120 C1300,110 1390,128 1440,130 L1440,160 L0,160 Z" fill="white" fillOpacity="0.14" />
-          <path d="M0,134 C500,118 1000,148 1440,136 L1440,160 L0,160 Z" fill="white" fillOpacity="0.45" />
+          <path d="M0,100 C260,68 520,136 780,104 C1040,72 1220,128 1440,108 L1440,160 L0,160 Z" fill="white" fillOpacity="0.28" />
+          <path d="M0,118 C380,90 760,142 1140,120 C1300,110 1390,128 1440,130 L1440,160 L0,160 Z" fill="white" fillOpacity="0.55" />
+          <path d="M0,134 C500,118 1000,148 1440,136 L1440,160 L0,160 Z" fill="white" fillOpacity="0.80" />
           <path d="M0,148 C480,138 960,156 1440,144 L1440,160 L0,160 Z" fill="white" />
         </svg>
       </section>
