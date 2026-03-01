@@ -194,7 +194,7 @@ export function IntegrationsShowcase() {
   const Visual = VISUALS[active];
 
   return (
-    <section className="bg-white px-4 pt-4 pb-20">
+    <section className="bg-white px-4 pt-4 pb-4">
       <div className="mx-auto max-w-5xl">
         <div className="overflow-hidden rounded-3xl bg-white shadow-xl ring-1 ring-gray-100">
           <div className="flex flex-col lg:flex-row lg:items-stretch">
@@ -255,6 +255,17 @@ export function IntegrationsShowcase() {
 
           </div>
         </div>
+
+        {/* Title below rectangle */}
+        <div className="mt-16">
+          <h2
+            className="text-4xl font-extrabold text-gray-900 md:text-5xl lg:text-[3.5rem]"
+            style={{ letterSpacing: "-0.04em", lineHeight: 1.05 }}
+          >
+            Des fonctionnalités essentielles<br />pour une équipe&nbsp;!
+          </h2>
+        </div>
+
       </div>
     </section>
   );

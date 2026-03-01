@@ -246,7 +246,7 @@ export default function EntreprisePage() {
       <IntegrationsShowcase />
 
       {/* ── Features — grand rectangle ── */}
-      <section className="bg-gray-50 px-4 py-20">
+      <section className="bg-white px-4 pt-6 pb-20">
         <div className="mx-auto max-w-5xl">
           <div className="overflow-hidden rounded-3xl bg-white shadow-xl ring-1 ring-gray-100">
 
