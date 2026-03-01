@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { MessageSquare, Send, FileText, Folder, ArrowLeft, Users } from "lucide-react";
+import { MessageSquare, Send, FileText, Folder, ArrowLeft, Users, Trash2 } from "lucide-react";
 
 type TeamMember = {
   id: string;
@@ -210,6 +210,17 @@ export function MessagingDropdown() {
     } finally { setSending(false); }
   };
 
+  const deleteMessage = async (id: string, isChannel: boolean) => {
+    try {
+      await fetch(`/api/messages/${id}`, { method: "DELETE" });
+      if (isChannel) {
+        setChannelMessages((prev) => prev.filter((m) => m.id !== id));
+      } else {
+        setDmMessages((prev) => prev.filter((m) => m.id !== id));
+      }
+    } catch {}
+  };
+
   const activeMember = members.find((m) => m.id === activeDm);
 
   return (
@@ -309,7 +320,7 @@ export function MessagingDropdown() {
                       return (
                         <div
                           key={msg.id}
-                          className={`flex items-start gap-2 ${isMine ? "flex-row-reverse" : ""}`}
+                          className={`group flex items-start gap-2 ${isMine ? "flex-row-reverse" : ""}`}
                         >
                           {!isMine && (
                             <Avatar name={msg.sender.name} color={msg.sender.memberColor} size="sm" />
@@ -320,27 +331,37 @@ export function MessagingDropdown() {
                                 {msg.sender.name || msg.sender.email}
                               </span>
                             )}
-                            <div
-                              className={`rounded-2xl px-3 py-2 text-xs leading-relaxed ${
-                                msg.type === "activity"
-                                  ? "flex items-center gap-1.5 bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 rounded-xl"
-                                  : isMine
-                                  ? "bg-violet-600 text-white rounded-tr-sm"
-                                  : "bg-neutral-100 text-neutral-800 rounded-tl-sm dark:bg-neutral-800 dark:text-neutral-200"
-                              }`}
-                            >
-                              {msg.type === "activity" && metadata && (
-                                <ActivityIcon action={metadata.action} />
-                              )}
-                              {msg.type === "activity" ? (
-                                <span>
-                                  <span className="font-medium">
-                                    {msg.sender.name || msg.sender.email.split("@")[0]}
-                                  </span>{" "}
-                                  {msg.content}
-                                </span>
-                              ) : (
-                                msg.content
+                            <div className={`flex items-center gap-1 ${isMine ? "flex-row-reverse" : ""}`}>
+                              <div
+                                className={`rounded-2xl px-3 py-2 text-xs leading-relaxed ${
+                                  msg.type === "activity"
+                                    ? "flex items-center gap-1.5 bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 rounded-xl"
+                                    : isMine
+                                    ? "bg-violet-600 text-white rounded-tr-sm"
+                                    : "bg-neutral-100 text-neutral-800 rounded-tl-sm dark:bg-neutral-800 dark:text-neutral-200"
+                                }`}
+                              >
+                                {msg.type === "activity" && metadata && (
+                                  <ActivityIcon action={metadata.action} />
+                                )}
+                                {msg.type === "activity" ? (
+                                  <span>
+                                    <span className="font-medium">
+                                      {msg.sender.name || msg.sender.email.split("@")[0]}
+                                    </span>{" "}
+                                    {msg.content}
+                                  </span>
+                                ) : (
+                                  msg.content
+                                )}
+                              </div>
+                              {isMine && (
+                                <button
+                                  onClick={() => deleteMessage(msg.id, true)}
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 rounded-lg p-1 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
                               )}
                             </div>
                             <span className="text-[10px] text-neutral-400 px-1">
@@ -388,20 +409,30 @@ export function MessagingDropdown() {
                       return (
                         <div
                           key={msg.id}
-                          className={`flex items-end gap-2 ${isMine ? "flex-row-reverse" : ""}`}
+                          className={`group flex items-end gap-2 ${isMine ? "flex-row-reverse" : ""}`}
                         >
                           {!isMine && (
                             <Avatar name={msg.sender.name} color={msg.sender.memberColor} size="sm" />
                           )}
                           <div className={`max-w-[75%] flex flex-col gap-0.5 ${isMine ? "items-end" : "items-start"}`}>
-                            <div
-                              className={`rounded-2xl px-3 py-2 text-xs leading-relaxed ${
-                                isMine
-                                  ? "bg-violet-600 text-white rounded-br-sm"
-                                  : "bg-neutral-100 text-neutral-800 rounded-bl-sm dark:bg-neutral-800 dark:text-neutral-200"
-                              }`}
-                            >
-                              {msg.content}
+                            <div className={`flex items-center gap-1 ${isMine ? "flex-row-reverse" : ""}`}>
+                              <div
+                                className={`rounded-2xl px-3 py-2 text-xs leading-relaxed ${
+                                  isMine
+                                    ? "bg-violet-600 text-white rounded-br-sm"
+                                    : "bg-neutral-100 text-neutral-800 rounded-bl-sm dark:bg-neutral-800 dark:text-neutral-200"
+                                }`}
+                              >
+                                {msg.content}
+                              </div>
+                              {isMine && (
+                                <button
+                                  onClick={() => deleteMessage(msg.id, false)}
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 rounded-lg p-1 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
+                              )}
                             </div>
                             <span className="text-[10px] text-neutral-400 px-1">
                               {getTimeAgo(msg.createdAt)}
