@@ -84,8 +84,8 @@ export function MessagingDropdown() {
   const [sending, setSending] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const channelBottomRef = useRef<HTMLDivElement>(null);
-  const dmBottomRef = useRef<HTMLDivElement>(null);
+  const channelScrollRef = useRef<HTMLDivElement>(null);
+  const dmScrollRef = useRef<HTMLDivElement>(null);
 
   const userId = session?.user?.id;
 
@@ -147,13 +147,15 @@ export function MessagingDropdown() {
     return () => clearInterval(interval);
   }, [isOpen, activeDm, fetchDm]);
 
-  // Auto scroll to bottom on new messages
+  // Auto scroll to bottom on new messages (scroll the container, not the page)
   useEffect(() => {
-    channelBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = channelScrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [channelMessages]);
 
   useEffect(() => {
-    dmBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = dmScrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [dmMessages]);
 
   // Mark as read when opening
@@ -292,7 +294,7 @@ export function MessagingDropdown() {
             ) : tab === "team" ? (
               /* ── Canal équipe ── */
               <>
-                <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2 min-h-0" style={{ maxHeight: "300px" }}>
+                <div ref={channelScrollRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-2 min-h-0" style={{ maxHeight: "300px" }}>
                   {channelMessages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-10">
                       <Users className="h-10 w-10 text-neutral-300 dark:text-neutral-600" />
@@ -349,7 +351,6 @@ export function MessagingDropdown() {
                       );
                     })
                   )}
-                  <div ref={channelBottomRef} />
                 </div>
 
                 {/* Channel input */}
@@ -373,7 +374,7 @@ export function MessagingDropdown() {
             ) : activeDm ? (
               /* ── DM thread ── */
               <>
-                <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2 min-h-0" style={{ maxHeight: "300px" }}>
+                <div ref={dmScrollRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-2 min-h-0" style={{ maxHeight: "300px" }}>
                   {dmMessages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-10">
                       <MessageSquare className="h-10 w-10 text-neutral-300 dark:text-neutral-600" />
@@ -410,7 +411,6 @@ export function MessagingDropdown() {
                       );
                     })
                   )}
-                  <div ref={dmBottomRef} />
                 </div>
 
                 {/* DM input */}
