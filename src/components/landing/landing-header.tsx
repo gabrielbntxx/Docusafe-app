@@ -64,7 +64,7 @@ export function LandingHeader({ solid: forceSolid = false }: { solid?: boolean }
                 key={item.label}
                 href={item.href}
                 className={`px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 ${
-                  scrolled
+                  solidBg
                     ? "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                     : "text-white/85 hover:text-white hover:bg-white/12"
                 }`}
@@ -82,7 +82,7 @@ export function LandingHeader({ solid: forceSolid = false }: { solid?: boolean }
               <Link
                 href="/login"
                 className={`px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 ${
-                  scrolled
+                  solidBg
                     ? "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                     : "text-white/85 hover:text-white hover:bg-white/12"
                 }`}
@@ -92,7 +92,7 @@ export function LandingHeader({ solid: forceSolid = false }: { solid?: boolean }
               <Link
                 href="/register"
                 className={`px-4 py-2.5 text-sm font-semibold rounded-full transition-all duration-200 whitespace-nowrap ${
-                  scrolled
+                  solidBg
                     ? "bg-gray-900 text-white hover:bg-gray-700 shadow-sm"
                     : "bg-white/20 text-white backdrop-blur-sm ring-1 ring-white/35 hover:bg-white/30 shadow-md"
                 }`}

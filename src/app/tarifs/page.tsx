@@ -174,10 +174,9 @@ export default function TarifsPage() {
                   )}
 
                   {/* Free trial banner */}
-                  <div className={`mb-5 flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold ${
+                  <div className={`mb-5 flex items-center justify-center rounded-xl py-2 text-xs font-bold ${
                     isDark ? "bg-white/10 text-white" : "bg-green-50 text-green-700"
                   }`}>
-                    <span>🎁</span>
                     1 mois gratuit
                   </div>
 
