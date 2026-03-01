@@ -78,10 +78,10 @@ function DashboardMockup() {
         </div>
 
         {/* Upload button */}
-        <div className="px-2 pt-2">
-          <div className="flex items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 py-1.5 shadow-sm">
-            <Upload className="h-2.5 w-2.5 text-white" />
-            <span className="text-[9px] font-semibold text-white">Ajouter un document</span>
+        <div className="px-2 pt-2.5">
+          <div className="flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 py-2.5 shadow-sm">
+            <Upload className="h-3 w-3 text-white" />
+            <span className="text-[10px] font-bold text-white">Ajouter un document</span>
           </div>
         </div>
 
@@ -162,7 +162,7 @@ function DashboardMockup() {
           </div>
 
           {/* DocuBot banner */}
-          <div className="flex items-start gap-2.5 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 p-2.5 shadow-md shadow-blue-500/20">
+          <div className="mt-2 flex items-start gap-2.5 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 p-2.5 shadow-md shadow-blue-500/20">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/20">
               <Bot className="h-4 w-4 text-white" />
             </div>
