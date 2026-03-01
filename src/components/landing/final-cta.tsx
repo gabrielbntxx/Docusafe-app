@@ -61,7 +61,7 @@ export function FinalCta() {
                   Créer un compte <ChevronRight className="h-4 w-4" />
                 </Link>
                 <p className="mt-3 text-xs text-gray-400">
-                  Aucune carte bancaire · Gratuit pour commencer
+                  Gratuit pour commencer
                 </p>
               </div>
 

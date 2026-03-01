@@ -302,7 +302,7 @@ export default function TarifsPage() {
             Toujours un doute ?
           </h2>
           <p className="mb-8 text-base leading-relaxed text-gray-500">
-            Profitez d&apos;un mois gratuit pour découvrir et prendre vraiment en main DocuSafe avant de choisir votre plan.
+            Profitez d&apos;un mois gratuit pour découvrir et prendre vraiment en main DocuSafe
           </p>
           <Link
             href="/register"
