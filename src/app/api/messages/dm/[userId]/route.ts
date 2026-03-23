@@ -14,6 +14,18 @@ async function getTeamOwnerId(userId: string): Promise<string | null> {
   return null;
 }
 
+// Vérifie que targetId appartient bien à la même équipe que teamOwnerId
+async function isTeamMember(targetId: string, teamOwnerId: string): Promise<boolean> {
+  const target = await db.user.findUnique({
+    where: { id: targetId },
+    select: { id: true, teamOwnerId: true, planType: true },
+  });
+  if (!target) return false;
+  // Le destinataire est soit le owner de l'équipe, soit un membre de cette équipe
+  const targetTeam = target.teamOwnerId ?? (target.planType === "BUSINESS" ? target.id : null);
+  return targetTeam === teamOwnerId;
+}
+
 // GET — messages DM entre moi et userId
 export async function GET(
   _request: Request,
@@ -27,6 +39,10 @@ export async function GET(
   const teamOwnerId = await getTeamOwnerId(session.user.id);
   if (!teamOwnerId) {
     return NextResponse.json({ error: "Business plan required" }, { status: 403 });
+  }
+
+  if (!(await isTeamMember(params.userId, teamOwnerId))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   try {
@@ -65,6 +81,10 @@ export async function POST(
   const teamOwnerId = await getTeamOwnerId(session.user.id);
   if (!teamOwnerId) {
     return NextResponse.json({ error: "Business plan required" }, { status: 403 });
+  }
+
+  if (!(await isTeamMember(params.userId, teamOwnerId))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { content } = await request.json();
