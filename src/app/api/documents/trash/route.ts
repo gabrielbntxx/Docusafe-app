@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { deleteFromR2 } from "@/lib/storage";
 import { revalidatePath } from "next/cache";
+import { getEffectiveUserId, getMemberFolderAccess, canDeleteDocs } from "@/lib/team";
 
 const TRASH_RETENTION_DAYS = 30;
 
@@ -15,15 +16,26 @@ export async function GET() {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
 
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - TRASH_RETENTION_DAYS);
+    const effectiveUserId = await getEffectiveUserId(session.user.id);
+    const isOwner = effectiveUserId === session.user.id;
+
+    // Apply folder access restrictions for team members
+    const memberFolderAccess = !isOwner
+      ? await getMemberFolderAccess(session.user.id)
+      : null;
+
+    const folderFilter =
+      memberFolderAccess !== null
+        ? memberFolderAccess.length === 0
+          ? { folderId: "__NONE__" } // member has no folder access at all
+          : { folderId: { in: memberFolderAccess } }
+        : {};
 
     const documents = await db.document.findMany({
       where: {
-        userId: session.user.id,
+        userId: effectiveUserId,
         deletedAt: { not: null },
-        // Only show docs deleted within the retention window
-        // (older ones will be purged by the cleanup job)
+        ...(isOwner ? {} : { isPrivate: 0, ...folderFilter }),
       },
       select: {
         id: true,
@@ -68,24 +80,50 @@ export async function DELETE() {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
 
+    // Only owner and admin roles can permanently purge documents
+    if (!(await canDeleteDocs(session.user.id))) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const effectiveUserId = await getEffectiveUserId(session.user.id);
+    const isOwner = effectiveUserId === session.user.id;
+
+    // Apply folder access restrictions for admins with restricted folders
+    const memberFolderAccess = !isOwner
+      ? await getMemberFolderAccess(session.user.id)
+      : null;
+
+    const folderFilter =
+      memberFolderAccess !== null
+        ? memberFolderAccess.length === 0
+          ? { folderId: "__NONE__" }
+          : { folderId: { in: memberFolderAccess } }
+        : {};
+
+    const baseWhere = {
+      userId: effectiveUserId,
+      deletedAt: { not: null },
+      ...(isOwner ? {} : { isPrivate: 0, ...folderFilter }),
+    };
+
     const trashed = await db.document.findMany({
-      where: { userId: session.user.id, deletedAt: { not: null } },
+      where: baseWhere,
       select: { id: true, storageKey: true, sizeBytes: true },
     });
 
     // Delete from R2 in parallel, ignore individual errors
     await Promise.allSettled(trashed.map((doc) => deleteFromR2(doc.storageKey)));
 
-    // Delete from DB
+    // Delete from DB (scoped to same filter — no wider than what was fetched)
     await db.document.deleteMany({
-      where: { userId: session.user.id, deletedAt: { not: null } },
+      where: { id: { in: trashed.map((d) => d.id) } },
     });
 
-    // Update user counters
+    // Update counters on the workspace owner's account
     if (trashed.length > 0) {
       const totalBytes = trashed.reduce((sum, d) => sum + Number(d.sizeBytes), 0);
       await db.user.update({
-        where: { id: session.user.id },
+        where: { id: effectiveUserId },
         data: {
           documentsCount: { decrement: trashed.length },
           storageUsedBytes: { decrement: totalBytes },
